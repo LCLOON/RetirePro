@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
 
@@ -139,6 +140,21 @@ export default function LandingPage() {
               <div className="text-2xl mb-1">🏆</div>
               <div className="text-lg font-bold text-white">Readiness Score</div>
               <div className="text-emerald-400 font-semibold">85/100</div>
+            </div>
+          </div>
+          
+          {/* Hero Image */}
+          <div className="mt-16 relative">
+            <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
+            <div className="relative rounded-xl overflow-hidden border border-slate-800 shadow-2xl shadow-emerald-500/10">
+              <Image
+                src="/hero-image.png"
+                alt="RetirePro Dashboard - Plan your retirement with confidence"
+                width={1200}
+                height={675}
+                className="w-full h-auto"
+                priority
+              />
             </div>
           </div>
         </div>
