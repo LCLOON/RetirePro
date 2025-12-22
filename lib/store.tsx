@@ -225,6 +225,46 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
+  // AUTO-LOAD data from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('retirepro-data');
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        // Merge with defaults to handle any new fields added in updates
+        dispatch({ type: 'LOAD_DATA', payload: {
+          retirementData: { ...DEFAULT_RETIREMENT_DATA, ...parsed.retirementData },
+          netWorthData: { ...DEFAULT_NET_WORTH, ...parsed.netWorthData },
+          budgetData: { ...DEFAULT_BUDGET, ...parsed.budgetData },
+          taxSettings: { ...DEFAULT_TAX_SETTINGS, ...parsed.taxSettings },
+          mortgageData: { ...DEFAULT_MORTGAGE, ...parsed.mortgageData },
+          socialSecurityData: { ...DEFAULT_SOCIAL_SECURITY, ...parsed.socialSecurityData },
+        }});
+        console.log('RetirePro: Data loaded from browser storage');
+      } catch (e) {
+        console.error('Failed to load saved data:', e);
+      }
+    }
+  }, []);
+  
+  // AUTO-SAVE data to localStorage when it changes
+  useEffect(() => {
+    // Skip initial render
+    if (state.hasUnsavedChanges) {
+      const dataToSave = {
+        retirementData: state.retirementData,
+        netWorthData: state.netWorthData,
+        budgetData: state.budgetData,
+        taxSettings: state.taxSettings,
+        mortgageData: state.mortgageData,
+        socialSecurityData: state.socialSecurityData,
+        savedAt: new Date().toISOString(),
+      };
+      localStorage.setItem('retirepro-data', JSON.stringify(dataToSave));
+      console.log('RetirePro: Data auto-saved');
+    }
+  }, [state.retirementData, state.netWorthData, state.budgetData, state.taxSettings, state.mortgageData, state.socialSecurityData, state.hasUnsavedChanges]);
+  
   const setActiveTab = useCallback((tab: TabId) => {
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
   }, []);
