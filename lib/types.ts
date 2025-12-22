@@ -37,6 +37,8 @@ export interface InheritedIRA {
   originalOwnerBirthYear: number;
   beneficiaryType: 'spouse' | 'non_spouse_eligible' | 'non_spouse_10_year';
   useStretchIRA: boolean; // For eligible designated beneficiaries
+  withdrawalStrategy: 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd'; // How to distribute over 10 years
+  originalOwnerStartedRMD: boolean; // Did original owner die after starting RMDs?
 }
 
 // Additional Income Source type
@@ -194,6 +196,8 @@ export const DEFAULT_INHERITED_IRA: InheritedIRA = {
   originalOwnerBirthYear: 1950,
   beneficiaryType: 'non_spouse_10_year',
   useStretchIRA: false,
+  withdrawalStrategy: 'annual_rmd', // Default to annual RMDs (most common case)
+  originalOwnerStartedRMD: true, // Assume original owner was already taking RMDs
 };
 
 // Default Dividend Portfolio

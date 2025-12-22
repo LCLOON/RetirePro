@@ -22,24 +22,76 @@ function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: number): 
   return preTaxBalance / lifeExpectancy;
 }
 
+// IRS Single Life Expectancy Table for Inherited IRAs (2024)
+const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
+  0: 84.6, 1: 83.7, 2: 82.7, 3: 81.7, 4: 80.7, 5: 79.8, 6: 78.8, 7: 77.8, 8: 76.8, 9: 75.8,
+  10: 74.8, 11: 73.8, 12: 72.8, 13: 71.9, 14: 70.9, 15: 69.9, 16: 68.9, 17: 67.9, 18: 66.9, 19: 66.0,
+  20: 65.0, 21: 64.0, 22: 63.0, 23: 62.1, 24: 61.1, 25: 60.1, 26: 59.2, 27: 58.2, 28: 57.2, 29: 56.2,
+  30: 55.3, 31: 54.3, 32: 53.4, 33: 52.4, 34: 51.4, 35: 50.5, 36: 49.5, 37: 48.5, 38: 47.6, 39: 46.6,
+  40: 45.7, 41: 44.7, 42: 43.7, 43: 42.8, 44: 41.8, 45: 40.9, 46: 39.9, 47: 39.0, 48: 38.0, 49: 37.1,
+  50: 36.2, 51: 35.2, 52: 34.3, 53: 33.4, 54: 32.5, 55: 31.6, 56: 30.6, 57: 29.8, 58: 28.9, 59: 28.0,
+  60: 27.1, 61: 26.2, 62: 25.4, 63: 24.5, 64: 23.7, 65: 22.9, 66: 22.0, 67: 21.2, 68: 20.4, 69: 19.6,
+  70: 18.8, 71: 18.0, 72: 17.2, 73: 16.4, 74: 15.6, 75: 14.8, 76: 14.1, 77: 13.3, 78: 12.6, 79: 11.9,
+  80: 11.2, 81: 10.5, 82: 9.9, 83: 9.3, 84: 8.6, 85: 8.1, 86: 7.5, 87: 7.0, 88: 6.5, 89: 6.0,
+  90: 5.6, 91: 5.2, 92: 4.8, 93: 4.4, 94: 4.1, 95: 3.8, 96: 3.5, 97: 3.2, 98: 3.0, 99: 2.8,
+  100: 2.5
+};
+
 // Calculate Inherited IRA RMD (10-year rule for non-spouse)
+// Supports different strategies: spread_evenly, year_10_lump_sum, back_loaded, annual_rmd
 function calculateInheritedIRAWithdrawal(
   inheritedBalance: number,
   currentYear: number,
   inheritedYear: number,
-  beneficiaryType: string
+  withdrawalStrategy: 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd' = 'annual_rmd',
+  beneficiaryAge?: number
 ): number {
   if (inheritedBalance <= 0) return 0;
   
-  const yearsRemaining = 10 - (currentYear - inheritedYear);
+  const yearsSinceInheritance = currentYear - inheritedYear;
+  const yearsRemaining = 10 - yearsSinceInheritance;
   
-  if (yearsRemaining <= 0) {
-    // Must withdraw entire remaining balance in final year
-    return inheritedBalance;
+  // Account must be emptied by year 10
+  if (yearsRemaining <= 0) return inheritedBalance;
+  
+  switch (withdrawalStrategy) {
+    case 'annual_rmd':
+      // Annual RMDs based on Single Life Expectancy Table
+      // This applies when original owner died AFTER their RBD (already taking RMDs)
+      if (beneficiaryAge !== undefined) {
+        const lifeExpectancy = SINGLE_LIFE_EXPECTANCY_TABLE[beneficiaryAge] || 10;
+        // Reduce by 1 each year after first year
+        const adjustedLifeExpectancy = Math.max(1, lifeExpectancy - yearsSinceInheritance);
+        
+        // In year 10, take whatever remains
+        if (yearsRemaining === 1) {
+          return inheritedBalance;
+        }
+        
+        return inheritedBalance / adjustedLifeExpectancy;
+      }
+      // Fall back to spread evenly if no age provided
+      return inheritedBalance / yearsRemaining;
+      
+    case 'year_10_lump_sum':
+      // Minimum RMDs: No withdrawal until year 10, then take everything
+      if (yearsRemaining === 1) {
+        return inheritedBalance;
+      }
+      return 0;
+      
+    case 'back_loaded':
+      // Years 1-7: no withdrawal, Years 8-10: spread the rest
+      if (yearsRemaining > 3) {
+        return 0;
+      }
+      return inheritedBalance / yearsRemaining;
+      
+    case 'spread_evenly':
+    default:
+      // Spread evenly over remaining years
+      return inheritedBalance / yearsRemaining;
   }
-  
-  // Spread evenly over remaining years (simplified approach)
-  return inheritedBalance / yearsRemaining;
 }
 
 export function DetailsTab() {
@@ -123,7 +175,8 @@ export function DetailsTab() {
           startInherited,
           currentYear,
           data.inheritedIRA.inheritedYear,
-          data.inheritedIRA.beneficiaryType
+          data.inheritedIRA.withdrawalStrategy || 'annual_rmd',
+          age // Pass current age for life expectancy calculation
         );
       }
       

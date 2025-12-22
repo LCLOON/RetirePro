@@ -466,6 +466,19 @@ export function DataTab() {
                   { value: 'non_spouse_10_year', label: 'Non-Spouse (10-Year Rule)' },
                 ]}
               />
+              <Select
+                label="Withdrawal Strategy"
+                value={data.inheritedIRA.withdrawalStrategy || 'annual_rmd'}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, withdrawalStrategy: v as 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd' }
+                })}
+                options={[
+                  { value: 'annual_rmd', label: 'Annual RMDs (Life Expectancy)' },
+                  { value: 'spread_evenly', label: 'Spread Evenly (10 years)' },
+                  { value: 'back_loaded', label: 'Back-Loaded (Years 8-10)' },
+                  { value: 'year_10_lump_sum', label: 'Year 10 Lump Sum' },
+                ]}
+              />
               {data.inheritedIRA.beneficiaryType === 'non_spouse_eligible' && (
                 <Checkbox
                   label="Use Stretch IRA (Life Expectancy)"
@@ -478,9 +491,19 @@ export function DataTab() {
             </div>
           )}
           
+          <div className="p-3 bg-blue-500/10 rounded-lg border border-blue-500/20 mt-2">
+            <p className="text-xs text-blue-300 font-medium mb-1">Withdrawal Strategy Options:</p>
+            <ul className="text-xs text-slate-400 space-y-1">
+              <li>• <strong>Annual RMDs</strong> - Required if original owner was already taking RMDs (most common)</li>
+              <li>• <strong>Spread Evenly</strong> - Divide balance equally over 10 years</li>
+              <li>• <strong>Back-Loaded</strong> - Wait until years 8-10 to withdraw</li>
+              <li>• <strong>Year 10 Lump Sum</strong> - No withdrawals until final year (if no annual RMD required)</li>
+            </ul>
+          </div>
+          
           <p className="text-xs text-slate-400 mt-2">
-            Note: SECURE Act 2.0 rules apply. Non-spouse beneficiaries typically must withdraw within 10 years. 
-            Eligible designated beneficiaries (disabled, chronically ill, minor children, or those within 10 years of decedent&apos;s age) may use stretch IRA rules.
+            Note: SECURE Act 2.0 rules apply. If the original owner died AFTER starting RMDs, you must continue annual RMDs 
+            AND empty the account within 10 years. If they died BEFORE RMDs started, you only need to empty by year 10.
           </p>
         </div>
       </Card>
