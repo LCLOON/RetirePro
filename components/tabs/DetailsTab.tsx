@@ -5,6 +5,43 @@ import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
 
+// IRS Uniform Lifetime Table (2024) for RMD calculations
+const RMD_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
+  72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2,
+  81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4, 88: 13.7, 89: 12.9,
+  90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8,
+  100: 6.4, 101: 6.0, 102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3, 107: 4.1, 108: 3.9,
+  109: 3.7, 110: 3.5, 111: 3.4, 112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8, 117: 2.7,
+  118: 2.5, 119: 2.3, 120: 2.0
+};
+
+// Calculate RMD for a given age and pre-tax balance
+function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: number): number {
+  if (age < rmdStartAge || preTaxBalance <= 0) return 0;
+  const lifeExpectancy = RMD_LIFE_EXPECTANCY_TABLE[age] || 2.0;
+  return preTaxBalance / lifeExpectancy;
+}
+
+// Calculate Inherited IRA RMD (10-year rule for non-spouse)
+function calculateInheritedIRAWithdrawal(
+  inheritedBalance: number,
+  currentYear: number,
+  inheritedYear: number,
+  beneficiaryType: string
+): number {
+  if (inheritedBalance <= 0) return 0;
+  
+  const yearsRemaining = 10 - (currentYear - inheritedYear);
+  
+  if (yearsRemaining <= 0) {
+    // Must withdraw entire remaining balance in final year
+    return inheritedBalance;
+  }
+  
+  // Spread evenly over remaining years (simplified approach)
+  return inheritedBalance / yearsRemaining;
+}
+
 export function DetailsTab() {
   const { state } = useApp();
   const data = state.retirementData;
@@ -14,17 +51,19 @@ export function DetailsTab() {
   const generateYearByYear = () => {
     const years = [];
     
-    // Include all savings: pre-tax, Roth, after-tax, HSA, inherited IRA
-    let balance = data.currentSavingsPreTax + data.currentSavingsRoth + 
-                  data.currentSavingsAfterTax + data.currentHSA;
-    if (data.hasInheritedIRA) {
-      balance += data.inheritedIRA.balance;
-    }
+    // Track pre-tax and Roth balances SEPARATELY for RMD calculations
+    let preTaxBalance = data.currentSavingsPreTax;
+    let rothBalance = data.currentSavingsRoth;
+    let afterTaxBalance = data.currentSavingsAfterTax + data.currentHSA;
+    let inheritedIRABalance = data.hasInheritedIRA ? data.inheritedIRA.balance : 0;
     
-    // Total contributions including HSA
-    let contribution = data.annualContributionPreTax + data.annualContributionRoth + 
-                       data.annualContributionAfterTax + data.employerMatch + 
-                       data.annualHSAContribution;
+    // Total balance is sum of all accounts
+    let totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance;
+    
+    // Track contributions by type
+    let preTaxContribution = data.annualContributionPreTax + data.employerMatch;
+    let rothContribution = data.annualContributionRoth;
+    let afterTaxContribution = data.annualContributionAfterTax + data.annualHSAContribution;
     
     let cumulativeContributions = 0;
     let cumulativeGrowth = 0;
@@ -34,15 +73,44 @@ export function DetailsTab() {
     const baseExpenses = data.retirementExpenses;
     
     // COLA rate for Social Security (use inflation rate - already stored as decimal like 0.025)
-    const ssCOLA = data.inflationRate || 0.025; // Use inflation rate or default 2.5%
+    const ssCOLA = data.inflationRate || 0.025;
+    
+    // RMD settings
+    const rmdStartAge = data.rmdStartAge || 73;
+    const includeRMD = data.includeRMD !== false; // Default to true
     
     for (let age = data.currentAge; age <= data.lifeExpectancy; age++) {
       const isRetired = age >= data.retirementAge;
-      // Return rates are already stored as decimals (0.07 = 7%)
       const yearReturn = isRetired ? data.postRetirementReturn : data.preRetirementReturn;
+      const currentYear = new Date().getFullYear() + (age - data.currentAge);
       
-      // Store start balance BEFORE any changes this year
-      const startBalance = balance;
+      // Store start balances BEFORE any changes this year
+      const startPreTax = preTaxBalance;
+      const startRoth = rothBalance;
+      const startAfterTax = afterTaxBalance;
+      const startInherited = inheritedIRABalance;
+      const startBalance = startPreTax + startRoth + startAfterTax + startInherited;
+      
+      // Calculate RMDs (Required Minimum Distributions)
+      let rmd401k = 0;
+      let rmdInherited = 0;
+      
+      if (includeRMD && age >= rmdStartAge) {
+        // Traditional 401K/IRA RMD
+        rmd401k = calculateRMD(age, startPreTax, rmdStartAge);
+      }
+      
+      // Inherited IRA withdrawals (10-year rule)
+      if (data.hasInheritedIRA && startInherited > 0) {
+        rmdInherited = calculateInheritedIRAWithdrawal(
+          startInherited,
+          currentYear,
+          data.inheritedIRA.inheritedYear,
+          data.inheritedIRA.beneficiaryType
+        );
+      }
+      
+      const totalRMD = rmd401k + rmdInherited;
       
       // Calculate years since SS started (for COLA adjustment)
       const yearsSinceYourSS = Math.max(0, age - data.socialSecurityStartAge);
@@ -51,7 +119,6 @@ export function DetailsTab() {
       // YOUR Social Security income (annual) WITH COLA
       let ssIncome = 0;
       if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
-        // Apply COLA for each year since SS started (inflation rate is decimal)
         ssIncome = data.socialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceYourSS);
       }
       
@@ -67,7 +134,6 @@ export function DetailsTab() {
       const additionalIncome = data.additionalIncome
         .filter(source => age >= source.startAge && age <= source.endAge)
         .reduce((sum, source) => {
-          // Adjust for inflation if flagged (inflation rate is decimal)
           if (source.adjustForInflation) {
             const yearsFromStart = age - source.startAge;
             return sum + source.amount * Math.pow(1 + data.inflationRate, yearsFromStart);
@@ -75,30 +141,26 @@ export function DetailsTab() {
           return sum + source.amount;
         }, 0);
       
-      // Pension income (many pensions have COLA too)
+      // Pension income
       let pensionIncome = 0;
       if (data.hasPension && age >= data.pensionStartAge) {
         const yearsSincePension = age - data.pensionStartAge;
-        // Apply 1.5% pension COLA (typical for government pensions)
         pensionIncome = data.pensionIncome * Math.pow(1.015, yearsSincePension);
       }
       
-      // Total income from non-portfolio sources
+      // Total income from non-portfolio sources (including RMDs as income)
       const totalOtherIncome = additionalIncome + pensionIncome;
-      const totalIncome = totalSsIncome + totalOtherIncome;
+      const totalIncome = totalSsIncome + totalOtherIncome + totalRMD;
       
       // Calculate expenses (only in retirement)
       let expenses = 0;
       let yearlyHealthcare = 0;
       
       if (isRetired) {
-        // Inflate base expenses from retirement year (expenseGrowthRate is decimal)
         const yearsInRetirement = age - data.retirementAge;
         expenses = baseExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
         
-        // Healthcare costs - different before/after Medicare (healthcareInflationRate is decimal)
         if (age >= data.medicareStartAge) {
-          // Medicare costs also inflate
           const yearsSinceMedicare = age - data.medicareStartAge;
           yearlyHealthcare = (data.medicarePremium + data.medicareSupplementPremium) * 12 * 
                              Math.pow(1 + data.healthcareInflationRate, yearsSinceMedicare);
@@ -110,65 +172,125 @@ export function DetailsTab() {
       }
       
       // Contributions (only pre-retirement)
-      const yearContribution = isRetired ? 0 : contribution;
+      const yearPreTaxContrib = isRetired ? 0 : preTaxContribution;
+      const yearRothContrib = isRetired ? 0 : rothContribution;
+      const yearAfterTaxContrib = isRetired ? 0 : afterTaxContribution;
+      const yearContribution = yearPreTaxContrib + yearRothContrib + yearAfterTaxContrib;
+      
       if (!isRetired) {
         cumulativeContributions += yearContribution;
       }
       
-      // Calculate growth on START balance (before contributions/withdrawals)
-      const growth = startBalance * yearReturn;
-      cumulativeGrowth += growth;
+      // Calculate growth on each account type
+      const preTaxGrowth = startPreTax * yearReturn;
+      const rothGrowth = startRoth * yearReturn;
+      const afterTaxGrowth = startAfterTax * yearReturn;
+      const inheritedGrowth = startInherited * yearReturn;
+      const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth;
+      cumulativeGrowth += totalGrowth;
       
-      // Net withdrawal (only in retirement)
-      // Withdrawal = Expenses - Income (amount needed from portfolio)
-      const withdrawal = isRetired ? Math.max(0, expenses - totalIncome) : 0;
+      // Calculate additional withdrawal needed beyond RMDs
+      // Withdrawal = max(0, Expenses - (SS + Other Income + RMDs))
+      const incomeWithoutWithdrawal = totalSsIncome + totalOtherIncome + totalRMD;
+      const additionalWithdrawalNeeded = isRetired ? Math.max(0, expenses - incomeWithoutWithdrawal) : 0;
+      
+      // Total withdrawal from portfolio (RMDs + any additional needed)
+      const totalWithdrawal = totalRMD + additionalWithdrawalNeeded;
       
       // Calculate net cash flow
-      // Positive = surplus (income > expenses), Negative = withdrawal needed
-      const netCashFlow = isRetired ? (totalIncome - expenses) : 0;
-      const surplus = isRetired ? Math.max(0, totalIncome - expenses) : 0;
+      const netCashFlow = isRetired ? (incomeWithoutWithdrawal - expenses) : 0;
+      const surplus = isRetired ? Math.max(0, incomeWithoutWithdrawal - expenses) : 0;
       
-      // Update balance for NEXT year
-      // Pre-retirement: start + growth + contributions
-      // Retirement: start + growth - withdrawal (or + surplus if income > expenses)
+      // Update account balances for NEXT year
       if (isRetired) {
-        balance = startBalance + growth - withdrawal + surplus;
+        // Apply RMDs first (mandatory), then additional withdrawals
+        // Withdraw from pre-tax first (for RMDs), then Roth, then after-tax
+        
+        // Pre-tax: growth - 401k RMD - portion of additional withdrawal
+        let remainingWithdrawal = additionalWithdrawalNeeded;
+        
+        preTaxBalance = startPreTax + preTaxGrowth - rmd401k;
+        if (remainingWithdrawal > 0 && preTaxBalance > 0) {
+          const fromPreTax = Math.min(remainingWithdrawal, preTaxBalance);
+          preTaxBalance -= fromPreTax;
+          remainingWithdrawal -= fromPreTax;
+        }
+        
+        // After-tax next (before Roth to preserve tax-free growth)
+        afterTaxBalance = startAfterTax + afterTaxGrowth;
+        if (remainingWithdrawal > 0 && afterTaxBalance > 0) {
+          const fromAfterTax = Math.min(remainingWithdrawal, afterTaxBalance);
+          afterTaxBalance -= fromAfterTax;
+          remainingWithdrawal -= fromAfterTax;
+        }
+        
+        // Roth last (tax-free, let it grow)
+        rothBalance = startRoth + rothGrowth;
+        if (remainingWithdrawal > 0 && rothBalance > 0) {
+          const fromRoth = Math.min(remainingWithdrawal, rothBalance);
+          rothBalance -= fromRoth;
+          remainingWithdrawal -= fromRoth;
+        }
+        
+        // Inherited IRA - mandatory withdrawal
+        inheritedIRABalance = Math.max(0, startInherited + inheritedGrowth - rmdInherited);
+        
       } else {
-        balance = startBalance + growth + yearContribution;
+        // Accumulation phase: add contributions and growth
+        preTaxBalance = startPreTax + preTaxGrowth + yearPreTaxContrib;
+        rothBalance = startRoth + rothGrowth + yearRothContrib;
+        afterTaxBalance = startAfterTax + afterTaxGrowth + yearAfterTaxContrib;
+        inheritedIRABalance = startInherited + inheritedGrowth;
       }
       
-      // Calculate total spendable (income + 401K withdrawal)
-      const totalSpendable = isRetired ? totalIncome + withdrawal : 0;
+      // Ensure no negative balances
+      preTaxBalance = Math.max(0, preTaxBalance);
+      rothBalance = Math.max(0, rothBalance);
+      afterTaxBalance = Math.max(0, afterTaxBalance);
+      inheritedIRABalance = Math.max(0, inheritedIRABalance);
       
-      // Calculate withdrawal rate (withdrawal / start balance)
-      const withdrawalRate = isRetired && startBalance > 0 ? (withdrawal / startBalance) * 100 : 0;
+      totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance;
+      
+      // Calculate total spendable (income + withdrawals)
+      const totalSpendable = isRetired ? totalSsIncome + totalOtherIncome + totalWithdrawal : 0;
+      
+      // Calculate withdrawal rate (total withdrawal / start balance)
+      const withdrawalRate = isRetired && startBalance > 0 ? (totalWithdrawal / startBalance) * 100 : 0;
       
       years.push({
         age,
-        year: new Date().getFullYear() + (age - data.currentAge),
+        year: currentYear,
         phase: isRetired ? 'Retirement' : 'Accumulation',
         startBalance: startBalance,
+        preTaxBalance: startPreTax,
+        rothBalance: startRoth,
         contributions: yearContribution,
-        growth: growth,
+        growth: totalGrowth,
         ssIncome: totalSsIncome,
         yourSS: ssIncome,
         spouseSS: spouseSsIncome,
         otherIncome: totalOtherIncome,
+        rmd401k: rmd401k,
+        rmdInherited: rmdInherited,
+        totalRMD: totalRMD,
         totalIncome: totalIncome,
         expenses: expenses,
-        withdrawal: withdrawal,
+        withdrawal: totalWithdrawal,
+        additionalWithdrawal: additionalWithdrawalNeeded,
         surplus: surplus,
         netCashFlow: netCashFlow,
-        totalSpendable: totalSpendable, // Income + 401K withdrawal
-        withdrawalRate: withdrawalRate, // % of portfolio withdrawn
-        endBalance: Math.max(0, balance),
+        totalSpendable: totalSpendable,
+        withdrawalRate: withdrawalRate,
+        endBalance: Math.max(0, totalBalance),
         cumulativeContributions,
         cumulativeGrowth,
       });
       
       // Grow contributions by growth rate for next year (pre-retirement only)
       if (!isRetired) {
-        contribution *= (1 + data.contributionGrowthRate);
+        preTaxContribution *= (1 + data.contributionGrowthRate);
+        rothContribution *= (1 + data.contributionGrowthRate);
+        afterTaxContribution *= (1 + data.contributionGrowthRate);
       }
     }
     
@@ -296,10 +418,11 @@ export function DetailsTab() {
                   <th className="text-right py-3 px-2 text-slate-400 font-medium">Spouse SS</th>
                 )}
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Other</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10">RMD</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10">Total Income</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10">Contributions</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">401K Withdrawal</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">Add'l W/D</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10">Total Spendable</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">W/D Rate</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">End Balance</th>
@@ -310,6 +433,7 @@ export function DetailsTab() {
                 const isRetirementYear = row.age === data.retirementAge;
                 const isSSYear = row.age === data.socialSecurityStartAge;
                 const isSpouseSSYear = data.hasSpouse && row.age === data.spouseSocialSecurityStartAge;
+                const isRMDStartYear = row.age === (data.rmdStartAge || 73);
                 const isMoneyOut = row.endBalance <= 0;
                 
                 return (
@@ -319,16 +443,18 @@ export function DetailsTab() {
                       border-b border-slate-700/50 transition-colors
                       ${isRetirementYear ? 'bg-emerald-500/10' : ''}
                       ${isSSYear || isSpouseSSYear ? 'bg-blue-500/10' : ''}
-                      ${isMoneyOut ? 'bg-red-500/10' : ''}
-                      ${!isRetirementYear && !isSSYear && !isSpouseSSYear && !isMoneyOut ? 'hover:bg-slate-800/50' : ''}
+                      ${isRMDStartYear ? 'bg-red-500/10' : ''}
+                      ${isMoneyOut ? 'bg-red-500/20' : ''}
+                      ${!isRetirementYear && !isSSYear && !isSpouseSSYear && !isRMDStartYear && !isMoneyOut ? 'hover:bg-slate-800/50' : ''}
                     `}
                   >
                     <td className="py-2 px-2">
-                      <span className={`font-medium ${isRetirementYear ? 'text-emerald-400' : 'text-white'}`}>
+                      <span className={`font-medium ${isRetirementYear ? 'text-emerald-400' : isRMDStartYear ? 'text-red-400' : 'text-white'}`}>
                         {row.age}
                         {isRetirementYear && <span className="ml-1">🎉</span>}
                         {isSSYear && <span className="ml-1">🏛️</span>}
                         {isSpouseSSYear && !isSSYear && <span className="ml-1">👫</span>}
+                        {isRMDStartYear && <span className="ml-1">📋</span>}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-slate-300">{row.year}</td>
@@ -358,6 +484,12 @@ export function DetailsTab() {
                     <td className="py-2 px-2 text-right text-amber-400">
                       {row.otherIncome > 0 ? `$${Math.round(row.otherIncome).toLocaleString()}` : '-'}
                     </td>
+                    <td className="py-2 px-2 text-right bg-red-500/5">
+                      {row.totalRMD > 0 
+                        ? <span className="text-red-400 font-medium">${Math.round(row.totalRMD).toLocaleString()}</span>
+                        : <span className="text-slate-500">-</span>
+                      }
+                    </td>
                     <td className="py-2 px-2 text-right font-semibold text-emerald-400 bg-emerald-500/5">
                       {row.totalIncome > 0 ? `$${Math.round(row.totalIncome).toLocaleString()}` : '-'}
                     </td>
@@ -369,8 +501,8 @@ export function DetailsTab() {
                     </td>
                     <td className="py-2 px-2 text-right bg-orange-500/5">
                       {row.phase === 'Retirement' 
-                        ? row.withdrawal > 0 
-                          ? <span className="text-orange-400 font-medium">-${Math.round(row.withdrawal).toLocaleString()}</span>
+                        ? row.additionalWithdrawal > 0 
+                          ? <span className="text-orange-400 font-medium">-${Math.round(row.additionalWithdrawal).toLocaleString()}</span>
                           : <span className="text-emerald-400">$0 ✓</span>
                         : <span className="text-slate-500">-</span>
                       }
@@ -431,10 +563,49 @@ export function DetailsTab() {
           </div>
         )}
         <div className="flex items-center gap-2">
-          <div className="w-4 h-4 bg-red-500/20 border border-red-500/30 rounded"></div>
+          <div className="w-4 h-4 bg-red-500/10 border border-red-500/30 rounded"></div>
+          <span className="text-slate-400">RMD Start Age 📋 ({data.rmdStartAge || 73})</span>
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="w-4 h-4 bg-red-500/30 border border-red-500/50 rounded"></div>
           <span className="text-slate-400">Funds Depleted ⚠️</span>
         </div>
       </div>
+
+      {/* RMD Info Card */}
+      <Card title="📋 RMD Information" icon="📋">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="bg-slate-800/50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-red-400 mb-2">Traditional 401K/IRA RMDs</h4>
+            <p className="text-xs text-slate-400 mb-2">
+              Required Minimum Distributions start at age <span className="text-white font-medium">{data.rmdStartAge || 73}</span>
+            </p>
+            <p className="text-xs text-slate-500">
+              Calculated using IRS Uniform Lifetime Table. Failure to take RMDs results in a 25% penalty.
+            </p>
+          </div>
+          {data.hasInheritedIRA && (
+            <div className="bg-slate-800/50 rounded-lg p-4">
+              <h4 className="text-sm font-medium text-amber-400 mb-2">Inherited IRA (10-Year Rule)</h4>
+              <p className="text-xs text-slate-400 mb-2">
+                Must empty by year <span className="text-white font-medium">{data.inheritedIRA.inheritedYear + 10}</span>
+              </p>
+              <p className="text-xs text-slate-500">
+                SECURE Act requires non-spouse beneficiaries to withdraw all funds within 10 years.
+              </p>
+            </div>
+          )}
+          <div className="bg-slate-800/50 rounded-lg p-4">
+            <h4 className="text-sm font-medium text-emerald-400 mb-2">Roth IRAs</h4>
+            <p className="text-xs text-slate-400 mb-2">
+              No RMDs required for Roth IRAs
+            </p>
+            <p className="text-xs text-slate-500">
+              Your Roth balance: ${data.currentSavingsRoth.toLocaleString()} (grows tax-free with no forced withdrawals)
+            </p>
+          </div>
+        </div>
+      </Card>
     </div>
   );
 }
