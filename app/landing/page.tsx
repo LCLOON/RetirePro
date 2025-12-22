@@ -3,20 +3,17 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
-import { loadStripe } from '@stripe/stripe-js';
 import { CookieConsent } from '@/components/CookieConsent';
 
-const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
-
-// Price IDs from Stripe Dashboard
-const PRICE_IDS = {
+// Stripe Payment Links - Direct links that bypass server-side API calls
+const PAYMENT_LINKS = {
   pro: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || 'price_pro_monthly',
-    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || 'price_pro_yearly',
+    monthly: 'https://buy.stripe.com/test_bJe9AN2tQ6vo0H05Zk1Fe00',
+    yearly: 'https://buy.stripe.com/test_bJecMZ3xU8Dw0H0cnI1Fe01',
   },
   premium: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_MONTHLY || 'price_premium_monthly',
-    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY || 'price_premium_yearly',
+    monthly: 'https://buy.stripe.com/test_00wdR36K62f875o87s1Fe02',
+    yearly: 'https://buy.stripe.com/test_28E14hd8u5rk0H09bw1Fe03',
   },
 };
 
@@ -51,38 +48,12 @@ const faqData = [
 export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [email, setEmail] = useState('');
-  const [isLoading, setIsLoading] = useState<string | null>(null);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
-  const handleCheckout = async (plan: 'pro' | 'premium') => {
-    setIsLoading(plan);
-    try {
-      const response = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          priceId: PRICE_IDS[plan][billingPeriod],
-          billingPeriod,
-          plan,
-        }),
-      });
-
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.error || 'Checkout failed');
-      }
-      
-      if (data.url) {
-        window.location.href = data.url;
-      } else {
-        throw new Error('No checkout URL returned');
-      }
-    } catch (error) {
-      console.error('Checkout error:', error);
-      alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
-      setIsLoading(null);
-    }
+  // Direct redirect to Stripe Payment Link - no server-side API needed
+  const handleCheckout = (plan: 'pro' | 'premium') => {
+    const paymentUrl = PAYMENT_LINKS[plan][billingPeriod];
+    window.location.href = paymentUrl;
   };
 
   return (
@@ -336,10 +307,9 @@ export default function LandingPage() {
               </ul>
               <button 
                 onClick={() => handleCheckout('pro')}
-                disabled={isLoading === 'pro'}
-                className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                {isLoading === 'pro' ? 'Loading...' : 'Get Pro'}
+                Get Pro
               </button>
             </div>
 
@@ -361,10 +331,9 @@ export default function LandingPage() {
               </ul>
               <button 
                 onClick={() => handleCheckout('premium')}
-                disabled={isLoading === 'premium'}
-                className="block w-full text-center bg-slate-800 hover:bg-slate-700 disabled:bg-slate-800/50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+                className="block w-full text-center bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium transition-colors"
               >
-                {isLoading === 'premium' ? 'Loading...' : 'Get Premium'}
+                Get Premium
               </button>
             </div>
           </div>
