@@ -4,6 +4,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState } from 'react';
 import { loadStripe } from '@stripe/stripe-js';
+import { CookieConsent } from '@/components/CookieConsent';
 
 const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
 
@@ -19,10 +20,39 @@ const PRICE_IDS = {
   },
 };
 
+// FAQ Data
+const faqData = [
+  {
+    question: 'Is my financial data secure?',
+    answer: 'Absolutely. We use 256-bit SSL encryption for all data transmission, and your data is encrypted at rest. We never store your login credentials to financial institutions. All payment processing is handled by Stripe, which is PCI-DSS compliant.',
+  },
+  {
+    question: 'Can I cancel my subscription anytime?',
+    answer: 'Yes, you can cancel your subscription at any time. There are no long-term contracts or cancellation fees. Your access will continue until the end of your current billing period.',
+  },
+  {
+    question: 'Do you offer a free trial?',
+    answer: 'Yes! Our Free plan gives you full access to basic retirement planning tools forever. No credit card required. You can upgrade to Pro or Premium anytime to unlock advanced features.',
+  },
+  {
+    question: 'Is this financial advice?',
+    answer: 'No, RetirePro provides educational tools and calculations only. We do not provide personalized financial, investment, tax, or legal advice. Always consult with qualified professionals before making financial decisions.',
+  },
+  {
+    question: 'How accurate are the projections?',
+    answer: 'Our projections use industry-standard calculations and Monte Carlo simulations. However, all projections are estimates based on the assumptions you provide. Actual results will vary based on market conditions, inflation, and other factors.',
+  },
+  {
+    question: 'Can I export my data?',
+    answer: 'Pro and Premium subscribers can export their data in JSON format. Premium subscribers also get access to PDF reports and advanced export options.',
+  },
+];
+
 export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState<string | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   const handleCheckout = async (plan: 'pro' | 'premium') => {
     setIsLoading(plan);
@@ -273,10 +303,11 @@ export default function LandingPage() {
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
               <h3 className="text-xl font-bold mb-2">Free</h3>
               <div className="text-4xl font-bold mb-1">$0<span className="text-lg text-slate-400 font-normal">/forever</span></div>
+              <p className="text-sm text-slate-400 mb-4">Perfect for getting started</p>
               <ul className="space-y-3 my-6 text-slate-300">
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Basic retirement calculator</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Social Security estimator</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Limited projections</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> 5-year projections</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Community support</li>
               </ul>
               <Link href="/app" className="block w-full text-center bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
@@ -291,14 +322,16 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold mb-2">Pro</h3>
               <div className="text-4xl font-bold mb-1">
-                ${billingPeriod === 'monthly' ? '9' : '7'}
+                ${billingPeriod === 'monthly' ? '7' : '5'}
                 <span className="text-lg text-slate-400 font-normal">/month</span>
               </div>
+              <p className="text-sm text-slate-400 mb-4">For serious retirement planners</p>
               <ul className="space-y-3 my-6 text-slate-300">
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> All Free features</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Monte Carlo simulations</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> 30-year projections</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Tax optimization</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Tax optimization tools</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Net worth tracking</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Email support</li>
               </ul>
               <button 
@@ -314,15 +347,17 @@ export default function LandingPage() {
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
               <h3 className="text-xl font-bold mb-2">Premium</h3>
               <div className="text-4xl font-bold mb-1">
-                ${billingPeriod === 'monthly' ? '19' : '15'}
+                ${billingPeriod === 'monthly' ? '12' : '10'}
                 <span className="text-lg text-slate-400 font-normal">/month</span>
               </div>
+              <p className="text-sm text-slate-400 mb-4">Maximum power & flexibility</p>
               <ul className="space-y-3 my-6 text-slate-300">
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> All Pro features</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> AI Retirement Advisor</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Estate planning tools</li>
-                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Custom scenarios</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Advanced scenarios</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Priority support</li>
+                <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Early access to features</li>
               </ul>
               <button 
                 onClick={() => handleCheckout('premium')}
@@ -331,6 +366,73 @@ export default function LandingPage() {
               >
                 {isLoading === 'premium' ? 'Loading...' : 'Get Premium'}
               </button>
+            </div>
+          </div>
+
+          {/* Compare Plans Table */}
+          <div className="mt-16 max-w-4xl mx-auto">
+            <h3 className="text-2xl font-bold text-center mb-8">Compare Plans</h3>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-slate-800">
+                    <th className="text-left py-4 px-4 font-medium text-slate-400">Feature</th>
+                    <th className="text-center py-4 px-4 font-medium text-slate-400">Free</th>
+                    <th className="text-center py-4 px-4 font-medium text-emerald-400">Pro</th>
+                    <th className="text-center py-4 px-4 font-medium text-purple-400">Premium</th>
+                  </tr>
+                </thead>
+                <tbody className="text-slate-300">
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Retirement Projections</td>
+                    <td className="text-center py-4 px-4">5 years</td>
+                    <td className="text-center py-4 px-4">30 years</td>
+                    <td className="text-center py-4 px-4">Unlimited</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Monte Carlo Simulations</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Social Security Calculator</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Tax Optimization Tools</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Net Worth Tracking</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">AI Retirement Advisor</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Estate Planning Tools</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4">—</td>
+                    <td className="text-center py-4 px-4 text-emerald-400">✓</td>
+                  </tr>
+                  <tr className="border-b border-slate-800/50">
+                    <td className="py-4 px-4">Support</td>
+                    <td className="text-center py-4 px-4">Community</td>
+                    <td className="text-center py-4 px-4">Email</td>
+                    <td className="text-center py-4 px-4">Priority</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </div>
         </div>
@@ -426,26 +528,90 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* FAQ Section */}
+      <section id="faq" className="py-20 px-4">
+        <div className="max-w-3xl mx-auto">
+          <div className="text-center mb-12">
+            <h2 className="text-4xl font-bold mb-4">Frequently Asked Questions</h2>
+            <p className="text-slate-400 text-lg">Got questions? We&apos;ve got answers.</p>
+          </div>
+          <div className="space-y-4">
+            {faqData.map((faq, index) => (
+              <div 
+                key={index} 
+                className="bg-slate-900/50 border border-slate-800 rounded-xl overflow-hidden"
+              >
+                <button
+                  onClick={() => setOpenFaq(openFaq === index ? null : index)}
+                  className="w-full flex items-center justify-between p-6 text-left"
+                >
+                  <span className="font-medium text-white">{faq.question}</span>
+                  <span className={`text-emerald-400 transition-transform ${openFaq === index ? 'rotate-45' : ''}`}>
+                    +
+                  </span>
+                </button>
+                {openFaq === index && (
+                  <div className="px-6 pb-6 text-slate-400">
+                    {faq.answer}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
       {/* Footer */}
       <footer className="py-12 px-4 border-t border-slate-800">
         <div className="max-w-7xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl">💰</span>
-              <span className="text-xl font-bold">RetirePro</span>
+          <div className="grid md:grid-cols-4 gap-8 mb-8">
+            {/* Brand */}
+            <div className="md:col-span-2">
+              <div className="flex items-center gap-2 mb-4">
+                <span className="text-2xl">💰</span>
+                <span className="text-xl font-bold">RetirePro</span>
+              </div>
+              <p className="text-slate-400 text-sm mb-4">
+                Professional retirement planning tools for everyone. Plan your future with confidence.
+              </p>
+              <div className="flex items-center gap-4 text-sm text-slate-500">
+                <span>✓ SSL Secured</span>
+                <span>✓ 99.9% Uptime</span>
+              </div>
             </div>
-            <p className="text-slate-400 text-sm">© 2025 RetirePro. All rights reserved.</p>
-            <div className="flex items-center gap-6">
-              <Link href="/terms" className="text-slate-400 hover:text-white text-sm transition-colors">Terms of Service</Link>
-              <Link href="/privacy" className="text-slate-400 hover:text-white text-sm transition-colors">Privacy Policy</Link>
+            
+            {/* Product Links */}
+            <div>
+              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li><a href="#features" className="hover:text-white transition-colors">Features</a></li>
+                <li><a href="#pricing" className="hover:text-white transition-colors">Pricing</a></li>
+                <li><Link href="/app" className="hover:text-white transition-colors">Demo</Link></li>
+                <li><a href="#faq" className="hover:text-white transition-colors">FAQ</a></li>
+              </ul>
+            </div>
+            
+            {/* Legal Links */}
+            <div>
+              <h4 className="font-semibold text-white mb-4">Legal</h4>
+              <ul className="space-y-2 text-sm text-slate-400">
+                <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
+                <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
+              </ul>
             </div>
           </div>
-          <p className="text-center text-slate-500 text-sm mt-6">
-            Disclaimer: RetirePro provides educational information and tools for retirement planning. 
-            This is not financial advice. Please consult a qualified financial advisor for personalized guidance.
-          </p>
+          
+          <div className="pt-8 border-t border-slate-800 flex flex-col md:flex-row items-center justify-between gap-4">
+            <p className="text-slate-500 text-sm">© 2025 RetirePro. All rights reserved.</p>
+            <p className="text-slate-600 text-xs text-center md:text-right">
+              Disclaimer: Not financial advice. Consult a qualified financial advisor.
+            </p>
+          </div>
         </div>
       </footer>
+
+      {/* Cookie Consent */}
+      <CookieConsent />
     </div>
   );
 }

@@ -132,13 +132,13 @@ export const TIER_INFO: Record<SubscriptionTier, { name: string; color: string; 
   pro: {
     name: 'Pro',
     color: 'text-emerald-400',
-    price: '$9/mo',
+    price: '$7/mo',
     badge: 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30',
   },
   premium: {
     name: 'Premium',
     color: 'text-purple-400',
-    price: '$19/mo',
+    price: '$12/mo',
     badge: 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
   },
 };
