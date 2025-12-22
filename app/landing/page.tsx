@@ -5,15 +5,15 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { CookieConsent } from '@/components/CookieConsent';
 
-// Stripe Payment Links - Direct links that bypass server-side API calls
+// Stripe Payment Links - RetirePro branded products
 const PAYMENT_LINKS = {
   pro: {
-    monthly: 'https://buy.stripe.com/test_bJe9AN2tQ6vo0H05Zk1Fe00',
-    yearly: 'https://buy.stripe.com/test_bJecMZ3xU8Dw0H0cnI1Fe01',
+    monthly: 'https://buy.stripe.com/test_9B64gt8SebPI2P887s1Fe04',
+    yearly: 'https://buy.stripe.com/test_fZu4gt6K61b42P8gDY1Fe05',
   },
   premium: {
-    monthly: 'https://buy.stripe.com/test_00wdR36K62f875o87s1Fe02',
-    yearly: 'https://buy.stripe.com/test_28E14hd8u5rk0H09bw1Fe03',
+    monthly: 'https://buy.stripe.com/test_eVq9ANfgC7zs4XgfzU1Fe06',
+    yearly: 'https://buy.stripe.com/test_3cIaER0lI7zs4XgbjE1Fe07',
   },
 };
 
