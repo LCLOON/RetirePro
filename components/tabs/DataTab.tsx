@@ -517,27 +517,28 @@ export function DataTab() {
       </Card>
       
       {/* Annual Contributions */}
-      <Card title="📈 Annual Contributions" subtitle="How much you save each year">
+      <Card title="📈 Annual Contributions" subtitle="How much you save each year (all account types)">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CurrencyInput
-            label="Pre-Tax Contribution"
+            label="Pre-Tax (401k/403b/TSP)"
             value={data.annualContributionPreTax}
             onChange={(v) => updateRetirementData({ annualContributionPreTax: v })}
             hint="2024 limit: $23,000 (under 50) / $30,500 (50+)"
           />
           <CurrencyInput
-            label="Roth Contribution"
+            label="Roth (401k Roth or Roth IRA)"
             value={data.annualContributionRoth}
             onChange={(v) => updateRetirementData({ annualContributionRoth: v })}
-            hint="2024 IRA limit: $7,000 (under 50) / $8,000 (50+)"
+            hint="401k Roth: $23K / Roth IRA: $7K limit"
           />
           <CurrencyInput
-            label="After-Tax Contribution"
+            label="After-Tax (Brokerage/Taxable)"
             value={data.annualContributionAfterTax}
             onChange={(v) => updateRetirementData({ annualContributionAfterTax: v })}
+            hint="Non-retirement taxable investments"
           />
           <CurrencyInput
-            label="Employer Match"
+            label="Employer 401k Match"
             value={data.employerMatch}
             onChange={(v) => updateRetirementData({ employerMatch: v })}
             hint="Annual employer matching contribution"
