@@ -426,23 +426,33 @@ export const DEFAULT_MORTGAGE: MortgageData = {
 
 // Social Security Types
 export interface SocialSecurityData {
+  // Your data
   averageEarnings: number;
   birthYear: number;
   estimatedBenefitAge62: number;
   estimatedBenefitFRA: number;
   estimatedBenefitAge70: number;
   claimingAge: number;
+  
+  // Spouse data
+  spouseAverageEarnings: number;
+  spouseBirthYear: number;
   spouseEstimatedBenefit: number;
   spouseClaimingAge: number;
 }
 
 export const DEFAULT_SOCIAL_SECURITY: SocialSecurityData = {
+  // Your defaults
   averageEarnings: 75000,
   birthYear: 1965,
   estimatedBenefitAge62: 0,
   estimatedBenefitFRA: 0,
   estimatedBenefitAge70: 0,
   claimingAge: 67,
+  
+  // Spouse defaults
+  spouseAverageEarnings: 50000,
+  spouseBirthYear: 1965,
   spouseEstimatedBenefit: 0,
   spouseClaimingAge: 67,
 };

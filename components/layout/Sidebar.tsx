@@ -14,12 +14,12 @@ interface NavItem {
 
 const navItems: NavItem[] = [
   { id: 'start', label: 'Overview', icon: '📈' },
+  { id: 'social', label: 'Social Security', icon: '🏛️' },
   { id: 'data', label: 'Data Entry', icon: '📝' },
   { id: 'results', label: 'Results', icon: '📊' },
   { id: 'charts', label: 'Charts', icon: '📉' },
   { id: 'analysis', label: 'Analysis', icon: '🔍' },
   { id: 'details', label: 'Details', icon: '📋' },
-  { id: 'social', label: 'Social Security', icon: '🏛️' },
   { id: 'tax', label: 'Tax Planning', icon: '💰' },
   { id: 'worth', label: 'Net Worth', icon: '🏆' },
   { id: 'mortgage', label: 'Mortgage', icon: '🏠' },
