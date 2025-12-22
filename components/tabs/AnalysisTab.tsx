@@ -240,24 +240,24 @@ export function AnalysisTab() {
         <Card title="⚠️ Risk Assessment" icon="⚠️">
           <div className="space-y-4">
             <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-              <div className={`w-3 h-3 rounded-full ${data.inflationRate > 3 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${data.inflationRate * 100 > 3 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
               <div className="flex-1">
                 <p className="text-white">Inflation Risk</p>
-                <p className="text-slate-400 text-sm">Assumed rate: {data.inflationRate}%</p>
+                <p className="text-slate-400 text-sm">Assumed rate: {(data.inflationRate * 100).toFixed(1)}%</p>
               </div>
-              <span className={data.inflationRate > 3 ? 'text-amber-400' : 'text-emerald-400'}>
-                {data.inflationRate > 3 ? 'Moderate' : 'Low'}
+              <span className={data.inflationRate * 100 > 3 ? 'text-amber-400' : 'text-emerald-400'}>
+                {data.inflationRate * 100 > 3 ? 'Moderate' : 'Low'}
               </span>
             </div>
             
             <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-              <div className={`w-3 h-3 rounded-full ${data.standardDeviation > 15 ? 'bg-red-500' : data.standardDeviation > 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${data.standardDeviation * 100 > 15 ? 'bg-red-500' : data.standardDeviation * 100 > 10 ? 'bg-amber-500' : 'bg-emerald-500'}`}></div>
               <div className="flex-1">
                 <p className="text-white">Market Volatility</p>
-                <p className="text-slate-400 text-sm">Std deviation: {data.standardDeviation}%</p>
+                <p className="text-slate-400 text-sm">Std deviation: {(data.standardDeviation * 100).toFixed(0)}%</p>
               </div>
-              <span className={data.standardDeviation > 15 ? 'text-red-400' : data.standardDeviation > 10 ? 'text-amber-400' : 'text-emerald-400'}>
-                {data.standardDeviation > 15 ? 'High' : data.standardDeviation > 10 ? 'Moderate' : 'Low'}
+              <span className={data.standardDeviation * 100 > 15 ? 'text-red-400' : data.standardDeviation * 100 > 10 ? 'text-amber-400' : 'text-emerald-400'}>
+                {data.standardDeviation * 100 > 15 ? 'High' : data.standardDeviation * 100 > 10 ? 'Moderate' : 'Low'}
               </span>
             </div>
             
@@ -273,13 +273,13 @@ export function AnalysisTab() {
             </div>
             
             <div className="flex items-center gap-3 p-3 bg-slate-700/50 rounded-lg">
-              <div className={`w-3 h-3 rounded-full ${data.safeWithdrawalRate > 4 ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
+              <div className={`w-3 h-3 rounded-full ${data.safeWithdrawalRate * 100 > 4 ? 'bg-red-500' : 'bg-emerald-500'}`}></div>
               <div className="flex-1">
                 <p className="text-white">Withdrawal Risk</p>
-                <p className="text-slate-400 text-sm">Rate: {data.safeWithdrawalRate}%</p>
+                <p className="text-slate-400 text-sm">Rate: {(data.safeWithdrawalRate * 100).toFixed(1)}%</p>
               </div>
-              <span className={data.safeWithdrawalRate > 4 ? 'text-red-400' : 'text-emerald-400'}>
-                {data.safeWithdrawalRate > 4 ? 'High' : 'Safe'}
+              <span className={data.safeWithdrawalRate * 100 > 4 ? 'text-red-400' : 'text-emerald-400'}>
+                {data.safeWithdrawalRate * 100 > 4 ? 'High' : 'Safe'}
               </span>
             </div>
           </div>
