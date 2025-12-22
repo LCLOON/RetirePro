@@ -172,15 +172,40 @@ export function AnalysisTab() {
         {/* Income Analysis */}
         <Card title="💵 Retirement Income Analysis" icon="💵">
           <div className="space-y-4">
-            <div className="p-4 bg-slate-700/50 rounded-lg">
-              <div className="flex justify-between items-center mb-2">
-                <span className="text-slate-400">Annual Expenses Needed</span>
-                <span className="text-white font-semibold">${data.retirementExpenses.toLocaleString()}</span>
-              </div>
-              <div className="w-full bg-slate-600 rounded-full h-2">
-                <div className="bg-red-500 h-2 rounded-full" style={{ width: '100%' }}></div>
-              </div>
-            </div>
+            {/* Income vs Expenses Progress Bar */}
+            {(() => {
+              const totalIncome = Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome + futureValue * data.safeWithdrawalRate);
+              const coveragePercent = Math.min((totalIncome / data.retirementExpenses) * 100, 100);
+              const surplus = totalIncome - data.retirementExpenses;
+              const isFullyCovered = surplus >= 0;
+              
+              return (
+                <div className="p-4 bg-slate-700/50 rounded-lg">
+                  <div className="flex justify-between items-center mb-2">
+                    <span className="text-slate-400">Income Coverage</span>
+                    <span className={`font-semibold ${isFullyCovered ? 'text-emerald-400' : 'text-amber-400'}`}>
+                      {coveragePercent.toFixed(0)}% of expenses
+                    </span>
+                  </div>
+                  <div className="w-full bg-slate-600 rounded-full h-3 relative">
+                    <div 
+                      className={`h-3 rounded-full transition-all ${isFullyCovered ? 'bg-emerald-500' : 'bg-amber-500'}`} 
+                      style={{ width: `${coveragePercent}%` }}
+                    ></div>
+                  </div>
+                  <div className="flex justify-between mt-2 text-sm">
+                    <span className="text-slate-400">
+                      Need: <span className="text-white">${data.retirementExpenses.toLocaleString()}/yr</span>
+                    </span>
+                    <span className={isFullyCovered ? 'text-emerald-400' : 'text-amber-400'}>
+                      {isFullyCovered 
+                        ? `+$${surplus.toLocaleString()} surplus` 
+                        : `-$${Math.abs(surplus).toLocaleString()} shortfall`}
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
             
             <div className="space-y-2">
               <div className="flex justify-between items-center p-2 bg-emerald-500/10 rounded">
