@@ -39,6 +39,7 @@ export interface InheritedIRA {
   useStretchIRA: boolean; // For eligible designated beneficiaries
   withdrawalStrategy: 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd'; // How to distribute over 10 years
   originalOwnerStartedRMD: boolean; // Did original owner die after starting RMDs?
+  expectedGrowthRate: number; // Annual growth rate for inherited IRA (e.g., 0.05 = 5%)
 }
 
 // Additional Income Source type
@@ -198,6 +199,7 @@ export const DEFAULT_INHERITED_IRA: InheritedIRA = {
   useStretchIRA: false,
   withdrawalStrategy: 'annual_rmd', // Default to annual RMDs (most common case)
   originalOwnerStartedRMD: true, // Assume original owner was already taking RMDs
+  expectedGrowthRate: 0.05, // Default 5% growth rate
 };
 
 // Default Dividend Portfolio

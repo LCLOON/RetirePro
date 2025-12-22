@@ -436,6 +436,14 @@ export function DataTab() {
                   inheritedIRA: { ...data.inheritedIRA, balance: v }
                 })}
               />
+              <PercentInput
+                label="Expected Growth Rate"
+                value={data.inheritedIRA.expectedGrowthRate ?? 0.05}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, expectedGrowthRate: v }
+                })}
+                hint="Annual return while holding"
+              />
               <NumberInput
                 label="Year Inherited"
                 value={data.inheritedIRA.inheritedYear}

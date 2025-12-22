@@ -281,7 +281,8 @@ export function DetailsTab() {
       const preTaxGrowth = startPreTax * yearReturn;
       const rothGrowth = startRoth * yearReturn;
       const afterTaxGrowth = startAfterTax * yearReturn;
-      const inheritedGrowth = startInherited * yearReturn;
+      const inheritedIRAReturn = data.inheritedIRA?.expectedGrowthRate ?? yearReturn;
+      const inheritedGrowth = startInherited * inheritedIRAReturn;
       const dividendGrowth = startDividend > 0 && !isRetired ? startDividend * yearReturn : 0;
       const cryptoGrowth = startCrypto > 0 ? startCrypto * cryptoGrowthRate : 0;
       const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth + dividendGrowth + cryptoGrowth;
