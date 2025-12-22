@@ -85,6 +85,67 @@ export function SocialSecurityTab() {
     return monthlyBenefit * 12 * yearsCollecting;
   };
   
+  // Calculate lifetime benefit with COLA
+  const lifetimeBenefitWithCOLA = (startAge: number, monthlyBenefit: number, lifeExp: number, cola: number = 0.025) => {
+    let total = 0;
+    for (let age = startAge; age < lifeExp; age++) {
+      const yearsFromStart = age - startAge;
+      total += monthlyBenefit * 12 * Math.pow(1 + cola, yearsFromStart);
+    }
+    return total;
+  };
+  
+  // Break-even analysis: At what age does delaying pay off?
+  const calculateBreakEvenAge = (earlyAge: number, earlyBenefit: number, laterAge: number, laterBenefit: number): number => {
+    // Monthly difference and gap
+    const monthlyDiff = laterBenefit - earlyBenefit;
+    const missedMonths = (laterAge - earlyAge) * 12;
+    const missedBenefits = earlyBenefit * missedMonths;
+    
+    // Months to recover = missed / monthly difference
+    if (monthlyDiff <= 0) return 999; // Never breaks even
+    const monthsToRecover = missedBenefits / monthlyDiff;
+    const breakEvenAge = laterAge + Math.ceil(monthsToRecover / 12);
+    return breakEvenAge;
+  };
+  
+  const breakEven67vs62 = calculateBreakEvenAge(62, yourBenefit62, 67, yourBenefit67);
+  const breakEven70vs67 = calculateBreakEvenAge(67, yourBenefit67, 70, yourBenefit70);
+  const breakEven70vs62 = calculateBreakEvenAge(62, yourBenefit62, 70, yourBenefit70);
+  
+  // Spousal benefit: 50% of higher earner's PIA (if higher than own benefit)
+  const spousalBenefitFromYou = pia * 0.5; // Spouse could get 50% of your PIA
+  const spousalBenefitFromSpouse = spousePIA * 0.5; // You could get 50% of spouse's PIA
+  const spouseQualifiesForSpousal = retData.hasSpouse && spousalBenefitFromYou > spousePIA;
+  const youQualifyForSpousal = retData.hasSpouse && spousalBenefitFromSpouse > pia;
+  
+  // If spouse qualifies, their effective benefit at FRA would be spousal benefit
+  const spouseEffectiveBenefit67 = spouseQualifiesForSpousal 
+    ? Math.max(spouseBenefit67, spousalBenefitFromYou) 
+    : spouseBenefit67;
+  
+  // Survivor benefit: survivor gets the higher of the two benefits
+  const survivorBenefit = Math.max(yourSelectedBenefit, retData.hasSpouse ? spouseSelectedBenefit : 0);
+  
+  // Earnings test (2025 limits)
+  const earningsTestLimit2025 = 22320; // Annual limit before FRA
+  const earningsTestLimitFRAYear = 59520; // Limit in year reaching FRA
+  
+  // SS Taxation thresholds (combined income = AGI + nontaxable interest + 50% of SS)
+  const ssTaxThresholdSingle = { lower: 25000, upper: 34000 };
+  const ssTaxThresholdMarried = { lower: 32000, upper: 44000 };
+  
+  // COLA projection (assume 2.5% average)
+  const colaRate = 0.025;
+  const projectBenefitWithCOLA = (currentBenefit: number, years: number) => {
+    return currentBenefit * Math.pow(1 + colaRate, years);
+  };
+  
+  // Years from claiming to age 80 for COLA projection
+  const yearsToAge80 = Math.max(0, 80 - ssData.claimingAge);
+  const yourBenefitAtAge80 = projectBenefitWithCOLA(yourSelectedBenefit, yearsToAge80);
+  const spouseBenefitAtAge80 = projectBenefitWithCOLA(spouseSelectedBenefit, yearsToAge80);
+  
   // Find optimal ages
   const yourLifetimes = [
     { age: 62, value: lifetimeBenefit(62, yourBenefit62, lifeExpectancy) },
@@ -463,6 +524,261 @@ export function SocialSecurityTab() {
               <span className="text-slate-300 ml-2">~24% increase</span>
             </div>
           </div>
+        </div>
+      </Card>
+
+      {/* Break-Even Analysis */}
+      <Card title="⏱️ Break-Even Analysis" subtitle="When does delaying benefits pay off?">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-amber-400">62</span>
+              <span className="text-slate-500">→</span>
+              <span className="text-blue-400">67</span>
+            </div>
+            <p className="text-2xl font-bold text-white">Age {breakEven67vs62}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Waiting until 67 pays off at age {breakEven67vs62}
+            </p>
+          </div>
+          <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-blue-400">67</span>
+              <span className="text-slate-500">→</span>
+              <span className="text-emerald-400">70</span>
+            </div>
+            <p className="text-2xl font-bold text-white">Age {breakEven70vs67}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Waiting until 70 pays off at age {breakEven70vs67}
+            </p>
+          </div>
+          <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <div className="flex items-center gap-2 mb-2">
+              <span className="text-amber-400">62</span>
+              <span className="text-slate-500">→</span>
+              <span className="text-emerald-400">70</span>
+            </div>
+            <p className="text-2xl font-bold text-white">Age {breakEven70vs62}</p>
+            <p className="text-xs text-slate-400 mt-1">
+              Waiting from 62 to 70 pays off at age {breakEven70vs62}
+            </p>
+          </div>
+        </div>
+        <div className="mt-4 p-3 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+          <p className="text-sm text-slate-300">
+            <span className="text-blue-400 font-medium">💡 Tip:</span> If you expect to live past the break-even age, 
+            delaying benefits results in higher lifetime income. Your life expectancy is set to {lifeExpectancy}.
+          </p>
+        </div>
+      </Card>
+
+      {/* Spousal & Survivor Benefits */}
+      {retData.hasSpouse && (
+        <Card title="👫 Spousal & Survivor Benefits" subtitle="Important strategies for married couples">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Spousal Benefit */}
+            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg">
+              <h4 className="font-medium text-white flex items-center gap-2 mb-3">
+                💑 Spousal Benefit
+              </h4>
+              {spouseQualifiesForSpousal ? (
+                <div className="space-y-2">
+                  <p className="text-emerald-400 font-medium">
+                    ✓ Your spouse may qualify for a spousal benefit!
+                  </p>
+                  <p className="text-sm text-slate-300">
+                    50% of your PIA ({formatCurrency(spousalBenefitFromYou)}/mo) is higher than 
+                    their own benefit ({formatCurrency(spousePIA)}/mo at FRA).
+                  </p>
+                  <p className="text-sm text-slate-400">
+                    They would receive their own benefit plus a &quot;top-up&quot; to reach the spousal amount.
+                  </p>
+                </div>
+              ) : (
+                <div className="space-y-2">
+                  <p className="text-slate-400">
+                    Your spouse&apos;s own benefit ({formatCurrency(spousePIA)}/mo) is higher than 
+                    50% of your PIA ({formatCurrency(spousalBenefitFromYou)}/mo).
+                  </p>
+                  <p className="text-sm text-slate-500">
+                    They should claim on their own work record.
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Survivor Benefit */}
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <h4 className="font-medium text-white flex items-center gap-2 mb-3">
+                ☠️ Survivor Benefit
+              </h4>
+              <div className="space-y-2">
+                <p className="text-sm text-slate-300">
+                  When one spouse passes, the survivor receives the <strong className="text-white">higher</strong> of 
+                  the two benefit amounts.
+                </p>
+                <p className="text-lg font-bold text-amber-400">
+                  Survivor would receive: {formatCurrency(survivorBenefit)}/mo
+                </p>
+                <p className="text-sm text-slate-400">
+                  This is why delaying the higher earner&apos;s benefit can protect the surviving spouse.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* Earnings Test Warning */}
+      {ssData.claimingAge < 67 && (
+        <Card title="⚠️ Earnings Test Warning" subtitle="Working while receiving early benefits">
+          <div className="p-4 bg-red-500/10 border border-red-500/20 rounded-lg">
+            <div className="flex items-start gap-3">
+              <span className="text-2xl">⚠️</span>
+              <div>
+                <h4 className="font-medium text-red-400 mb-2">
+                  You plan to claim at age {ssData.claimingAge} (before FRA)
+                </h4>
+                <p className="text-sm text-slate-300 mb-3">
+                  If you continue working while receiving SS before your Full Retirement Age (67), 
+                  your benefits may be temporarily reduced:
+                </p>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="p-3 bg-slate-800/50 rounded-lg">
+                    <p className="text-white font-medium">Before FRA Year</p>
+                    <p className="text-sm text-slate-400">
+                      $1 withheld for every $2 earned over{' '}
+                      <span className="text-amber-400">{formatCurrency(earningsTestLimit2025)}/year</span>
+                    </p>
+                  </div>
+                  <div className="p-3 bg-slate-800/50 rounded-lg">
+                    <p className="text-white font-medium">Year Reaching FRA</p>
+                    <p className="text-sm text-slate-400">
+                      $1 withheld for every $3 earned over{' '}
+                      <span className="text-amber-400">{formatCurrency(earningsTestLimitFRAYear)}/year</span>
+                    </p>
+                  </div>
+                </div>
+                <p className="text-xs text-slate-500 mt-3">
+                  Note: Withheld benefits are not lost permanently. They&apos;re added back after FRA.
+                </p>
+              </div>
+            </div>
+          </div>
+        </Card>
+      )}
+
+      {/* SS Taxation */}
+      <Card title="💰 Social Security Taxation" subtitle="How much of your benefits may be taxable">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div className="space-y-3">
+            <h4 className="font-medium text-white">Combined Income Thresholds ({retData.filingStatus === 'married' ? 'Married' : 'Single'})</h4>
+            <p className="text-xs text-slate-400 mb-2">
+              Combined Income = AGI + Nontaxable Interest + 50% of SS Benefits
+            </p>
+            {retData.filingStatus === 'married' || retData.hasSpouse ? (
+              <div className="space-y-2">
+                <div className="flex justify-between p-2 bg-emerald-500/10 rounded">
+                  <span className="text-slate-300">Under {formatCurrency(ssTaxThresholdMarried.lower)}</span>
+                  <span className="text-emerald-400">0% taxable</span>
+                </div>
+                <div className="flex justify-between p-2 bg-amber-500/10 rounded">
+                  <span className="text-slate-300">{formatCurrency(ssTaxThresholdMarried.lower)} - {formatCurrency(ssTaxThresholdMarried.upper)}</span>
+                  <span className="text-amber-400">Up to 50% taxable</span>
+                </div>
+                <div className="flex justify-between p-2 bg-red-500/10 rounded">
+                  <span className="text-slate-300">Over {formatCurrency(ssTaxThresholdMarried.upper)}</span>
+                  <span className="text-red-400">Up to 85% taxable</span>
+                </div>
+              </div>
+            ) : (
+              <div className="space-y-2">
+                <div className="flex justify-between p-2 bg-emerald-500/10 rounded">
+                  <span className="text-slate-300">Under {formatCurrency(ssTaxThresholdSingle.lower)}</span>
+                  <span className="text-emerald-400">0% taxable</span>
+                </div>
+                <div className="flex justify-between p-2 bg-amber-500/10 rounded">
+                  <span className="text-slate-300">{formatCurrency(ssTaxThresholdSingle.lower)} - {formatCurrency(ssTaxThresholdSingle.upper)}</span>
+                  <span className="text-amber-400">Up to 50% taxable</span>
+                </div>
+                <div className="flex justify-between p-2 bg-red-500/10 rounded">
+                  <span className="text-slate-300">Over {formatCurrency(ssTaxThresholdSingle.upper)}</span>
+                  <span className="text-red-400">Up to 85% taxable</span>
+                </div>
+              </div>
+            )}
+          </div>
+          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg">
+            <h4 className="font-medium text-white mb-3">💡 Tax Planning Tips</h4>
+            <ul className="space-y-2 text-sm text-slate-300">
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400">•</span>
+                Roth withdrawals don&apos;t count toward combined income
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400">•</span>
+                Consider Roth conversions before claiming SS
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400">•</span>
+                Delay SS to reduce taxable income early in retirement
+              </li>
+              <li className="flex items-start gap-2">
+                <span className="text-blue-400">•</span>
+                Municipal bond interest is nontaxable but counts toward SS taxation
+              </li>
+            </ul>
+          </div>
+        </div>
+      </Card>
+
+      {/* COLA Projection */}
+      <Card title="📈 COLA Projection" subtitle="How your benefits grow with inflation adjustments">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+          <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-center">
+            <p className="text-slate-400 text-sm">Your Benefit Today</p>
+            <p className="text-2xl font-bold text-white">{formatCurrency(yourSelectedBenefit)}/mo</p>
+            <p className="text-xs text-slate-500">At age {ssData.claimingAge}</p>
+          </div>
+          <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
+            <p className="text-slate-400 text-sm">Projected at Age 80</p>
+            <p className="text-2xl font-bold text-blue-400">{formatCurrency(yourBenefitAtAge80)}/mo</p>
+            <p className="text-xs text-slate-500">With {(colaRate * 100).toFixed(1)}% annual COLA</p>
+          </div>
+          <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg text-center">
+            <p className="text-slate-400 text-sm">Lifetime with COLA</p>
+            <p className="text-2xl font-bold text-purple-400">
+              {formatCurrency(lifetimeBenefitWithCOLA(ssData.claimingAge, yourSelectedBenefit, lifeExpectancy, colaRate))}
+            </p>
+            <p className="text-xs text-slate-500">Your total through age {lifeExpectancy}</p>
+          </div>
+        </div>
+        {retData.hasSpouse && (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-slate-700">
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg text-center">
+              <p className="text-slate-400 text-sm">Spouse Benefit Today</p>
+              <p className="text-2xl font-bold text-white">{formatCurrency(spouseSelectedBenefit)}/mo</p>
+              <p className="text-xs text-slate-500">At age {ssData.spouseClaimingAge || 67}</p>
+            </div>
+            <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg text-center">
+              <p className="text-slate-400 text-sm">Spouse at Age 80</p>
+              <p className="text-2xl font-bold text-blue-400">{formatCurrency(spouseBenefitAtAge80)}/mo</p>
+              <p className="text-xs text-slate-500">With {(colaRate * 100).toFixed(1)}% annual COLA</p>
+            </div>
+            <div className="p-4 bg-purple-500/10 border border-purple-500/20 rounded-lg text-center">
+              <p className="text-slate-400 text-sm">Spouse Lifetime with COLA</p>
+              <p className="text-2xl font-bold text-purple-400">
+                {formatCurrency(lifetimeBenefitWithCOLA(ssData.spouseClaimingAge || 67, spouseSelectedBenefit, spouseLifeExpectancy, colaRate))}
+              </p>
+              <p className="text-xs text-slate-500">Through age {spouseLifeExpectancy}</p>
+            </div>
+          </div>
+        )}
+        <div className="mt-4 p-3 bg-slate-800/50 rounded-lg">
+          <p className="text-sm text-slate-300">
+            <span className="text-emerald-400 font-medium">📊 Historical COLA:</span> The average COLA over the past 
+            20 years has been approximately 2.5%. Recent years (2022-2024) saw higher adjustments due to inflation.
+          </p>
         </div>
       </Card>
       
