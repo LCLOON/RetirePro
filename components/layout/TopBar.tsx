@@ -1,15 +1,10 @@
 'use client';
 
-import { useState } from 'react';
 import { useApp } from '@/lib/store';
 import { Button } from '@/components/ui/Button';
-import { useSubscription, SubscriptionTier } from '@/lib/subscription';
-import Link from 'next/link';
 
 export function TopBar() {
-  const { state, saveToLocalStorage } = useApp();
-  const { tier, setTier } = useSubscription();
-  const [showTierDropdown, setShowTierDropdown] = useState(false);
+  const { state, runCalculations, saveToLocalStorage, exportToJSON } = useApp();
 
   // Format currency
   const formatCurrency = (value: number) => {
@@ -21,7 +16,7 @@ export function TopBar() {
     }).format(value);
   };
 
-  // Calculate quick stats
+  // Calculate quick stats (shown on larger screens)
   const totalSavings = state.retirementData.currentSavingsPreTax + 
     state.retirementData.currentSavingsRoth + 
     state.retirementData.currentSavingsAfterTax;
@@ -31,62 +26,35 @@ export function TopBar() {
   const successRate = state.monteCarloResults ? 
     Math.round(state.monteCarloResults.successRate * 100) : 0;
 
-  // Tier badge colors
-  const tierColors: Record<SubscriptionTier, string> = {
-    free: 'bg-slate-600 text-slate-200',
-    pro: 'bg-emerald-600 text-white',
-    premium: 'bg-purple-600 text-white',
-  };
-
-  const tierLabels: Record<SubscriptionTier, string> = {
-    free: 'FREE',
-    pro: 'PRO',
-    premium: 'PREMIUM',
-  };
-
   return (
-    <header className="h-16 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-6">
-      {/* Quick Stats */}
-      <div className="flex items-center gap-6">
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg">
-          <span className="text-lg">📊</span>
-          <div>
-            <p className="text-xs text-slate-400">Total Savings</p>
-            <p className="text-sm font-semibold text-white">{formatCurrency(totalSavings)}</p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg">
-          <span className="text-lg">⏱️</span>
-          <div>
-            <p className="text-xs text-slate-400">Years to Retire</p>
-            <p className="text-sm font-semibold text-white">{yearsToRetirement} years</p>
-          </div>
-        </div>
-
-        {state.monteCarloResults && (
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg">
-            <span className="text-lg">🏆</span>
-            <div>
-              <p className="text-xs text-slate-400">Success Rate</p>
-              <p className={`text-sm font-semibold ${
-                successRate >= 80 ? 'text-emerald-400' : 
-                successRate >= 60 ? 'text-amber-400' : 'text-red-400'
-              }`}>
-                {successRate}%
-              </p>
-            </div>
-          </div>
-        )}
+    <header className="h-14 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-6">
+      {/* Left Side - Page Title / Breadcrumb */}
+      <div className="flex items-center gap-4">
+        <h2 className="text-lg font-semibold text-white">
+          {state.activeTab === 'start' && '📈 Overview'}
+          {state.activeTab === 'data' && '📝 Data Entry'}
+          {state.activeTab === 'results' && '📊 Results'}
+          {state.activeTab === 'charts' && '📉 Charts'}
+          {state.activeTab === 'analysis' && '🔍 Analysis'}
+          {state.activeTab === 'details' && '📋 Details'}
+          {state.activeTab === 'social' && '🏛️ Social Security'}
+          {state.activeTab === 'tax' && '💰 Tax Planning'}
+          {state.activeTab === 'worth' && '🏆 Net Worth'}
+          {state.activeTab === 'mortgage' && '🏠 Mortgage'}
+          {state.activeTab === 'budget' && '💳 Budget'}
+          {state.activeTab === 'advanced' && '🎯 Advanced'}
+          {state.activeTab === 'legal' && '⚖️ Legal'}
+          {state.activeTab === 'ai' && '🤖 AI Advisor'}
+          {state.activeTab === 'settings' && '⚙️ Settings'}
+        </h2>
       </div>
 
-      {/* Right Side - Tier & Actions */}
-      <div className="flex items-center gap-3">
+      {/* Right Side - Actions */}
+      <div className="flex items-center gap-2">
         {state.hasUnsavedChanges && (
-          <span className="text-xs text-amber-400 mr-2">● Unsaved changes</span>
+          <span className="text-xs text-amber-400 mr-2">● Unsaved</span>
         )}
-
-        {/* Save Button */}
+        
         <Button
           variant="outline"
           size="sm"
@@ -99,92 +67,30 @@ export function TopBar() {
           Save
         </Button>
 
-        {/* Demo Mode Tier Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setShowTierDropdown(!showTierDropdown)}
-            className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 border border-slate-600 rounded-lg text-sm text-slate-300 hover:bg-slate-600/50 transition-colors"
-          >
-            <span className="text-yellow-400">🧪</span>
-            <span>Demo Mode:</span>
-            <span className={`px-2 py-0.5 rounded text-xs font-bold ${tierColors[tier]}`}>
-              {tierLabels[tier]}
-            </span>
-            <svg className="w-4 h-4 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={exportToJSON}
+          className="border-slate-600 text-slate-300 hover:bg-slate-700"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
+          </svg>
+          Export
+        </Button>
 
-          {showTierDropdown && (
-            <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setShowTierDropdown(false)} 
-              />
-              <div className="absolute right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-20 min-w-[140px] py-1">
-                {(['free', 'pro', 'premium'] as SubscriptionTier[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setTier(t);
-                      setShowTierDropdown(false);
-                    }}
-                    className={`w-full px-4 py-2 text-left text-sm hover:bg-slate-700 flex items-center gap-2 ${
-                      tier === t ? 'bg-slate-700' : ''
-                    }`}
-                  >
-                    <span className={`px-2 py-0.5 rounded text-xs font-bold ${tierColors[t]}`}>
-                      {tierLabels[t]}
-                    </span>
-                    {tier === t && (
-                      <svg className="w-4 h-4 text-emerald-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Current Plan Badge */}
-        <div className="flex items-center gap-2 px-3 py-1.5 bg-slate-700/50 rounded-lg border border-slate-600">
-          <span className="text-lg">💎</span>
-          <div className="text-left">
-            <p className="text-[10px] text-slate-400 leading-none">RetirePro</p>
-            <p className="text-xs text-slate-300 leading-tight">Current Plan</p>
-          </div>
-          <span className={`px-2 py-0.5 rounded text-xs font-bold ${tierColors[tier]}`}>
-            {tierLabels[tier]}
-          </span>
-        </div>
-
-        {/* Upgrade Plan Button */}
-        {tier !== 'premium' && (
-          <Link href="/landing#pricing">
-            <Button
-              variant="primary"
-              size="sm"
-              className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 border-0"
-            >
-              <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 10l7-7m0 0l7 7m-7-7v18" />
-              </svg>
-              Upgrade Plan
-            </Button>
-          </Link>
-        )}
-
-        {/* Logout Button */}
-        <Link href="/landing">
-          <button className="flex items-center gap-1 px-3 py-1.5 text-sm text-slate-400 hover:text-white transition-colors">
-            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            Logout
-          </button>
-        </Link>
+        <Button
+          variant="primary"
+          size="sm"
+          onClick={runCalculations}
+          loading={state.isCalculating}
+          className="bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 border-0"
+        >
+          <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+          </svg>
+          Calculate
+        </Button>
       </div>
     </header>
   );
