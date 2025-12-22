@@ -1,7 +1,9 @@
 'use client';
 
 import { useApp } from '@/lib/store';
+import { SubscriptionProvider } from '@/lib/subscription';
 import { DashboardLayout } from '@/components/layout';
+import { FeatureGate } from '@/components/ui/FeatureGate';
 import {
   StartTab,
   DataTab,
@@ -22,7 +24,7 @@ import {
   HelpTab,
 } from '@/components/tabs';
 
-export function Dashboard() {
+function DashboardContent() {
   const { state } = useApp();
   
   const renderTab = () => {
@@ -34,27 +36,67 @@ export function Dashboard() {
       case 'results':
         return <ResultsTab />;
       case 'charts':
-        return <ChartsTab />;
+        return (
+          <FeatureGate featureId="charts">
+            <ChartsTab />
+          </FeatureGate>
+        );
       case 'analysis':
-        return <AnalysisTab />;
+        return (
+          <FeatureGate featureId="analysis">
+            <AnalysisTab />
+          </FeatureGate>
+        );
       case 'details':
-        return <DetailsTab />;
+        return (
+          <FeatureGate featureId="details">
+            <DetailsTab />
+          </FeatureGate>
+        );
       case 'mortgage':
-        return <MortgageTab />;
+        return (
+          <FeatureGate featureId="mortgage">
+            <MortgageTab />
+          </FeatureGate>
+        );
       case 'worth':
-        return <NetWorthTab />;
+        return (
+          <FeatureGate featureId="worth">
+            <NetWorthTab />
+          </FeatureGate>
+        );
       case 'budget':
-        return <BudgetTab />;
+        return (
+          <FeatureGate featureId="budget">
+            <BudgetTab />
+          </FeatureGate>
+        );
       case 'social':
         return <SocialSecurityTab />;
       case 'tax':
-        return <TaxTab />;
+        return (
+          <FeatureGate featureId="tax">
+            <TaxTab />
+          </FeatureGate>
+        );
       case 'advanced':
-        return <AdvancedTab />;
+        return (
+          <FeatureGate featureId="advanced">
+            <AdvancedTab />
+          </FeatureGate>
+        );
       case 'legal':
-        return <LegalTab />;
+        return (
+          <FeatureGate featureId="legal">
+            <LegalTab />
+          </FeatureGate>
+        );
       case 'ai':
-        return <AITab />;
+        return (
+          <FeatureGate featureId="ai">
+            <AITab />
+          </FeatureGate>
+        );
       case 'about':
         return <AboutTab />;
       case 'settings':
@@ -70,5 +112,13 @@ export function Dashboard() {
     <DashboardLayout>
       {renderTab()}
     </DashboardLayout>
+  );
+}
+
+export function Dashboard() {
+  return (
+    <SubscriptionProvider>
+      <DashboardContent />
+    </SubscriptionProvider>
   );
 }

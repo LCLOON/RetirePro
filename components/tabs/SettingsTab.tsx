@@ -4,9 +4,12 @@ import { ReactNode } from 'react';
 import { Card, CardGrid } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp, Theme } from '@/lib/store';
+import { useSubscription, TIER_INFO, SubscriptionTier, PRO_FEATURES, PREMIUM_FEATURES } from '@/lib/subscription';
+import Link from 'next/link';
 
 export function SettingsTab() {
   const { state, setTheme, saveToLocalStorage, loadFromLocalStorage, resetAll, exportToJSON } = useApp();
+  const { tier, setTier } = useSubscription();
   
   const themes: { id: Theme; label: string; icon: ReactNode }[] = [
     {
@@ -146,6 +149,88 @@ export function SettingsTab() {
               </Button>
             </div>
           </div>
+        </div>
+      </Card>
+
+      {/* Subscription Management */}
+      <Card title="Subscription" subtitle="Manage your RetirePro subscription">
+        <div className="space-y-6">
+          {/* Current Plan */}
+          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Current Plan</p>
+              <p className={`text-xl font-bold ${TIER_INFO[tier].color}`}>
+                {TIER_INFO[tier].name}
+              </p>
+            </div>
+            <div className={`px-4 py-2 rounded-full ${TIER_INFO[tier].badge}`}>
+              {TIER_INFO[tier].price}
+            </div>
+          </div>
+
+          {/* Plan Selector */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+              Change Plan
+            </label>
+            <div className="grid grid-cols-3 gap-4">
+              {(['free', 'pro', 'premium'] as SubscriptionTier[]).map((planTier) => (
+                <button
+                  key={planTier}
+                  onClick={() => setTier(planTier)}
+                  className={`
+                    flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
+                    ${tier === planTier
+                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30'
+                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                    }
+                  `}
+                >
+                  <span className="text-2xl">
+                    {planTier === 'free' ? '🆓' : planTier === 'pro' ? '⭐' : '💎'}
+                  </span>
+                  <span className={`
+                    text-sm font-medium
+                    ${tier === planTier
+                      ? 'text-emerald-700 dark:text-emerald-300'
+                      : 'text-gray-700 dark:text-gray-300'
+                    }
+                  `}>
+                    {TIER_INFO[planTier].name}
+                  </span>
+                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                    {TIER_INFO[planTier].price}
+                  </span>
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
+              * For testing purposes. In production, this will sync with Stripe.
+            </p>
+          </div>
+
+          {/* Feature List */}
+          {tier !== 'premium' && (
+            <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-purple-500/10 border border-emerald-500/20 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                Upgrade to {tier === 'free' ? 'Pro' : 'Premium'} for:
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
+                {(tier === 'free' ? PRO_FEATURES : PREMIUM_FEATURES).slice(0, 4).map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span className="text-emerald-400">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <Link 
+                href="/#pricing"
+                className="inline-block mt-4 bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
+              >
+                View Pricing
+              </Link>
+            </div>
+          )}
         </div>
       </Card>
       
