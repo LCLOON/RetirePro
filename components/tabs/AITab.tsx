@@ -146,9 +146,9 @@ export function AITab() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-shrink-0">
         <div>
           <h1 className="text-2xl font-bold text-white flex items-center gap-3">
             <span className="text-3xl">🤖</span>
@@ -163,12 +163,12 @@ export function AITab() {
       </div>
 
       {/* Chat Interface */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 flex-1 min-h-0">
         {/* Main Chat */}
-        <div className="lg:col-span-2">
-          <Card className="h-[600px] flex flex-col">
+        <div className="lg:col-span-2 flex flex-col min-h-0">
+          <Card className="flex-1 flex flex-col min-h-[450px] max-h-[calc(100vh-220px)] overflow-hidden" noWrapper>
             {/* Messages */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex-1 overflow-y-auto p-4 space-y-4 min-h-0">
               {messages.map((message, index) => (
                 <div
                   key={index}
@@ -237,7 +237,7 @@ export function AITab() {
         </div>
 
         {/* Sidebar */}
-        <div className="space-y-6">
+        <div className="space-y-4 overflow-y-auto">
           {/* Quick Questions */}
           <Card title="💡 Quick Questions" icon="💡">
             <div className="space-y-2">

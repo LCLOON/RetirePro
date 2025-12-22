@@ -10,6 +10,7 @@ interface CardProps {
   icon?: string;
   action?: ReactNode;
   noPadding?: boolean;
+  noWrapper?: boolean; // Don't wrap children in a div
 }
 
 export function Card({ 
@@ -19,7 +20,8 @@ export function Card({
   subtitle,
   icon,
   action,
-  noPadding = false 
+  noPadding = false,
+  noWrapper = false 
 }: CardProps) {
   return (
     <div className={`bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 shadow-lg ${className}`}>
@@ -35,9 +37,13 @@ export function Card({
           {action && <div>{action}</div>}
         </div>
       )}
-      <div className={noPadding ? '' : 'p-5'}>
-        {children}
-      </div>
+      {noWrapper ? (
+        children
+      ) : (
+        <div className={noPadding ? '' : 'p-5'}>
+          {children}
+        </div>
+      )}
     </div>
   );
 }
