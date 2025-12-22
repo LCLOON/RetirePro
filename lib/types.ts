@@ -72,6 +72,7 @@ export interface RetirementData {
   state: string; // State for tax calculations
   
   // Spouse Information (for married)
+  hasSpouse: boolean;
   spouseCurrentAge: number;
   spouseRetirementAge: number;
   spouseLifeExpectancy: number;
@@ -176,6 +177,7 @@ export const DEFAULT_RETIREMENT_DATA: RetirementData = {
   state: 'CA',
   
   // Spouse defaults
+  hasSpouse: false,
   spouseCurrentAge: 30,
   spouseRetirementAge: 65,
   spouseLifeExpectancy: 90,

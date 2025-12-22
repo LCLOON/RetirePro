@@ -94,8 +94,12 @@ export function DataTab() {
             label="Filing Status"
             value={data.filingStatus}
             onChange={(v) => {
-              updateRetirementData({ filingStatus: v as 'single' | 'married' | 'head_of_household' });
-              if (v === 'married') setExpandedSections(prev => ({ ...prev, spouse: true }));
+              const isMarried = v === 'married';
+              updateRetirementData({ 
+                filingStatus: v as 'single' | 'married' | 'head_of_household',
+                hasSpouse: isMarried
+              });
+              if (isMarried) setExpandedSections(prev => ({ ...prev, spouse: true }));
             }}
             options={[
               { value: 'single', label: 'Single' },

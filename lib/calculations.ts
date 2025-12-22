@@ -86,10 +86,15 @@ function generateYearByYear(
   const yearsInRetirement = data.lifeExpectancy - data.retirementAge;
   const currentYear = new Date().getFullYear();
   
-  // Current total savings
-  let balance = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax;
+  // Current total savings including HSA and inherited IRA
+  let balance = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax + data.currentHSA;
+  if (data.hasInheritedIRA) {
+    balance += data.inheritedIRA.balance;
+  }
+  
+  // Total contributions including HSA
   let contribution = data.annualContributionPreTax + data.annualContributionRoth + 
-                     data.annualContributionAfterTax + data.employerMatch;
+                     data.annualContributionAfterTax + data.employerMatch + data.annualHSAContribution;
   
   // Pre-retirement accumulation phase
   for (let i = 0; i <= yearsToRetirement; i++) {
@@ -115,6 +120,7 @@ function generateYearByYear(
   
   // Post-retirement decumulation phase
   let withdrawal = data.retirementExpenses;
+  let healthcareCost = data.annualHealthcareCost;
   
   for (let i = 1; i <= yearsInRetirement; i++) {
     const age = data.retirementAge + i;
@@ -122,23 +128,41 @@ function generateYearByYear(
     
     const growth = balance * (data.postRetirementReturn + returnAdjustment);
     
-    // Other income sources
+    // Calculate all income sources
     let income = 0;
+    
+    // Social Security
     if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
       income += data.socialSecurityBenefit;
     }
+    
+    // Spouse Social Security
+    if (data.hasSpouse && age >= data.spouseSocialSecurityStartAge) {
+      income += data.spouseSocialSecurityBenefit;
+    }
+    
     // Pension income
     if (data.hasPension && age >= data.pensionStartAge) {
       income += data.pensionIncome;
     }
-    // Additional income sources (rental, part-time, etc.)
+    
+    // Additional income sources (rental, part-time, annuities, etc.)
     data.additionalIncome.forEach(source => {
       if (age >= source.startAge && age <= source.endAge) {
         income += source.amount;
       }
     });
     
-    const netWithdrawal = Math.max(0, withdrawal - income);
+    // Healthcare costs (adjust based on Medicare eligibility)
+    let yearlyHealthcare = healthcareCost;
+    if (age >= data.medicareStartAge) {
+      yearlyHealthcare = data.medicarePremium * 12 + data.medicareSupplementPremium * 12;
+    }
+    
+    // Total expenses including healthcare
+    const totalExpenses = withdrawal + yearlyHealthcare;
+    
+    const netWithdrawal = Math.max(0, totalExpenses - income);
     balance = balance + growth - netWithdrawal;
     
     projections.push({
@@ -152,7 +176,10 @@ function generateYearByYear(
     });
     
     if (balance <= 0) break;
+    
+    // Inflation adjustments
     withdrawal *= (1 + data.expenseGrowthRate);
+    healthcareCost *= (1 + data.healthcareInflationRate);
   }
   
   return projections;
@@ -210,9 +237,15 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
   let successCount = 0;
   
   for (let sim = 0; sim < numSimulations; sim++) {
-    let balance = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax;
+    // Include all savings types: pre-tax, Roth, after-tax, HSA, and inherited IRA
+    let balance = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax + data.currentHSA;
+    if (data.hasInheritedIRA) {
+      balance += data.inheritedIRA.balance;
+    }
+    
+    // Total annual contributions including HSA
     let contribution = data.annualContributionPreTax + data.annualContributionRoth + 
-                       data.annualContributionAfterTax + data.employerMatch;
+                       data.annualContributionAfterTax + data.employerMatch + data.annualHSAContribution;
     
     // Pre-retirement
     for (let year = 0; year < yearsToRetirement; year++) {
@@ -223,19 +256,48 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
     
     // Post-retirement
     let withdrawal = data.retirementExpenses;
+    let healthcareCost = data.annualHealthcareCost;
     let runOutOfMoney = false;
     
     for (let year = 0; year < yearsInRetirement; year++) {
       const age = data.retirementAge + year;
       const annualReturn = randomNormal(data.postRetirementReturn, data.standardDeviation * 0.7);
       
+      // Calculate all income sources
       let income = 0;
+      
+      // Social Security
       if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
         income += data.socialSecurityBenefit;
       }
-      income += data.pensionIncome;
       
-      const netWithdrawal = Math.max(0, withdrawal - income);
+      // Spouse Social Security
+      if (data.hasSpouse && age >= data.spouseSocialSecurityStartAge) {
+        income += data.spouseSocialSecurityBenefit;
+      }
+      
+      // Pension
+      if (data.hasPension && age >= data.pensionStartAge) {
+        income += data.pensionIncome;
+      }
+      
+      // Additional income sources (rental, part-time work, annuities, etc.)
+      data.additionalIncome.forEach(source => {
+        if (age >= source.startAge && age <= source.endAge) {
+          income += source.amount;
+        }
+      });
+      
+      // Healthcare costs (adjust based on Medicare eligibility)
+      let yearlyHealthcare = healthcareCost;
+      if (age >= data.medicareStartAge) {
+        yearlyHealthcare = data.medicarePremium * 12 + data.medicareSupplementPremium * 12;
+      }
+      
+      // Total expenses including healthcare
+      const totalExpenses = withdrawal + yearlyHealthcare;
+      
+      const netWithdrawal = Math.max(0, totalExpenses - income);
       balance = balance * (1 + annualReturn) - netWithdrawal;
       
       if (balance <= 0) {
@@ -244,7 +306,9 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
         break;
       }
       
+      // Inflation adjustments
       withdrawal *= (1 + data.expenseGrowthRate);
+      healthcareCost *= (1 + data.healthcareInflationRate);
     }
     
     finalBalances.push(balance);
