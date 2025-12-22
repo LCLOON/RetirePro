@@ -74,112 +74,231 @@ export function calculateYearsLast(
   return years >= maxYears ? Infinity : years;
 }
 
+// IRS Uniform Lifetime Table (2024) for RMD calculations
+const RMD_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
+  72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2,
+  81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4, 88: 13.7, 89: 12.9,
+  90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8,
+  100: 6.4, 101: 6.0, 102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3, 107: 4.1, 108: 3.9,
+  109: 3.7, 110: 3.5, 111: 3.4, 112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8, 117: 2.7,
+  118: 2.5, 119: 2.3, 120: 2.0
+};
+
+// Calculate RMD for a given age and pre-tax balance
+function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: number): number {
+  if (age < rmdStartAge || preTaxBalance <= 0) return 0;
+  const lifeExpectancy = RMD_LIFE_EXPECTANCY_TABLE[age] || 2.0;
+  return preTaxBalance / lifeExpectancy;
+}
+
+// Calculate Inherited IRA withdrawal (10-year rule)
+function calculateInheritedIRAWithdrawal(
+  inheritedBalance: number,
+  currentYear: number,
+  inheritedYear: number
+): number {
+  if (inheritedBalance <= 0) return 0;
+  const yearsRemaining = 10 - (currentYear - inheritedYear);
+  if (yearsRemaining <= 0) return inheritedBalance;
+  return inheritedBalance / yearsRemaining;
+}
+
 /**
  * Generate year-by-year projection for a scenario
+ * This is the MAIN calculation engine used by Results, Charts, Analysis tabs
+ * SYNCHRONIZED with DetailsTab.tsx calculations
  */
 function generateYearByYear(
   data: RetirementData,
   returnAdjustment: number = 0
 ): YearProjection[] {
   const projections: YearProjection[] = [];
-  const yearsToRetirement = data.retirementAge - data.currentAge;
-  const yearsInRetirement = data.lifeExpectancy - data.retirementAge;
   const currentYear = new Date().getFullYear();
   
-  // Current total savings including HSA and inherited IRA
-  let balance = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax + data.currentHSA;
-  if (data.hasInheritedIRA) {
-    balance += data.inheritedIRA.balance;
-  }
+  // Track balances by account type for RMD calculations
+  let preTaxBalance = data.currentSavingsPreTax;
+  let rothBalance = data.currentSavingsRoth;
+  let afterTaxBalance = data.currentSavingsAfterTax + data.currentHSA;
+  let inheritedIRABalance = data.hasInheritedIRA ? data.inheritedIRA.balance : 0;
   
-  // Total contributions including HSA
-  let contribution = data.annualContributionPreTax + data.annualContributionRoth + 
-                     data.annualContributionAfterTax + data.employerMatch + data.annualHSAContribution;
+  // Track contributions by type
+  let preTaxContribution = data.annualContributionPreTax + data.employerMatch;
+  let rothContribution = data.annualContributionRoth;
+  let afterTaxContribution = data.annualContributionAfterTax + data.annualHSAContribution;
   
-  // Pre-retirement accumulation phase
-  for (let i = 0; i <= yearsToRetirement; i++) {
-    const age = data.currentAge + i;
-    const year = currentYear + i;
-    const growth = balance * (data.preRetirementReturn + returnAdjustment);
+  // COLA rate for Social Security
+  const ssCOLA = data.inflationRate || 0.025;
+  
+  // RMD settings
+  const rmdStartAge = data.rmdStartAge || 73;
+  const includeRMD = data.includeRMD !== false;
+  
+  // Base expenses for inflation
+  const baseExpenses = data.retirementExpenses;
+  const baseHealthcareCost = data.annualHealthcareCost;
+  
+  for (let age = data.currentAge; age <= data.lifeExpectancy; age++) {
+    const isRetired = age >= data.retirementAge;
+    const yearReturn = (isRetired ? data.postRetirementReturn : data.preRetirementReturn) + returnAdjustment;
+    const year = currentYear + (age - data.currentAge);
     
-    projections.push({
-      age,
-      year,
-      balance,
-      contribution: i < yearsToRetirement ? contribution : 0,
-      growth,
-      withdrawal: 0,
-      income: 0,
-    });
+    // Store start balances
+    const startPreTax = preTaxBalance;
+    const startRoth = rothBalance;
+    const startAfterTax = afterTaxBalance;
+    const startInherited = inheritedIRABalance;
+    const startBalance = startPreTax + startRoth + startAfterTax + startInherited;
     
-    if (i < yearsToRetirement) {
-      balance += growth + contribution;
-      contribution *= (1 + data.contributionGrowthRate);
+    // Calculate RMDs
+    let rmd401k = 0;
+    let rmdInherited = 0;
+    
+    if (includeRMD && age >= rmdStartAge) {
+      rmd401k = calculateRMD(age, startPreTax, rmdStartAge);
     }
-  }
-  
-  // Post-retirement decumulation phase
-  let withdrawal = data.retirementExpenses;
-  let healthcareCost = data.annualHealthcareCost;
-  
-  for (let i = 1; i <= yearsInRetirement; i++) {
-    const age = data.retirementAge + i;
-    const year = currentYear + yearsToRetirement + i;
     
-    const growth = balance * (data.postRetirementReturn + returnAdjustment);
+    if (data.hasInheritedIRA && startInherited > 0) {
+      rmdInherited = calculateInheritedIRAWithdrawal(
+        startInherited, year, data.inheritedIRA.inheritedYear
+      );
+    }
     
-    // Calculate all income sources
-    let income = 0;
+    const totalRMD = rmd401k + rmdInherited;
     
-    // Social Security
+    // Social Security with COLA
+    const yearsSinceYourSS = Math.max(0, age - data.socialSecurityStartAge);
+    const yearsSinceSpouseSS = Math.max(0, age - data.spouseSocialSecurityStartAge);
+    
+    let ssIncome = 0;
     if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
-      income += data.socialSecurityBenefit;
+      ssIncome = data.socialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceYourSS);
     }
     
-    // Spouse Social Security
+    let spouseSsIncome = 0;
     if (data.hasSpouse && age >= data.spouseSocialSecurityStartAge) {
-      income += data.spouseSocialSecurityBenefit;
+      spouseSsIncome = data.spouseSocialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceSpouseSS);
     }
     
-    // Pension income
+    // Pension with COLA
+    let pensionIncome = 0;
     if (data.hasPension && age >= data.pensionStartAge) {
-      income += data.pensionIncome;
+      const yearsSincePension = age - data.pensionStartAge;
+      pensionIncome = data.pensionIncome * Math.pow(1.015, yearsSincePension);
     }
     
-    // Additional income sources (rental, part-time, annuities, etc.)
+    // Additional income sources
+    let additionalIncome = 0;
     data.additionalIncome.forEach(source => {
       if (age >= source.startAge && age <= source.endAge) {
-        income += source.amount;
+        if (source.adjustForInflation) {
+          const yearsFromStart = age - source.startAge;
+          additionalIncome += source.amount * Math.pow(1 + data.inflationRate, yearsFromStart);
+        } else {
+          additionalIncome += source.amount;
+        }
       }
     });
     
-    // Healthcare costs (adjust based on Medicare eligibility)
-    let yearlyHealthcare = healthcareCost;
-    if (age >= data.medicareStartAge) {
-      yearlyHealthcare = data.medicarePremium * 12 + data.medicareSupplementPremium * 12;
+    // Total income (RMDs count as income - they're mandatory withdrawals)
+    const totalIncome = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + totalRMD;
+    
+    // Calculate expenses
+    let expenses = 0;
+    if (isRetired) {
+      const yearsInRetirement = age - data.retirementAge;
+      expenses = baseExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
+      
+      // Healthcare costs
+      if (age >= data.medicareStartAge) {
+        const yearsSinceMedicare = age - data.medicareStartAge;
+        expenses += (data.medicarePremium + data.medicareSupplementPremium) * 12 *
+                    Math.pow(1 + data.healthcareInflationRate, yearsSinceMedicare);
+      } else {
+        expenses += baseHealthcareCost * Math.pow(1 + data.healthcareInflationRate, yearsInRetirement);
+      }
     }
     
-    // Total expenses including healthcare
-    const totalExpenses = withdrawal + yearlyHealthcare;
+    // Contributions (pre-retirement only)
+    const yearPreTaxContrib = isRetired ? 0 : preTaxContribution;
+    const yearRothContrib = isRetired ? 0 : rothContribution;
+    const yearAfterTaxContrib = isRetired ? 0 : afterTaxContribution;
+    const yearContribution = yearPreTaxContrib + yearRothContrib + yearAfterTaxContrib;
     
-    const netWithdrawal = Math.max(0, totalExpenses - income);
-    balance = balance + growth - netWithdrawal;
+    // Growth on each account
+    const preTaxGrowth = startPreTax * yearReturn;
+    const rothGrowth = startRoth * yearReturn;
+    const afterTaxGrowth = startAfterTax * yearReturn;
+    const inheritedGrowth = startInherited * yearReturn;
+    const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth;
+    
+    // Additional withdrawal needed beyond RMDs
+    const incomeWithoutPortfolio = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + totalRMD;
+    const additionalWithdrawalNeeded = isRetired ? Math.max(0, expenses - incomeWithoutPortfolio) : 0;
+    const totalWithdrawal = totalRMD + additionalWithdrawalNeeded;
+    
+    // Update account balances
+    if (isRetired) {
+      let remainingWithdrawal = additionalWithdrawalNeeded;
+      
+      // Pre-tax: apply RMD and additional withdrawal
+      preTaxBalance = startPreTax + preTaxGrowth - rmd401k;
+      if (remainingWithdrawal > 0 && preTaxBalance > 0) {
+        const fromPreTax = Math.min(remainingWithdrawal, preTaxBalance);
+        preTaxBalance -= fromPreTax;
+        remainingWithdrawal -= fromPreTax;
+      }
+      
+      // After-tax next
+      afterTaxBalance = startAfterTax + afterTaxGrowth;
+      if (remainingWithdrawal > 0 && afterTaxBalance > 0) {
+        const fromAfterTax = Math.min(remainingWithdrawal, afterTaxBalance);
+        afterTaxBalance -= fromAfterTax;
+        remainingWithdrawal -= fromAfterTax;
+      }
+      
+      // Roth last
+      rothBalance = startRoth + rothGrowth;
+      if (remainingWithdrawal > 0 && rothBalance > 0) {
+        const fromRoth = Math.min(remainingWithdrawal, rothBalance);
+        rothBalance -= fromRoth;
+        remainingWithdrawal -= fromRoth;
+      }
+      
+      // Inherited IRA
+      inheritedIRABalance = Math.max(0, startInherited + inheritedGrowth - rmdInherited);
+    } else {
+      preTaxBalance = startPreTax + preTaxGrowth + yearPreTaxContrib;
+      rothBalance = startRoth + rothGrowth + yearRothContrib;
+      afterTaxBalance = startAfterTax + afterTaxGrowth + yearAfterTaxContrib;
+      inheritedIRABalance = startInherited + inheritedGrowth;
+    }
+    
+    // Ensure no negative balances
+    preTaxBalance = Math.max(0, preTaxBalance);
+    rothBalance = Math.max(0, rothBalance);
+    afterTaxBalance = Math.max(0, afterTaxBalance);
+    inheritedIRABalance = Math.max(0, inheritedIRABalance);
+    
+    const endBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance;
     
     projections.push({
       age,
       year,
-      balance: Math.max(0, balance),
-      contribution: 0,
-      growth,
-      withdrawal: netWithdrawal,
-      income,
+      balance: startBalance,
+      contribution: yearContribution,
+      growth: totalGrowth,
+      withdrawal: totalWithdrawal,
+      income: totalIncome,
     });
     
-    if (balance <= 0) break;
+    // Grow contributions for next year
+    if (!isRetired) {
+      preTaxContribution *= (1 + data.contributionGrowthRate);
+      rothContribution *= (1 + data.contributionGrowthRate);
+      afterTaxContribution *= (1 + data.contributionGrowthRate);
+    }
     
-    // Inflation adjustments
-    withdrawal *= (1 + data.expenseGrowthRate);
-    healthcareCost *= (1 + data.healthcareInflationRate);
+    if (endBalance <= 0) break;
   }
   
   return projections;
@@ -227,91 +346,178 @@ function randomNormal(mean: number, stdDev: number): number {
 
 /**
  * Perform Monte Carlo simulation
+ * SYNCHRONIZED with DetailsTab.tsx - includes RMDs, SS COLA, separate accounts
  */
 export function performMonteCarloProjection(data: RetirementData): MonteCarloResults {
   const numSimulations = data.monteCarloRuns;
-  const yearsToRetirement = data.retirementAge - data.currentAge;
-  const yearsInRetirement = data.lifeExpectancy - data.retirementAge;
+  const currentYear = new Date().getFullYear();
+  
+  // RMD and COLA settings
+  const rmdStartAge = data.rmdStartAge || 73;
+  const includeRMD = data.includeRMD !== false;
+  const ssCOLA = data.inflationRate || 0.025;
   
   const finalBalances: number[] = [];
   let successCount = 0;
   
   for (let sim = 0; sim < numSimulations; sim++) {
-    // Include all savings types: pre-tax, Roth, after-tax, HSA, and inherited IRA
-    let balance = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax + data.currentHSA;
-    if (data.hasInheritedIRA) {
-      balance += data.inheritedIRA.balance;
-    }
+    // Track account balances separately for RMD
+    let preTaxBalance = data.currentSavingsPreTax;
+    let rothBalance = data.currentSavingsRoth;
+    let afterTaxBalance = data.currentSavingsAfterTax + data.currentHSA;
+    let inheritedBalance = data.hasInheritedIRA ? data.inheritedIRA.balance : 0;
     
-    // Total annual contributions including HSA
-    let contribution = data.annualContributionPreTax + data.annualContributionRoth + 
-                       data.annualContributionAfterTax + data.employerMatch + data.annualHSAContribution;
+    let preTaxContrib = data.annualContributionPreTax + data.employerMatch;
+    let rothContrib = data.annualContributionRoth;
+    let afterTaxContrib = data.annualContributionAfterTax + data.annualHSAContribution;
     
-    // Pre-retirement
-    for (let year = 0; year < yearsToRetirement; year++) {
-      const annualReturn = randomNormal(data.preRetirementReturn, data.standardDeviation);
-      balance = balance * (1 + annualReturn) + contribution;
-      contribution *= (1 + data.contributionGrowthRate);
-    }
-    
-    // Post-retirement
-    let withdrawal = data.retirementExpenses;
-    let healthcareCost = data.annualHealthcareCost;
     let runOutOfMoney = false;
     
-    for (let year = 0; year < yearsInRetirement; year++) {
-      const age = data.retirementAge + year;
-      const annualReturn = randomNormal(data.postRetirementReturn, data.standardDeviation * 0.7);
+    // Run simulation year by year
+    for (let age = data.currentAge; age <= data.lifeExpectancy; age++) {
+      const isRetired = age >= data.retirementAge;
+      const year = currentYear + (age - data.currentAge);
       
-      // Calculate all income sources
-      let income = 0;
+      // Random return based on phase
+      const annualReturn = isRetired 
+        ? randomNormal(data.postRetirementReturn, data.standardDeviation * 0.7)
+        : randomNormal(data.preRetirementReturn, data.standardDeviation);
       
-      // Social Security
+      // Start balances
+      const startPreTax = preTaxBalance;
+      const startRoth = rothBalance;
+      const startAfterTax = afterTaxBalance;
+      const startInherited = inheritedBalance;
+      
+      // Calculate RMDs
+      let rmd401k = 0;
+      let rmdInherited = 0;
+      
+      if (includeRMD && isRetired && age >= rmdStartAge) {
+        rmd401k = calculateRMD(age, startPreTax, rmdStartAge);
+      }
+      
+      if (data.hasInheritedIRA && startInherited > 0) {
+        rmdInherited = calculateInheritedIRAWithdrawal(
+          startInherited, year, data.inheritedIRA.inheritedYear
+        );
+      }
+      
+      const totalRMD = rmd401k + rmdInherited;
+      
+      // Income with COLA
+      let income = totalRMD;
+      
+      // Social Security with COLA
       if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
-        income += data.socialSecurityBenefit;
+        const yearsSinceYourSS = age - data.socialSecurityStartAge;
+        income += data.socialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceYourSS);
       }
       
-      // Spouse Social Security
+      // Spouse SS with COLA
       if (data.hasSpouse && age >= data.spouseSocialSecurityStartAge) {
-        income += data.spouseSocialSecurityBenefit;
+        const yearsSinceSpouseSS = age - data.spouseSocialSecurityStartAge;
+        income += data.spouseSocialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceSpouseSS);
       }
       
-      // Pension
+      // Pension with COLA
       if (data.hasPension && age >= data.pensionStartAge) {
-        income += data.pensionIncome;
+        const yearsSincePension = age - data.pensionStartAge;
+        income += data.pensionIncome * Math.pow(1.015, yearsSincePension);
       }
       
-      // Additional income sources (rental, part-time work, annuities, etc.)
+      // Additional income
       data.additionalIncome.forEach(source => {
         if (age >= source.startAge && age <= source.endAge) {
-          income += source.amount;
+          if (source.adjustForInflation) {
+            const yearsFromStart = age - source.startAge;
+            income += source.amount * Math.pow(1 + data.inflationRate, yearsFromStart);
+          } else {
+            income += source.amount;
+          }
         }
       });
       
-      // Healthcare costs (adjust based on Medicare eligibility)
-      let yearlyHealthcare = healthcareCost;
-      if (age >= data.medicareStartAge) {
-        yearlyHealthcare = data.medicarePremium * 12 + data.medicareSupplementPremium * 12;
+      // Calculate expenses (only in retirement)
+      let expenses = 0;
+      if (isRetired) {
+        const yearsInRetirement = age - data.retirementAge;
+        expenses = data.retirementExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
+        
+        // Healthcare
+        if (age >= data.medicareStartAge) {
+          const yearsSinceMedicare = age - data.medicareStartAge;
+          expenses += (data.medicarePremium + data.medicareSupplementPremium) * 12 *
+                      Math.pow(1 + data.healthcareInflationRate, yearsSinceMedicare);
+        } else {
+          expenses += data.annualHealthcareCost * Math.pow(1 + data.healthcareInflationRate, yearsInRetirement);
+        }
       }
       
-      // Total expenses including healthcare
-      const totalExpenses = withdrawal + yearlyHealthcare;
+      // Growth
+      const preTaxGrowth = startPreTax * annualReturn;
+      const rothGrowth = startRoth * annualReturn;
+      const afterTaxGrowth = startAfterTax * annualReturn;
+      const inheritedGrowth = startInherited * annualReturn;
       
-      const netWithdrawal = Math.max(0, totalExpenses - income);
-      balance = balance * (1 + annualReturn) - netWithdrawal;
+      // Additional withdrawal needed beyond RMDs
+      const incomeWithoutPortfolio = income;
+      const additionalWithdrawal = isRetired ? Math.max(0, expenses - incomeWithoutPortfolio) : 0;
       
-      if (balance <= 0) {
+      // Update balances
+      if (isRetired) {
+        let remaining = additionalWithdrawal;
+        
+        preTaxBalance = startPreTax + preTaxGrowth - rmd401k;
+        if (remaining > 0 && preTaxBalance > 0) {
+          const take = Math.min(remaining, preTaxBalance);
+          preTaxBalance -= take;
+          remaining -= take;
+        }
+        
+        afterTaxBalance = startAfterTax + afterTaxGrowth;
+        if (remaining > 0 && afterTaxBalance > 0) {
+          const take = Math.min(remaining, afterTaxBalance);
+          afterTaxBalance -= take;
+          remaining -= take;
+        }
+        
+        rothBalance = startRoth + rothGrowth;
+        if (remaining > 0 && rothBalance > 0) {
+          const take = Math.min(remaining, rothBalance);
+          rothBalance -= take;
+          remaining -= take;
+        }
+        
+        inheritedBalance = Math.max(0, startInherited + inheritedGrowth - rmdInherited);
+      } else {
+        preTaxBalance = startPreTax + preTaxGrowth + preTaxContrib;
+        rothBalance = startRoth + rothGrowth + rothContrib;
+        afterTaxBalance = startAfterTax + afterTaxGrowth + afterTaxContrib;
+        inheritedBalance = startInherited + inheritedGrowth;
+        
+        // Grow contributions
+        preTaxContrib *= (1 + data.contributionGrowthRate);
+        rothContrib *= (1 + data.contributionGrowthRate);
+        afterTaxContrib *= (1 + data.contributionGrowthRate);
+      }
+      
+      // Ensure no negative
+      preTaxBalance = Math.max(0, preTaxBalance);
+      rothBalance = Math.max(0, rothBalance);
+      afterTaxBalance = Math.max(0, afterTaxBalance);
+      inheritedBalance = Math.max(0, inheritedBalance);
+      
+      const totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedBalance;
+      
+      if (totalBalance <= 0 && isRetired) {
         runOutOfMoney = true;
-        balance = 0;
         break;
       }
-      
-      // Inflation adjustments
-      withdrawal *= (1 + data.expenseGrowthRate);
-      healthcareCost *= (1 + data.healthcareInflationRate);
     }
     
-    finalBalances.push(balance);
+    const finalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedBalance;
+    finalBalances.push(finalBalance);
     if (!runOutOfMoney) successCount++;
   }
   
