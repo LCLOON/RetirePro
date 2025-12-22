@@ -27,14 +27,16 @@ export function DetailsTab() {
       // Social Security income
       const ssIncome = age >= data.socialSecurityStartAge ? data.socialSecurityBenefit : 0;
       
-      // Other income
-      const otherIncome = (age >= data.otherIncomeStartAge && age <= data.otherIncomeEndAge) ? data.otherIncome : 0;
+      // Additional income sources (from array)
+      const additionalIncome = data.additionalIncome
+        .filter(source => age >= source.startAge && age <= source.endAge)
+        .reduce((sum, source) => sum + source.amount, 0);
       
       // Pension
-      const pensionIncome = isRetired ? data.pensionIncome : 0;
+      const pensionIncome = (data.hasPension && age >= data.pensionStartAge) ? data.pensionIncome : 0;
       
       // Total income from non-portfolio sources
-      const totalIncome = ssIncome + otherIncome + pensionIncome;
+      const totalIncome = ssIncome + additionalIncome + pensionIncome;
       
       // Expenses (only in retirement)
       const expenses = isRetired ? data.retirementExpenses * Math.pow(1 + data.inflationRate / 100, age - data.retirementAge) : 0;
@@ -61,7 +63,7 @@ export function DetailsTab() {
         contributions: contributions,
         growth: growth,
         ssIncome: ssIncome,
-        otherIncome: otherIncome + pensionIncome,
+        otherIncome: additionalIncome + pensionIncome,
         expenses: expenses,
         withdrawal: isRetired ? Math.max(0, expenses - totalIncome) : 0,
         endBalance: Math.max(0, balance),

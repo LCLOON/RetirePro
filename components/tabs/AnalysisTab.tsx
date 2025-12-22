@@ -10,11 +10,21 @@ export function AnalysisTab() {
   const results = state.monteCarloResults;
   const scenarioResults = state.scenarioResults;
 
+  // Helper to calculate total additional income at a given age
+  const getAdditionalIncomeAtAge = (age: number) => {
+    return data.additionalIncome
+      .filter(source => age >= source.startAge && age <= source.endAge)
+      .reduce((sum, source) => sum + source.amount, 0);
+  };
+
+  // Total additional income at retirement age
+  const totalAdditionalIncome = getAdditionalIncomeAtAge(data.retirementAge);
+
   // Calculate key metrics
   const yearsToRetirement = Math.max(0, data.retirementAge - data.currentAge);
   const yearsInRetirement = data.lifeExpectancy - data.retirementAge;
-  const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax;
-  const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + data.annualContributionAfterTax + data.employerMatch;
+  const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax + data.currentHSA;
+  const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + data.annualContributionAfterTax + data.employerMatch + data.annualHSAContribution;
   
   // Future value calculations (rates are already decimals: 0.07 = 7%)
   const rate = data.preRetirementReturn;
@@ -23,8 +33,9 @@ export function AnalysisTab() {
       totalContributions * ((Math.pow(1 + rate, yearsToRetirement) - 1) / rate)
     : totalSavings + totalContributions * yearsToRetirement;
   
+  const pensionAtRetirement = data.hasPension && data.retirementAge >= data.pensionStartAge ? data.pensionIncome : 0;
   const retirementNeeds = data.retirementExpenses * yearsInRetirement;
-  const incomeGap = data.retirementExpenses - (data.socialSecurityBenefit + data.pensionIncome + data.otherIncome);
+  const incomeGap = data.retirementExpenses - (data.socialSecurityBenefit + pensionAtRetirement + totalAdditionalIncome);
   // safeWithdrawalRate is already decimal (0.04 = 4%)
   const savingsNeeded = incomeGap > 0 && data.safeWithdrawalRate > 0 ? incomeGap / data.safeWithdrawalRate : 0;
   
@@ -153,15 +164,15 @@ export function AnalysisTab() {
               </div>
               <div className="flex justify-between items-center p-2 bg-blue-500/10 rounded">
                 <span className="text-slate-300">Pension</span>
-                <span className="text-blue-400">${data.pensionIncome.toLocaleString()}/yr</span>
+                <span className="text-blue-400">${pensionAtRetirement.toLocaleString()}/yr</span>
               </div>
               <div className="flex justify-between items-center p-2 bg-purple-500/10 rounded">
-                <span className="text-slate-300">Other Income</span>
-                <span className="text-purple-400">${data.otherIncome.toLocaleString()}/yr</span>
+                <span className="text-slate-300">Additional Income ({data.additionalIncome.length} sources)</span>
+                <span className="text-purple-400">${totalAdditionalIncome.toLocaleString()}/yr</span>
               </div>
               <div className="flex justify-between items-center p-2 bg-amber-500/10 rounded">
                 <span className="text-slate-300">Portfolio Withdrawal</span>
-                <span className="text-amber-400">${Math.round(futureValue * (data.safeWithdrawalRate / 100)).toLocaleString()}/yr</span>
+                <span className="text-amber-400">${Math.round(futureValue * data.safeWithdrawalRate).toLocaleString()}/yr</span>
               </div>
             </div>
 
@@ -169,7 +180,7 @@ export function AnalysisTab() {
               <div className="flex justify-between items-center">
                 <span className="text-white font-medium">Total Annual Income</span>
                 <span className="text-2xl font-bold text-emerald-400">
-                  ${(data.socialSecurityBenefit + data.pensionIncome + data.otherIncome + Math.round(futureValue * (data.safeWithdrawalRate / 100))).toLocaleString()}
+                  ${(data.socialSecurityBenefit + pensionAtRetirement + totalAdditionalIncome + Math.round(futureValue * data.safeWithdrawalRate)).toLocaleString()}
                 </span>
               </div>
             </div>

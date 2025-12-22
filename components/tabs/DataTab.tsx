@@ -1,20 +1,71 @@
 'use client';
 
+import { useState } from 'react';
 import { Card } from '@/components/ui';
 import { CurrencyInput, PercentInput, NumberInput } from '@/components/ui';
 import { Select, Checkbox } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp } from '@/lib/store';
+import { US_STATES, IncomeSource, DEFAULT_INHERITED_IRA } from '@/lib/types';
 
 export function DataTab() {
   const { state, updateRetirementData, runCalculations } = useApp();
   const data = state.retirementData;
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+    spouse: data.filingStatus === 'married',
+    hsa: data.currentHSA > 0 || data.annualHSAContribution > 0,
+    inheritedIra: data.hasInheritedIRA,
+    pension: data.hasPension,
+    additionalIncome: data.additionalIncome.length > 0,
+    healthcare: true,
+    drawdown: false,
+    rothConversion: data.rothConversionEnabled,
+  });
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
+  };
+
+  // Helper to generate unique ID
+  const generateId = () => Math.random().toString(36).substring(2, 9);
+
+  // Add new income source
+  const addIncomeSource = () => {
+    const newSource: IncomeSource = {
+      id: generateId(),
+      name: 'New Income Source',
+      amount: 0,
+      startAge: data.retirementAge,
+      endAge: data.lifeExpectancy,
+      adjustForInflation: true,
+      type: 'other',
+    };
+    updateRetirementData({ 
+      additionalIncome: [...data.additionalIncome, newSource] 
+    });
+  };
+
+  // Update income source
+  const updateIncomeSource = (id: string, updates: Partial<IncomeSource>) => {
+    updateRetirementData({
+      additionalIncome: data.additionalIncome.map(source =>
+        source.id === id ? { ...source, ...updates } : source
+      ),
+    });
+  };
+
+  // Remove income source
+  const removeIncomeSource = (id: string) => {
+    updateRetirementData({
+      additionalIncome: data.additionalIncome.filter(source => source.id !== id),
+    });
+  };
   
   return (
     <div className="space-y-6">
       {/* Personal Information */}
       <Card title="Personal Information" subtitle="Enter your basic information and retirement timeline">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
           <NumberInput
             label="Current Age"
             value={data.currentAge}
@@ -42,18 +93,74 @@ export function DataTab() {
           <Select
             label="Filing Status"
             value={data.filingStatus}
-            onChange={(v) => updateRetirementData({ filingStatus: v as 'single' | 'married' | 'head_of_household' })}
+            onChange={(v) => {
+              updateRetirementData({ filingStatus: v as 'single' | 'married' | 'head_of_household' });
+              if (v === 'married') setExpandedSections(prev => ({ ...prev, spouse: true }));
+            }}
             options={[
               { value: 'single', label: 'Single' },
               { value: 'married', label: 'Married Filing Jointly' },
               { value: 'head_of_household', label: 'Head of Household' },
             ]}
           />
+          <Select
+            label="State of Residence"
+            value={data.state}
+            onChange={(v) => updateRetirementData({ state: v })}
+            options={US_STATES.map(s => ({ value: s.value, label: s.label }))}
+          />
         </div>
       </Card>
+
+      {/* Spouse Information - Collapsible */}
+      {data.filingStatus === 'married' && (
+        <Card 
+          title="👫 Spouse Information" 
+          subtitle="Enter your spouse's retirement details"
+        >
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <NumberInput
+              label="Spouse Current Age"
+              value={data.spouseCurrentAge}
+              onChange={(v) => updateRetirementData({ spouseCurrentAge: v })}
+              min={18}
+              max={100}
+              suffix="years"
+            />
+            <NumberInput
+              label="Spouse Retirement Age"
+              value={data.spouseRetirementAge}
+              onChange={(v) => updateRetirementData({ spouseRetirementAge: v })}
+              min={data.spouseCurrentAge + 1}
+              max={100}
+              suffix="years"
+            />
+            <NumberInput
+              label="Spouse Life Expectancy"
+              value={data.spouseLifeExpectancy}
+              onChange={(v) => updateRetirementData({ spouseLifeExpectancy: v })}
+              min={data.spouseRetirementAge + 1}
+              max={120}
+              suffix="years"
+            />
+            <CurrencyInput
+              label="Spouse Social Security (Annual)"
+              value={data.spouseSocialSecurityBenefit}
+              onChange={(v) => updateRetirementData({ spouseSocialSecurityBenefit: v })}
+            />
+            <NumberInput
+              label="Spouse SS Start Age"
+              value={data.spouseSocialSecurityStartAge}
+              onChange={(v) => updateRetirementData({ spouseSocialSecurityStartAge: v })}
+              min={62}
+              max={70}
+            />
+          </div>
+        </Card>
+      )}
       
       {/* Current Savings */}
-      <Card title="Current Savings" subtitle="Enter your current retirement account balances">
+      <Card title="💰 Current Savings" subtitle="Enter your current retirement account balances">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CurrencyInput
             label="Pre-Tax Accounts (401k, Traditional IRA)"
@@ -75,19 +182,122 @@ export function DataTab() {
           />
         </div>
       </Card>
+
+      {/* HSA Account */}
+      <Card 
+        title="🏥 Health Savings Account (HSA)" 
+        subtitle="Triple tax-advantaged healthcare savings"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CurrencyInput
+            label="Current HSA Balance"
+            value={data.currentHSA}
+            onChange={(v) => updateRetirementData({ currentHSA: v })}
+            hint="Health Savings Account balance"
+          />
+          <CurrencyInput
+            label="Annual HSA Contribution"
+            value={data.annualHSAContribution}
+            onChange={(v) => updateRetirementData({ annualHSAContribution: v })}
+            hint="2024 limit: $4,150 (self) / $8,300 (family)"
+          />
+          <Checkbox
+            label="Include HSA Catch-Up (Age 55+)"
+            checked={data.hsaCatchUp}
+            onChange={(v) => updateRetirementData({ hsaCatchUp: v })}
+          />
+        </div>
+      </Card>
+
+      {/* Inherited IRA */}
+      <Card 
+        title="📜 Inherited IRA" 
+        subtitle="Track inherited retirement accounts with RMD rules"
+      >
+        <div className="space-y-4">
+          <Checkbox
+            label="I have an Inherited IRA"
+            checked={data.hasInheritedIRA}
+            onChange={(v) => {
+              updateRetirementData({ 
+                hasInheritedIRA: v,
+                inheritedIRA: v ? data.inheritedIRA : DEFAULT_INHERITED_IRA
+              });
+            }}
+          />
+          
+          {data.hasInheritedIRA && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-slate-700">
+              <CurrencyInput
+                label="Inherited IRA Balance"
+                value={data.inheritedIRA.balance}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, balance: v }
+                })}
+              />
+              <NumberInput
+                label="Year Inherited"
+                value={data.inheritedIRA.inheritedYear}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, inheritedYear: v }
+                })}
+                min={1990}
+                max={new Date().getFullYear()}
+              />
+              <NumberInput
+                label="Original Owner Birth Year"
+                value={data.inheritedIRA.originalOwnerBirthYear}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, originalOwnerBirthYear: v }
+                })}
+                min={1900}
+                max={new Date().getFullYear()}
+              />
+              <Select
+                label="Beneficiary Type"
+                value={data.inheritedIRA.beneficiaryType}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, beneficiaryType: v as 'spouse' | 'non_spouse_eligible' | 'non_spouse_10_year' }
+                })}
+                options={[
+                  { value: 'spouse', label: 'Spouse (can treat as own)' },
+                  { value: 'non_spouse_eligible', label: 'Eligible Designated Beneficiary' },
+                  { value: 'non_spouse_10_year', label: 'Non-Spouse (10-Year Rule)' },
+                ]}
+              />
+              {data.inheritedIRA.beneficiaryType === 'non_spouse_eligible' && (
+                <Checkbox
+                  label="Use Stretch IRA (Life Expectancy)"
+                  checked={data.inheritedIRA.useStretchIRA}
+                  onChange={(v) => updateRetirementData({ 
+                    inheritedIRA: { ...data.inheritedIRA, useStretchIRA: v }
+                  })}
+                />
+              )}
+            </div>
+          )}
+          
+          <p className="text-xs text-slate-400 mt-2">
+            Note: SECURE Act 2.0 rules apply. Non-spouse beneficiaries typically must withdraw within 10 years. 
+            Eligible designated beneficiaries (disabled, chronically ill, minor children, or those within 10 years of decedent&apos;s age) may use stretch IRA rules.
+          </p>
+        </div>
+      </Card>
       
       {/* Annual Contributions */}
-      <Card title="Annual Contributions" subtitle="How much you save each year">
+      <Card title="📈 Annual Contributions" subtitle="How much you save each year">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CurrencyInput
             label="Pre-Tax Contribution"
             value={data.annualContributionPreTax}
             onChange={(v) => updateRetirementData({ annualContributionPreTax: v })}
+            hint="2024 limit: $23,000 (under 50) / $30,500 (50+)"
           />
           <CurrencyInput
             label="Roth Contribution"
             value={data.annualContributionRoth}
             onChange={(v) => updateRetirementData({ annualContributionRoth: v })}
+            hint="2024 IRA limit: $7,000 (under 50) / $8,000 (50+)"
           />
           <CurrencyInput
             label="After-Tax Contribution"
@@ -106,11 +316,16 @@ export function DataTab() {
             onChange={(v) => updateRetirementData({ contributionGrowthRate: v })}
             hint="Annual increase in contributions"
           />
+          <Checkbox
+            label="Include Catch-Up Contributions (Age 50+)"
+            checked={data.includeCatchUpContributions}
+            onChange={(v) => updateRetirementData({ includeCatchUpContributions: v })}
+          />
         </div>
       </Card>
       
       {/* Investment Returns */}
-      <Card title="Investment Returns" subtitle="Expected returns and inflation assumptions">
+      <Card title="📊 Investment Returns" subtitle="Expected returns and inflation assumptions">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <PercentInput
             label="Pre-Retirement Return"
@@ -138,9 +353,9 @@ export function DataTab() {
         </div>
       </Card>
       
-      {/* Retirement Income */}
-      <Card title="Retirement Income Needs" subtitle="Expected expenses and withdrawal strategy">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {/* Retirement Income Needs */}
+      <Card title="🎯 Retirement Income Needs" subtitle="Expected expenses and withdrawal strategy">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <CurrencyInput
             label="Annual Retirement Expenses"
             value={data.retirementExpenses}
@@ -159,53 +374,305 @@ export function DataTab() {
             onChange={(v) => updateRetirementData({ safeWithdrawalRate: v })}
             hint="Typically 3-4% of portfolio"
           />
+          <CurrencyInput
+            label="Desired Legacy Amount"
+            value={data.desiredLegacy}
+            onChange={(v) => updateRetirementData({ desiredLegacy: v })}
+            hint="Amount you want to leave to heirs"
+          />
+        </div>
+      </Card>
+
+      {/* Healthcare Costs */}
+      <Card 
+        title="🏥 Healthcare Costs" 
+        subtitle="Medical expenses before and after Medicare eligibility"
+      >
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <CurrencyInput
+            label="Annual Healthcare Cost (Pre-Medicare)"
+            value={data.annualHealthcareCost}
+            onChange={(v) => updateRetirementData({ annualHealthcareCost: v })}
+            hint="Insurance premiums + out-of-pocket"
+          />
+          <PercentInput
+            label="Healthcare Inflation Rate"
+            value={data.healthcareInflationRate}
+            onChange={(v) => updateRetirementData({ healthcareInflationRate: v })}
+            hint="Typically 5-7% per year"
+          />
+          <NumberInput
+            label="Medicare Start Age"
+            value={data.medicareStartAge}
+            onChange={(v) => updateRetirementData({ medicareStartAge: v })}
+            min={65}
+            max={100}
+            suffix="years"
+          />
+          <CurrencyInput
+            label="Medicare Part B Premium (Monthly)"
+            value={data.medicarePremium}
+            onChange={(v) => updateRetirementData({ medicarePremium: v })}
+            hint="2024 standard: $174.70/month"
+          />
+          <CurrencyInput
+            label="Supplement/Advantage Premium (Monthly)"
+            value={data.medicareSupplementPremium}
+            onChange={(v) => updateRetirementData({ medicareSupplementPremium: v })}
+            hint="Medigap or Medicare Advantage plan"
+          />
         </div>
       </Card>
       
-      {/* Other Income */}
-      <Card title="Other Income Sources" subtitle="Additional income during retirement">
+      {/* Social Security */}
+      <Card title="🏛️ Social Security" subtitle="Your Social Security benefits">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           <CurrencyInput
-            label="Social Security (Annual)"
+            label="Your Social Security (Annual)"
             value={data.socialSecurityBenefit}
             onChange={(v) => updateRetirementData({ socialSecurityBenefit: v })}
           />
           <NumberInput
-            label="SS Start Age"
+            label="Your SS Start Age"
             value={data.socialSecurityStartAge}
             onChange={(v) => updateRetirementData({ socialSecurityStartAge: v })}
             min={62}
             max={70}
           />
-          <CurrencyInput
-            label="Pension (Annual)"
-            value={data.pensionIncome}
-            onChange={(v) => updateRetirementData({ pensionIncome: v })}
+          <Checkbox
+            label="Include Social Security in Projections"
+            checked={data.includeSocialSecurity}
+            onChange={(v) => updateRetirementData({ includeSocialSecurity: v })}
           />
-          <CurrencyInput
-            label="Other Income (Annual)"
-            value={data.otherIncome}
-            onChange={(v) => updateRetirementData({ otherIncome: v })}
+        </div>
+        <p className="text-xs text-slate-400 mt-4">
+          Tip: Delaying Social Security from 62 to 70 can increase your benefit by ~77%. 
+          Visit ssa.gov/myaccount for your personalized estimate.
+        </p>
+      </Card>
+
+      {/* Pension */}
+      <Card 
+        title="🏢 Pension Income" 
+        subtitle="Defined benefit pension details"
+      >
+        <div className="space-y-4">
+          <Checkbox
+            label="I have a pension"
+            checked={data.hasPension}
+            onChange={(v) => updateRetirementData({ hasPension: v })}
           />
-          <NumberInput
-            label="Other Income Start Age"
-            value={data.otherIncomeStartAge}
-            onChange={(v) => updateRetirementData({ otherIncomeStartAge: v })}
-            min={data.currentAge}
-            max={100}
+          
+          {data.hasPension && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-slate-700">
+              <CurrencyInput
+                label="Annual Pension Income"
+                value={data.pensionIncome}
+                onChange={(v) => updateRetirementData({ pensionIncome: v })}
+              />
+              <NumberInput
+                label="Pension Start Age"
+                value={data.pensionStartAge}
+                onChange={(v) => updateRetirementData({ pensionStartAge: v })}
+                min={data.currentAge}
+                max={100}
+              />
+              <PercentInput
+                label="Cost of Living Adjustment (COLA)"
+                value={data.pensionCOLA}
+                onChange={(v) => updateRetirementData({ pensionCOLA: v })}
+                hint="Annual pension increase %"
+              />
+              {data.filingStatus === 'married' && (
+                <PercentInput
+                  label="Survivor Benefit"
+                  value={data.pensionSurvivorBenefit}
+                  onChange={(v) => updateRetirementData({ pensionSurvivorBenefit: v })}
+                  hint="% of pension for surviving spouse"
+                />
+              )}
+            </div>
+          )}
+        </div>
+      </Card>
+
+      {/* Additional Income Sources */}
+      <Card 
+        title="💵 Additional Income Sources" 
+        subtitle="Rental income, part-time work, annuities, etc."
+      >
+        <div className="space-y-4">
+          {data.additionalIncome.map((source, index) => (
+            <div key={source.id} className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+              <div className="flex justify-between items-center mb-4">
+                <h4 className="text-sm font-medium text-white">Income Source #{index + 1}</h4>
+                <button
+                  onClick={() => removeIncomeSource(source.id)}
+                  className="text-red-400 hover:text-red-300 text-sm"
+                >
+                  Remove
+                </button>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div className="lg:col-span-2">
+                  <label className="block text-sm font-medium text-slate-300 mb-1">Name</label>
+                  <input
+                    type="text"
+                    value={source.name}
+                    onChange={(e) => updateIncomeSource(source.id, { name: e.target.value })}
+                    className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  />
+                </div>
+                <Select
+                  label="Type"
+                  value={source.type}
+                  onChange={(v) => updateIncomeSource(source.id, { type: v as IncomeSource['type'] })}
+                  options={[
+                    { value: 'rental', label: 'Rental Income' },
+                    { value: 'part_time', label: 'Part-Time Work' },
+                    { value: 'annuity', label: 'Annuity' },
+                    { value: 'trust', label: 'Trust Distribution' },
+                    { value: 'royalty', label: 'Royalty/Licensing' },
+                    { value: 'other', label: 'Other' },
+                  ]}
+                />
+                <CurrencyInput
+                  label="Annual Amount"
+                  value={source.amount}
+                  onChange={(v) => updateIncomeSource(source.id, { amount: v })}
+                />
+                <NumberInput
+                  label="Start Age"
+                  value={source.startAge}
+                  onChange={(v) => updateIncomeSource(source.id, { startAge: v })}
+                  min={data.currentAge}
+                  max={120}
+                />
+                <NumberInput
+                  label="End Age"
+                  value={source.endAge}
+                  onChange={(v) => updateIncomeSource(source.id, { endAge: v })}
+                  min={source.startAge}
+                  max={120}
+                />
+                <Checkbox
+                  label="Adjust for Inflation"
+                  checked={source.adjustForInflation}
+                  onChange={(v) => updateIncomeSource(source.id, { adjustForInflation: v })}
+                />
+              </div>
+            </div>
+          ))}
+          
+          <Button 
+            variant="secondary" 
+            onClick={addIncomeSource}
+            className="w-full"
+          >
+            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+            </svg>
+            Add Income Source
+          </Button>
+        </div>
+      </Card>
+
+      {/* Drawdown Strategy */}
+      <Card 
+        title="📉 Withdrawal Strategy" 
+        subtitle="How to withdraw from different account types"
+      >
+        <div className="space-y-4">
+          <Select
+            label="Drawdown Strategy"
+            value={data.drawdownStrategy}
+            onChange={(v) => updateRetirementData({ drawdownStrategy: v as typeof data.drawdownStrategy })}
+            options={[
+              { value: 'traditional', label: 'Traditional (Taxable → Tax-Deferred → Tax-Free)' },
+              { value: 'roth_first', label: 'Roth First (Tax-Free → Taxable → Tax-Deferred)' },
+              { value: 'proportional', label: 'Proportional (Pro-rata from all accounts)' },
+              { value: 'tax_efficient', label: 'Tax-Efficient (Optimize based on tax brackets)' },
+            ]}
           />
-          <NumberInput
-            label="Other Income End Age"
-            value={data.otherIncomeEndAge}
-            onChange={(v) => updateRetirementData({ otherIncomeEndAge: v })}
-            min={data.otherIncomeStartAge}
-            max={120}
+          
+          <div className="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
+            <h4 className="text-sm font-medium text-white mb-2">Strategy Explanation</h4>
+            <p className="text-xs text-slate-400">
+              {data.drawdownStrategy === 'traditional' && 
+                "Traditional: Withdraw from taxable accounts first, then tax-deferred (401k/IRA), then Roth. This preserves tax-free growth longest."}
+              {data.drawdownStrategy === 'roth_first' && 
+                "Roth First: Use Roth funds first, then taxable, then tax-deferred. May be beneficial if you expect higher tax rates later."}
+              {data.drawdownStrategy === 'proportional' && 
+                "Proportional: Withdraw proportionally from all accounts. Provides consistent tax treatment each year."}
+              {data.drawdownStrategy === 'tax_efficient' && 
+                "Tax-Efficient: Optimizes withdrawals based on tax brackets. May include Roth conversions in low-income years."}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <Checkbox
+              label="Include Required Minimum Distributions (RMDs)"
+              checked={data.includeRMD}
+              onChange={(v) => updateRetirementData({ includeRMD: v })}
+            />
+            <NumberInput
+              label="RMD Start Age"
+              value={data.rmdStartAge}
+              onChange={(v) => updateRetirementData({ rmdStartAge: v })}
+              min={72}
+              max={75}
+              hint="73 (born 1951-1959) or 75 (born 1960+)"
+            />
+          </div>
+        </div>
+      </Card>
+
+      {/* Roth Conversion Strategy */}
+      <Card 
+        title="🔄 Roth Conversion Strategy" 
+        subtitle="Plan tax-efficient Roth conversions"
+      >
+        <div className="space-y-4">
+          <Checkbox
+            label="Enable Roth Conversion Strategy"
+            checked={data.rothConversionEnabled}
+            onChange={(v) => updateRetirementData({ rothConversionEnabled: v })}
           />
+          
+          {data.rothConversionEnabled && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-slate-700">
+              <CurrencyInput
+                label="Annual Conversion Amount"
+                value={data.rothConversionAmount}
+                onChange={(v) => updateRetirementData({ rothConversionAmount: v })}
+                hint="Amount to convert from Traditional to Roth each year"
+              />
+              <NumberInput
+                label="Conversion Start Age"
+                value={data.rothConversionStartAge}
+                onChange={(v) => updateRetirementData({ rothConversionStartAge: v })}
+                min={data.currentAge}
+                max={data.rmdStartAge}
+              />
+              <NumberInput
+                label="Conversion End Age"
+                value={data.rothConversionEndAge}
+                onChange={(v) => updateRetirementData({ rothConversionEndAge: v })}
+                min={data.rothConversionStartAge}
+                max={data.rmdStartAge}
+              />
+            </div>
+          )}
+          
+          <p className="text-xs text-slate-400">
+            Roth conversions can reduce future RMDs and create tax-free income. 
+            Best done during low-income years (early retirement, before Social Security).
+          </p>
         </div>
       </Card>
       
       {/* Simulation Settings */}
-      <Card title="Monte Carlo Settings" subtitle="Parameters for retirement simulations">
+      <Card title="🎲 Monte Carlo Settings" subtitle="Parameters for retirement simulations">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <NumberInput
             label="Number of Simulations"
@@ -220,11 +687,6 @@ export function DataTab() {
             value={data.successProbability / 100}
             onChange={(v) => updateRetirementData({ successProbability: v * 100 })}
             asDecimal={false}
-          />
-          <Checkbox
-            label="Include Social Security"
-            checked={data.includeSocialSecurity}
-            onChange={(v) => updateRetirementData({ includeSocialSecurity: v })}
           />
           <Checkbox
             label="Inflation-Adjusted Returns"

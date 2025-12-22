@@ -1,5 +1,67 @@
 // RetirePro Types - Web Version
 
+// US States for tax purposes
+export const US_STATES = [
+  { value: 'AL', label: 'Alabama' }, { value: 'AK', label: 'Alaska' },
+  { value: 'AZ', label: 'Arizona' }, { value: 'AR', label: 'Arkansas' },
+  { value: 'CA', label: 'California' }, { value: 'CO', label: 'Colorado' },
+  { value: 'CT', label: 'Connecticut' }, { value: 'DE', label: 'Delaware' },
+  { value: 'FL', label: 'Florida' }, { value: 'GA', label: 'Georgia' },
+  { value: 'HI', label: 'Hawaii' }, { value: 'ID', label: 'Idaho' },
+  { value: 'IL', label: 'Illinois' }, { value: 'IN', label: 'Indiana' },
+  { value: 'IA', label: 'Iowa' }, { value: 'KS', label: 'Kansas' },
+  { value: 'KY', label: 'Kentucky' }, { value: 'LA', label: 'Louisiana' },
+  { value: 'ME', label: 'Maine' }, { value: 'MD', label: 'Maryland' },
+  { value: 'MA', label: 'Massachusetts' }, { value: 'MI', label: 'Michigan' },
+  { value: 'MN', label: 'Minnesota' }, { value: 'MS', label: 'Mississippi' },
+  { value: 'MO', label: 'Missouri' }, { value: 'MT', label: 'Montana' },
+  { value: 'NE', label: 'Nebraska' }, { value: 'NV', label: 'Nevada' },
+  { value: 'NH', label: 'New Hampshire' }, { value: 'NJ', label: 'New Jersey' },
+  { value: 'NM', label: 'New Mexico' }, { value: 'NY', label: 'New York' },
+  { value: 'NC', label: 'North Carolina' }, { value: 'ND', label: 'North Dakota' },
+  { value: 'OH', label: 'Ohio' }, { value: 'OK', label: 'Oklahoma' },
+  { value: 'OR', label: 'Oregon' }, { value: 'PA', label: 'Pennsylvania' },
+  { value: 'RI', label: 'Rhode Island' }, { value: 'SC', label: 'South Carolina' },
+  { value: 'SD', label: 'South Dakota' }, { value: 'TN', label: 'Tennessee' },
+  { value: 'TX', label: 'Texas' }, { value: 'UT', label: 'Utah' },
+  { value: 'VT', label: 'Vermont' }, { value: 'VA', label: 'Virginia' },
+  { value: 'WA', label: 'Washington' }, { value: 'WV', label: 'West Virginia' },
+  { value: 'WI', label: 'Wisconsin' }, { value: 'WY', label: 'Wyoming' },
+  { value: 'DC', label: 'Washington D.C.' },
+] as const;
+
+// Inherited IRA type
+export interface InheritedIRA {
+  balance: number;
+  inheritedYear: number;
+  originalOwnerBirthYear: number;
+  beneficiaryType: 'spouse' | 'non_spouse_eligible' | 'non_spouse_10_year';
+  useStretchIRA: boolean; // For eligible designated beneficiaries
+}
+
+// Additional Income Source type
+export interface IncomeSource {
+  id: string;
+  name: string;
+  amount: number;
+  startAge: number;
+  endAge: number;
+  adjustForInflation: boolean;
+  type: 'rental' | 'part_time' | 'annuity' | 'trust' | 'royalty' | 'other';
+}
+
+// Drawdown Strategy
+export type DrawdownStrategy = 
+  | 'traditional' // Taxable → Tax-Deferred → Tax-Free
+  | 'roth_first' // Tax-Free → Taxable → Tax-Deferred
+  | 'proportional' // Pro-rata from all accounts
+  | 'tax_efficient' // Optimize based on tax brackets
+  | 'custom'; // User-defined order
+
+export interface DrawdownOrder {
+  priority: ('pretax' | 'roth' | 'aftertax' | 'hsa' | 'inherited_ira')[];
+}
+
 // Core retirement data types
 export interface RetirementData {
   // Basic Information
@@ -7,11 +69,28 @@ export interface RetirementData {
   retirementAge: number;
   lifeExpectancy: number;
   filingStatus: 'single' | 'married' | 'head_of_household';
+  state: string; // State for tax calculations
+  
+  // Spouse Information (for married)
+  spouseCurrentAge: number;
+  spouseRetirementAge: number;
+  spouseLifeExpectancy: number;
+  spouseSocialSecurityBenefit: number;
+  spouseSocialSecurityStartAge: number;
   
   // Current Savings (by tax type)
   currentSavingsPreTax: number;
   currentSavingsRoth: number;
   currentSavingsAfterTax: number;
+  
+  // HSA (Health Savings Account)
+  currentHSA: number;
+  annualHSAContribution: number;
+  hsaCatchUp: boolean; // Age 55+ catch-up contribution
+  
+  // Inherited IRA
+  hasInheritedIRA: boolean;
+  inheritedIRA: InheritedIRA;
   
   // Annual Contributions
   annualContributionPreTax: number;
@@ -19,6 +98,9 @@ export interface RetirementData {
   annualContributionAfterTax: number;
   employerMatch: number;
   contributionGrowthRate: number;
+  
+  // Catch-up Contributions (age 50+)
+  includeCatchUpContributions: boolean;
   
   // Investment Returns
   preRetirementReturn: number;
@@ -31,13 +113,43 @@ export interface RetirementData {
   expenseGrowthRate: number;
   safeWithdrawalRate: number;
   
-  // Social Security & Other Income
+  // Healthcare Costs
+  annualHealthcareCost: number;
+  healthcareInflationRate: number; // Typically higher than general inflation
+  medicareStartAge: number;
+  medicarePremium: number; // Monthly Part B premium
+  medicareSupplementPremium: number; // Medigap or Advantage premium
+  
+  // Social Security
   socialSecurityBenefit: number;
   socialSecurityStartAge: number;
+  
+  // Pension
+  hasPension: boolean;
   pensionIncome: number;
-  otherIncome: number;
-  otherIncomeStartAge: number;
-  otherIncomeEndAge: number;
+  pensionStartAge: number;
+  pensionCOLA: number; // Cost of living adjustment %
+  pensionSurvivorBenefit: number; // % for spouse if applicable
+  
+  // Additional Income Sources
+  additionalIncome: IncomeSource[];
+  
+  // Drawdown Strategy
+  drawdownStrategy: DrawdownStrategy;
+  customDrawdownOrder: DrawdownOrder;
+  
+  // RMD Settings
+  includeRMD: boolean;
+  rmdStartAge: number; // 73 for most, 75 for those born 1960+
+  
+  // Roth Conversion Strategy
+  rothConversionEnabled: boolean;
+  rothConversionAmount: number; // Annual conversion amount
+  rothConversionStartAge: number;
+  rothConversionEndAge: number;
+  
+  // Legacy/Estate Planning
+  desiredLegacy: number; // Amount to leave to heirs
   
   // Simulation Settings
   monteCarloRuns: number;
@@ -46,22 +158,50 @@ export interface RetirementData {
   inflationAdjusted: boolean;
 }
 
+// Default Inherited IRA
+export const DEFAULT_INHERITED_IRA: InheritedIRA = {
+  balance: 0,
+  inheritedYear: new Date().getFullYear(),
+  originalOwnerBirthYear: 1950,
+  beneficiaryType: 'non_spouse_10_year',
+  useStretchIRA: false,
+};
+
 // Default values for web app
 export const DEFAULT_RETIREMENT_DATA: RetirementData = {
   currentAge: 30,
   retirementAge: 65,
   lifeExpectancy: 90,
   filingStatus: 'single',
+  state: 'CA',
+  
+  // Spouse defaults
+  spouseCurrentAge: 30,
+  spouseRetirementAge: 65,
+  spouseLifeExpectancy: 90,
+  spouseSocialSecurityBenefit: 0,
+  spouseSocialSecurityStartAge: 67,
   
   currentSavingsPreTax: 50000,
   currentSavingsRoth: 25000,
   currentSavingsAfterTax: 10000,
+  
+  // HSA defaults
+  currentHSA: 0,
+  annualHSAContribution: 0,
+  hsaCatchUp: false,
+  
+  // Inherited IRA defaults
+  hasInheritedIRA: false,
+  inheritedIRA: DEFAULT_INHERITED_IRA,
   
   annualContributionPreTax: 10000,
   annualContributionRoth: 6000,
   annualContributionAfterTax: 5000,
   employerMatch: 5000,
   contributionGrowthRate: 0.02,
+  
+  includeCatchUpContributions: false,
   
   preRetirementReturn: 0.07,
   postRetirementReturn: 0.05,
@@ -72,12 +212,42 @@ export const DEFAULT_RETIREMENT_DATA: RetirementData = {
   expenseGrowthRate: 0.02,
   safeWithdrawalRate: 0.04,
   
+  // Healthcare defaults
+  annualHealthcareCost: 8000,
+  healthcareInflationRate: 0.05,
+  medicareStartAge: 65,
+  medicarePremium: 175, // 2024 standard Part B premium
+  medicareSupplementPremium: 150,
+  
   socialSecurityBenefit: 25000,
   socialSecurityStartAge: 67,
+  
+  // Pension defaults
+  hasPension: false,
   pensionIncome: 0,
-  otherIncome: 0,
-  otherIncomeStartAge: 65,
-  otherIncomeEndAge: 90,
+  pensionStartAge: 65,
+  pensionCOLA: 0,
+  pensionSurvivorBenefit: 0.5,
+  
+  // Additional income
+  additionalIncome: [],
+  
+  // Drawdown defaults
+  drawdownStrategy: 'traditional',
+  customDrawdownOrder: { priority: ['aftertax', 'pretax', 'roth', 'hsa'] },
+  
+  // RMD defaults
+  includeRMD: true,
+  rmdStartAge: 73,
+  
+  // Roth conversion defaults
+  rothConversionEnabled: false,
+  rothConversionAmount: 0,
+  rothConversionStartAge: 65,
+  rothConversionEndAge: 72,
+  
+  // Legacy
+  desiredLegacy: 0,
   
   monteCarloRuns: 1000,
   successProbability: 90,

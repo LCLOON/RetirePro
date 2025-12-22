@@ -127,10 +127,16 @@ function generateYearByYear(
     if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
       income += data.socialSecurityBenefit;
     }
-    income += data.pensionIncome;
-    if (age >= data.otherIncomeStartAge && age <= data.otherIncomeEndAge) {
-      income += data.otherIncome;
+    // Pension income
+    if (data.hasPension && age >= data.pensionStartAge) {
+      income += data.pensionIncome;
     }
+    // Additional income sources (rental, part-time, etc.)
+    data.additionalIncome.forEach(source => {
+      if (age >= source.startAge && age <= source.endAge) {
+        income += source.amount;
+      }
+    });
     
     const netWithdrawal = Math.max(0, withdrawal - income);
     balance = balance + growth - netWithdrawal;
