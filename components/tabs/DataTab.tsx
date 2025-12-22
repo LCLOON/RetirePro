@@ -6,7 +6,7 @@ import { CurrencyInput, PercentInput, NumberInput } from '@/components/ui';
 import { Select, Checkbox } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp } from '@/lib/store';
-import { US_STATES, IncomeSource, DEFAULT_INHERITED_IRA } from '@/lib/types';
+import { US_STATES, IncomeSource, DEFAULT_INHERITED_IRA, DEFAULT_DIVIDEND_PORTFOLIO, DEFAULT_CRYPTO_HOLDINGS } from '@/lib/types';
 
 export function DataTab() {
   const { state, updateRetirementData, runCalculations } = useApp();
@@ -252,6 +252,161 @@ export function DataTab() {
             checked={data.hsaCatchUp}
             onChange={(v) => updateRetirementData({ hsaCatchUp: v })}
           />
+        </div>
+      </Card>
+
+      {/* Dividend Income Portfolio */}
+      <Card 
+        title="💹 Dividend Income Portfolio" 
+        subtitle="Track dividend-paying stocks and funds for retirement income"
+      >
+        <div className="space-y-4">
+          <Checkbox
+            label="I have a dividend income portfolio"
+            checked={data.hasDividendPortfolio}
+            onChange={(v) => {
+              updateRetirementData({ 
+                hasDividendPortfolio: v,
+                dividendPortfolio: v ? data.dividendPortfolio : DEFAULT_DIVIDEND_PORTFOLIO
+              });
+            }}
+          />
+          
+          {data.hasDividendPortfolio && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-slate-700">
+              <CurrencyInput
+                label="Current Portfolio Value"
+                value={data.dividendPortfolio.currentValue}
+                onChange={(v) => updateRetirementData({ 
+                  dividendPortfolio: { ...data.dividendPortfolio, currentValue: v }
+                })}
+                hint="Total value of dividend-paying investments"
+              />
+              <CurrencyInput
+                label="Annual Dividend Income"
+                value={data.dividendPortfolio.annualDividendIncome}
+                onChange={(v) => updateRetirementData({ 
+                  dividendPortfolio: { ...data.dividendPortfolio, annualDividendIncome: v }
+                })}
+                hint="Expected annual dividend payments"
+              />
+              <PercentInput
+                label="Dividend Yield"
+                value={data.dividendPortfolio.yieldOnCost}
+                onChange={(v) => updateRetirementData({ 
+                  dividendPortfolio: { ...data.dividendPortfolio, yieldOnCost: v }
+                })}
+                hint="Current yield on cost"
+              />
+              <PercentInput
+                label="Dividend Growth Rate"
+                value={data.dividendPortfolio.dividendGrowthRate}
+                onChange={(v) => updateRetirementData({ 
+                  dividendPortfolio: { ...data.dividendPortfolio, dividendGrowthRate: v }
+                })}
+                hint="Expected annual dividend increase"
+              />
+              <Checkbox
+                label="Reinvest dividends until retirement"
+                checked={data.dividendPortfolio.reinvestDividends}
+                onChange={(v) => updateRetirementData({ 
+                  dividendPortfolio: { ...data.dividendPortfolio, reinvestDividends: v }
+                })}
+              />
+              <Checkbox
+                label="Include in retirement projections"
+                checked={data.dividendPortfolio.includeInProjections}
+                onChange={(v) => updateRetirementData({ 
+                  dividendPortfolio: { ...data.dividendPortfolio, includeInProjections: v }
+                })}
+              />
+            </div>
+          )}
+          
+          <p className="text-xs text-slate-400 mt-2">
+            💡 Tip: Use Dividend Pro to plan and track your dividend portfolio. 
+            Dividend income can provide reliable cash flow in retirement without selling shares.
+          </p>
+        </div>
+      </Card>
+
+      {/* Cryptocurrency Holdings */}
+      <Card 
+        title="₿ Cryptocurrency Holdings" 
+        subtitle="Track crypto assets for retirement planning"
+      >
+        <div className="space-y-4">
+          <Checkbox
+            label="I have cryptocurrency holdings"
+            checked={data.hasCryptoHoldings}
+            onChange={(v) => {
+              updateRetirementData({ 
+                hasCryptoHoldings: v,
+                cryptoHoldings: v ? data.cryptoHoldings : DEFAULT_CRYPTO_HOLDINGS
+              });
+            }}
+          />
+          
+          {data.hasCryptoHoldings && (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4 border-t border-slate-700">
+              <CurrencyInput
+                label="Current Crypto Value"
+                value={data.cryptoHoldings.currentValue}
+                onChange={(v) => updateRetirementData({ 
+                  cryptoHoldings: { ...data.cryptoHoldings, currentValue: v }
+                })}
+                hint="Total crypto portfolio value"
+              />
+              <PercentInput
+                label="Expected Annual Growth"
+                value={data.cryptoHoldings.expectedGrowthRate}
+                onChange={(v) => updateRetirementData({ 
+                  cryptoHoldings: { ...data.cryptoHoldings, expectedGrowthRate: v }
+                })}
+                hint="Long-term expected return"
+              />
+              <PercentInput
+                label="Volatility (Std Dev)"
+                value={data.cryptoHoldings.volatility}
+                onChange={(v) => updateRetirementData({ 
+                  cryptoHoldings: { ...data.cryptoHoldings, volatility: v }
+                })}
+                hint="For Monte Carlo simulations"
+              />
+              <NumberInput
+                label="Withdrawal Start Age"
+                value={data.cryptoHoldings.withdrawalStartAge}
+                onChange={(v) => updateRetirementData({ 
+                  cryptoHoldings: { ...data.cryptoHoldings, withdrawalStartAge: v }
+                })}
+                min={data.currentAge}
+                max={100}
+                suffix="years"
+              />
+              <PercentInput
+                label="Annual Withdrawal Rate"
+                value={data.cryptoHoldings.withdrawalPercent}
+                onChange={(v) => updateRetirementData({ 
+                  cryptoHoldings: { ...data.cryptoHoldings, withdrawalPercent: v }
+                })}
+                hint="% of crypto to withdraw annually"
+              />
+              <Checkbox
+                label="Include in retirement projections"
+                checked={data.cryptoHoldings.includeInProjections}
+                onChange={(v) => updateRetirementData({ 
+                  cryptoHoldings: { ...data.cryptoHoldings, includeInProjections: v }
+                })}
+              />
+            </div>
+          )}
+          
+          <div className="p-3 bg-amber-500/10 rounded-lg border border-amber-500/20">
+            <p className="text-xs text-amber-400">
+              ⚠️ Cryptocurrency is highly volatile. Consider limiting crypto to 5-10% of your total portfolio. 
+              The default 50% volatility reflects historical Bitcoin/Ethereum price swings.
+            </p>
+          </div>
         </div>
       </Card>
 

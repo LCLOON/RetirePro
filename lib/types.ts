@@ -47,7 +47,27 @@ export interface IncomeSource {
   startAge: number;
   endAge: number;
   adjustForInflation: boolean;
-  type: 'rental' | 'part_time' | 'annuity' | 'trust' | 'royalty' | 'other';
+  type: 'rental' | 'part_time' | 'annuity' | 'trust' | 'royalty' | 'dividend' | 'crypto' | 'other';
+}
+
+// Dividend Income Portfolio type
+export interface DividendPortfolio {
+  currentValue: number;         // Current portfolio value
+  annualDividendIncome: number; // Expected annual dividend income
+  dividendGrowthRate: number;   // Expected dividend growth rate (e.g., 0.05 = 5%)
+  yieldOnCost: number;          // Current yield on cost
+  reinvestDividends: boolean;   // Reinvest until retirement?
+  includeInProjections: boolean;
+}
+
+// Cryptocurrency Holdings type
+export interface CryptoHoldings {
+  currentValue: number;           // Current crypto portfolio value
+  expectedGrowthRate: number;     // Expected annual growth rate (high volatility)
+  volatility: number;             // Standard deviation for Monte Carlo
+  includeInProjections: boolean;
+  withdrawalStartAge: number;     // When to start drawing from crypto
+  withdrawalPercent: number;      // Annual withdrawal % (like SWR)
 }
 
 // Drawdown Strategy
@@ -135,6 +155,14 @@ export interface RetirementData {
   // Additional Income Sources
   additionalIncome: IncomeSource[];
   
+  // Dividend Income Portfolio
+  hasDividendPortfolio: boolean;
+  dividendPortfolio: DividendPortfolio;
+  
+  // Cryptocurrency Holdings
+  hasCryptoHoldings: boolean;
+  cryptoHoldings: CryptoHoldings;
+  
   // Drawdown Strategy
   drawdownStrategy: DrawdownStrategy;
   customDrawdownOrder: DrawdownOrder;
@@ -166,6 +194,26 @@ export const DEFAULT_INHERITED_IRA: InheritedIRA = {
   originalOwnerBirthYear: 1950,
   beneficiaryType: 'non_spouse_10_year',
   useStretchIRA: false,
+};
+
+// Default Dividend Portfolio
+export const DEFAULT_DIVIDEND_PORTFOLIO: DividendPortfolio = {
+  currentValue: 0,
+  annualDividendIncome: 0,
+  dividendGrowthRate: 0.05,      // 5% dividend growth
+  yieldOnCost: 0.03,              // 3% yield
+  reinvestDividends: true,
+  includeInProjections: true,
+};
+
+// Default Crypto Holdings
+export const DEFAULT_CRYPTO_HOLDINGS: CryptoHoldings = {
+  currentValue: 0,
+  expectedGrowthRate: 0.10,       // 10% expected (conservative for crypto)
+  volatility: 0.50,               // 50% std dev (high volatility)
+  includeInProjections: true,
+  withdrawalStartAge: 65,
+  withdrawalPercent: 0.04,        // 4% withdrawal rate
 };
 
 // Default values for web app
@@ -233,6 +281,14 @@ export const DEFAULT_RETIREMENT_DATA: RetirementData = {
   
   // Additional income
   additionalIncome: [],
+  
+  // Dividend Income defaults
+  hasDividendPortfolio: false,
+  dividendPortfolio: DEFAULT_DIVIDEND_PORTFOLIO,
+  
+  // Cryptocurrency defaults
+  hasCryptoHoldings: false,
+  cryptoHoldings: DEFAULT_CRYPTO_HOLDINGS,
   
   // Drawdown defaults
   drawdownStrategy: 'traditional',

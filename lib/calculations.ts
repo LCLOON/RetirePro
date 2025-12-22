@@ -121,6 +121,21 @@ function generateYearByYear(
   let afterTaxBalance = data.currentSavingsAfterTax + data.currentHSA;
   let inheritedIRABalance = data.hasInheritedIRA ? data.inheritedIRA.balance : 0;
   
+  // Dividend portfolio tracking
+  let dividendPortfolioValue = data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections 
+    ? data.dividendPortfolio.currentValue : 0;
+  let annualDividendIncome = data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections 
+    ? data.dividendPortfolio.annualDividendIncome : 0;
+  const dividendGrowthRate = data.dividendPortfolio?.dividendGrowthRate || 0.05;
+  const reinvestDividends = data.dividendPortfolio?.reinvestDividends ?? true;
+  
+  // Cryptocurrency tracking
+  let cryptoValue = data.hasCryptoHoldings && data.cryptoHoldings.includeInProjections 
+    ? data.cryptoHoldings.currentValue : 0;
+  const cryptoGrowthRate = data.cryptoHoldings?.expectedGrowthRate || 0.10;
+  const cryptoWithdrawalStartAge = data.cryptoHoldings?.withdrawalStartAge || data.retirementAge;
+  const cryptoWithdrawalPercent = data.cryptoHoldings?.withdrawalPercent || 0.04;
+  
   // Track contributions by type
   let preTaxContribution = data.annualContributionPreTax + data.employerMatch;
   let rothContribution = data.annualContributionRoth;
@@ -147,7 +162,9 @@ function generateYearByYear(
     const startRoth = rothBalance;
     const startAfterTax = afterTaxBalance;
     const startInherited = inheritedIRABalance;
-    const startBalance = startPreTax + startRoth + startAfterTax + startInherited;
+    const startDividend = dividendPortfolioValue;
+    const startCrypto = cryptoValue;
+    const startBalance = startPreTax + startRoth + startAfterTax + startInherited + startDividend + startCrypto;
     
     // Calculate RMDs
     let rmd401k = 0;
@@ -199,8 +216,36 @@ function generateYearByYear(
       }
     });
     
+    // Dividend income (in retirement, dividends become income)
+    let dividendIncome = 0;
+    if (startDividend > 0) {
+      if (isRetired && !reinvestDividends) {
+        // Dividends as income in retirement
+        dividendIncome = annualDividendIncome;
+      } else if (!isRetired && reinvestDividends) {
+        // Reinvesting: dividends grow the portfolio
+        dividendPortfolioValue = startDividend + startDividend * yearReturn + annualDividendIncome;
+        annualDividendIncome *= (1 + dividendGrowthRate);
+      } else {
+        // Retired but was reinvesting - now take dividends as income
+        dividendIncome = annualDividendIncome;
+        dividendPortfolioValue = startDividend + startDividend * yearReturn;
+        annualDividendIncome *= (1 + dividendGrowthRate);
+      }
+    }
+    
+    // Cryptocurrency income (withdrawal from crypto portfolio)
+    let cryptoIncome = 0;
+    if (startCrypto > 0 && age >= cryptoWithdrawalStartAge) {
+      cryptoIncome = startCrypto * cryptoWithdrawalPercent;
+      cryptoValue = startCrypto * (1 + cryptoGrowthRate) - cryptoIncome;
+    } else if (startCrypto > 0) {
+      // Pre-withdrawal: just grow the crypto
+      cryptoValue = startCrypto * (1 + cryptoGrowthRate);
+    }
+    
     // Total income (RMDs count as income - they're mandatory withdrawals)
-    const totalIncome = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + totalRMD;
+    const totalIncome = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + dividendIncome + cryptoIncome + totalRMD;
     
     // Calculate expenses
     let expenses = 0;
@@ -229,10 +274,12 @@ function generateYearByYear(
     const rothGrowth = startRoth * yearReturn;
     const afterTaxGrowth = startAfterTax * yearReturn;
     const inheritedGrowth = startInherited * yearReturn;
-    const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth;
+    const dividendGrowth = startDividend > 0 && !isRetired ? startDividend * yearReturn : 0;
+    const cryptoGrowth = startCrypto > 0 ? startCrypto * cryptoGrowthRate : 0;
+    const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth + dividendGrowth + cryptoGrowth;
     
-    // Additional withdrawal needed beyond RMDs
-    const incomeWithoutPortfolio = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + totalRMD;
+    // Additional withdrawal needed beyond RMDs and passive income
+    const incomeWithoutPortfolio = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + dividendIncome + cryptoIncome + totalRMD;
     const additionalWithdrawalNeeded = isRetired ? Math.max(0, expenses - incomeWithoutPortfolio) : 0;
     const totalWithdrawal = totalRMD + additionalWithdrawalNeeded;
     
@@ -266,11 +313,15 @@ function generateYearByYear(
       
       // Inherited IRA
       inheritedIRABalance = Math.max(0, startInherited + inheritedGrowth - rmdInherited);
+      
+      // Dividend portfolio (growth handled above in income section)
+      // Crypto (growth and withdrawal handled above in income section)
     } else {
       preTaxBalance = startPreTax + preTaxGrowth + yearPreTaxContrib;
       rothBalance = startRoth + rothGrowth + yearRothContrib;
       afterTaxBalance = startAfterTax + afterTaxGrowth + yearAfterTaxContrib;
       inheritedIRABalance = startInherited + inheritedGrowth;
+      // Dividend and crypto handled above
     }
     
     // Ensure no negative balances
@@ -278,8 +329,10 @@ function generateYearByYear(
     rothBalance = Math.max(0, rothBalance);
     afterTaxBalance = Math.max(0, afterTaxBalance);
     inheritedIRABalance = Math.max(0, inheritedIRABalance);
+    dividendPortfolioValue = Math.max(0, dividendPortfolioValue);
+    cryptoValue = Math.max(0, cryptoValue);
     
-    const endBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance;
+    const endBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance + dividendPortfolioValue + cryptoValue;
     
     projections.push({
       age,
@@ -367,6 +420,22 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
     let afterTaxBalance = data.currentSavingsAfterTax + data.currentHSA;
     let inheritedBalance = data.hasInheritedIRA ? data.inheritedIRA.balance : 0;
     
+    // Dividend portfolio
+    let dividendValue = data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections 
+      ? data.dividendPortfolio.currentValue : 0;
+    let annualDividends = data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections 
+      ? data.dividendPortfolio.annualDividendIncome : 0;
+    const divGrowthRate = data.dividendPortfolio?.dividendGrowthRate || 0.05;
+    const reinvest = data.dividendPortfolio?.reinvestDividends ?? true;
+    
+    // Cryptocurrency (with its own volatility)
+    let cryptoBalance = data.hasCryptoHoldings && data.cryptoHoldings.includeInProjections 
+      ? data.cryptoHoldings.currentValue : 0;
+    const cryptoGrowth = data.cryptoHoldings?.expectedGrowthRate || 0.10;
+    const cryptoVol = data.cryptoHoldings?.volatility || 0.50;
+    const cryptoStartAge = data.cryptoHoldings?.withdrawalStartAge || data.retirementAge;
+    const cryptoWdRate = data.cryptoHoldings?.withdrawalPercent || 0.04;
+    
     let preTaxContrib = data.annualContributionPreTax + data.employerMatch;
     let rothContrib = data.annualContributionRoth;
     let afterTaxContrib = data.annualContributionAfterTax + data.annualHSAContribution;
@@ -438,6 +507,33 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
         }
       });
       
+      // Dividend income
+      if (dividendValue > 0) {
+        if (isRetired && !reinvest) {
+          income += annualDividends;
+          dividendValue *= (1 + annualReturn);
+        } else if (!isRetired && reinvest) {
+          dividendValue = dividendValue * (1 + annualReturn) + annualDividends;
+        } else {
+          income += annualDividends;
+          dividendValue *= (1 + annualReturn);
+        }
+        annualDividends *= (1 + divGrowthRate);
+      }
+      
+      // Cryptocurrency income (with random return based on crypto volatility)
+      if (cryptoBalance > 0) {
+        const cryptoReturn = randomNormal(cryptoGrowth, cryptoVol);
+        if (age >= cryptoStartAge) {
+          const cryptoWithdrawal = cryptoBalance * cryptoWdRate;
+          income += cryptoWithdrawal;
+          cryptoBalance = cryptoBalance * (1 + cryptoReturn) - cryptoWithdrawal;
+        } else {
+          cryptoBalance *= (1 + cryptoReturn);
+        }
+        cryptoBalance = Math.max(0, cryptoBalance);
+      }
+      
       // Calculate expenses (only in retirement)
       let expenses = 0;
       if (isRetired) {
@@ -507,8 +603,9 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
       rothBalance = Math.max(0, rothBalance);
       afterTaxBalance = Math.max(0, afterTaxBalance);
       inheritedBalance = Math.max(0, inheritedBalance);
+      dividendValue = Math.max(0, dividendValue);
       
-      const totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedBalance;
+      const totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedBalance + dividendValue + cryptoBalance;
       
       if (totalBalance <= 0 && isRetired) {
         runOutOfMoney = true;
@@ -516,7 +613,7 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
       }
     }
     
-    const finalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedBalance;
+    const finalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedBalance + dividendValue + cryptoBalance;
     finalBalances.push(finalBalance);
     if (!runOutOfMoney) successCount++;
   }

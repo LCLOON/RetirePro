@@ -57,8 +57,23 @@ export function DetailsTab() {
     let afterTaxBalance = data.currentSavingsAfterTax + data.currentHSA;
     let inheritedIRABalance = data.hasInheritedIRA ? data.inheritedIRA.balance : 0;
     
+    // Dividend portfolio tracking
+    let dividendPortfolioValue = data.hasDividendPortfolio && data.dividendPortfolio?.includeInProjections 
+      ? data.dividendPortfolio.currentValue : 0;
+    let annualDividendIncome = data.hasDividendPortfolio && data.dividendPortfolio?.includeInProjections 
+      ? data.dividendPortfolio.annualDividendIncome : 0;
+    const dividendGrowthRate = data.dividendPortfolio?.dividendGrowthRate || 0.05;
+    const reinvestDividends = data.dividendPortfolio?.reinvestDividends ?? true;
+    
+    // Cryptocurrency tracking
+    let cryptoValue = data.hasCryptoHoldings && data.cryptoHoldings?.includeInProjections 
+      ? data.cryptoHoldings.currentValue : 0;
+    const cryptoGrowthRate = data.cryptoHoldings?.expectedGrowthRate || 0.10;
+    const cryptoWithdrawalStartAge = data.cryptoHoldings?.withdrawalStartAge || data.retirementAge;
+    const cryptoWithdrawalPercent = data.cryptoHoldings?.withdrawalPercent || 0.04;
+    
     // Total balance is sum of all accounts
-    let totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance;
+    let totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance + dividendPortfolioValue + cryptoValue;
     
     // Track contributions by type
     let preTaxContribution = data.annualContributionPreTax + data.employerMatch;
@@ -89,7 +104,9 @@ export function DetailsTab() {
       const startRoth = rothBalance;
       const startAfterTax = afterTaxBalance;
       const startInherited = inheritedIRABalance;
-      const startBalance = startPreTax + startRoth + startAfterTax + startInherited;
+      const startDividend = dividendPortfolioValue;
+      const startCrypto = cryptoValue;
+      const startBalance = startPreTax + startRoth + startAfterTax + startInherited + startDividend + startCrypto;
       
       // Calculate RMDs (Required Minimum Distributions)
       let rmd401k = 0;
@@ -148,8 +165,34 @@ export function DetailsTab() {
         pensionIncome = data.pensionIncome * Math.pow(1.015, yearsSincePension);
       }
       
+      // Dividend income
+      let dividendIncome = 0;
+      if (startDividend > 0) {
+        if (isRetired && !reinvestDividends) {
+          dividendIncome = annualDividendIncome;
+        } else if (!isRetired && reinvestDividends) {
+          // Reinvesting during accumulation phase
+          dividendPortfolioValue = startDividend + startDividend * yearReturn + annualDividendIncome;
+          annualDividendIncome *= (1 + dividendGrowthRate);
+        } else {
+          // Retired: take dividends as income
+          dividendIncome = annualDividendIncome;
+          dividendPortfolioValue = startDividend + startDividend * yearReturn;
+          annualDividendIncome *= (1 + dividendGrowthRate);
+        }
+      }
+      
+      // Cryptocurrency income
+      let cryptoIncome = 0;
+      if (startCrypto > 0 && age >= cryptoWithdrawalStartAge) {
+        cryptoIncome = startCrypto * cryptoWithdrawalPercent;
+        cryptoValue = startCrypto * (1 + cryptoGrowthRate) - cryptoIncome;
+      } else if (startCrypto > 0) {
+        cryptoValue = startCrypto * (1 + cryptoGrowthRate);
+      }
+      
       // Total income from non-portfolio sources (including RMDs as income)
-      const totalOtherIncome = additionalIncome + pensionIncome;
+      const totalOtherIncome = additionalIncome + pensionIncome + dividendIncome + cryptoIncome;
       const totalIncome = totalSsIncome + totalOtherIncome + totalRMD;
       
       // Calculate expenses (only in retirement)
@@ -186,7 +229,9 @@ export function DetailsTab() {
       const rothGrowth = startRoth * yearReturn;
       const afterTaxGrowth = startAfterTax * yearReturn;
       const inheritedGrowth = startInherited * yearReturn;
-      const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth;
+      const dividendGrowth = startDividend > 0 && !isRetired ? startDividend * yearReturn : 0;
+      const cryptoGrowth = startCrypto > 0 ? startCrypto * cryptoGrowthRate : 0;
+      const totalGrowth = preTaxGrowth + rothGrowth + afterTaxGrowth + inheritedGrowth + dividendGrowth + cryptoGrowth;
       cumulativeGrowth += totalGrowth;
       
       // Calculate additional withdrawal needed beyond RMDs
@@ -235,12 +280,15 @@ export function DetailsTab() {
         // Inherited IRA - mandatory withdrawal
         inheritedIRABalance = Math.max(0, startInherited + inheritedGrowth - rmdInherited);
         
+        // Dividend and crypto already updated above
+        
       } else {
         // Accumulation phase: add contributions and growth
         preTaxBalance = startPreTax + preTaxGrowth + yearPreTaxContrib;
         rothBalance = startRoth + rothGrowth + yearRothContrib;
         afterTaxBalance = startAfterTax + afterTaxGrowth + yearAfterTaxContrib;
         inheritedIRABalance = startInherited + inheritedGrowth;
+        // Dividend and crypto already updated above
       }
       
       // Ensure no negative balances
@@ -248,8 +296,10 @@ export function DetailsTab() {
       rothBalance = Math.max(0, rothBalance);
       afterTaxBalance = Math.max(0, afterTaxBalance);
       inheritedIRABalance = Math.max(0, inheritedIRABalance);
+      dividendPortfolioValue = Math.max(0, dividendPortfolioValue);
+      cryptoValue = Math.max(0, cryptoValue);
       
-      totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance;
+      totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance + dividendPortfolioValue + cryptoValue;
       
       // Calculate total spendable (income + withdrawals)
       const totalSpendable = isRetired ? totalSsIncome + totalOtherIncome + totalWithdrawal : 0;
