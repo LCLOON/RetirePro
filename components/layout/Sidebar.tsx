@@ -70,7 +70,7 @@ export function Sidebar() {
   const yearsToRetirement = state.retirementData.retirementAge - state.retirementData.currentAge;
   
   const successRate = state.monteCarloResults ? 
-    Math.round(state.monteCarloResults.successRate * 100) : 0;
+    Math.round(state.monteCarloResults.successRate) : 0;
 
   const formatCurrency = (value: number) => {
     if (value >= 1000000) {

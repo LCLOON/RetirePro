@@ -30,7 +30,7 @@ export function StartTab() {
     state.retirementData.employerMatch;
   
   const successRate = state.monteCarloResults ? 
-    Math.round(state.monteCarloResults.successRate * 100) : null;
+    Math.round(state.monteCarloResults.successRate) : null;
   
   const projectedAtRetirement = state.scenarioResults?.expected.atRetirement;
   

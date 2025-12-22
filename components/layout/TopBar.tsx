@@ -24,7 +24,7 @@ export function TopBar() {
   const yearsToRetirement = state.retirementData.retirementAge - state.retirementData.currentAge;
   
   const successRate = state.monteCarloResults ? 
-    Math.round(state.monteCarloResults.successRate * 100) : 0;
+    Math.round(state.monteCarloResults.successRate) : 0;
 
   return (
     <header className="h-14 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-6">
