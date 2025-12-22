@@ -224,15 +224,18 @@ export function DetailsTab() {
                 <p className="text-xl font-bold text-emerald-400">${Math.round(avgRetirementIncome).toLocaleString()}/yr</p>
                 <p className="text-xs text-slate-500">${Math.round(avgRetirementIncome / 12).toLocaleString()}/mo</p>
               </div>
-              <div className={`rounded-lg p-3 ${avgRetirementIncome >= avgExpenses ? 'bg-emerald-500/20' : 'bg-red-500/20'}`}>
-                <p className="text-xs text-slate-400">vs Expenses</p>
-                <p className={`text-lg font-bold ${avgRetirementIncome >= avgExpenses ? 'text-emerald-400' : 'text-red-400'}`}>
-                  {avgRetirementIncome >= avgExpenses ? '✓ Covered' : '⚠️ Shortfall'}
+              <div className={`rounded-lg p-3 ${avgRetirementIncome >= avgExpenses ? 'bg-emerald-500/20' : 'bg-orange-500/20'}`}>
+                <p className="text-xs text-slate-400">401K Withdrawal Needed</p>
+                <p className={`text-lg font-bold ${avgRetirementIncome >= avgExpenses ? 'text-emerald-400' : 'text-orange-400'}`}>
+                  {avgRetirementIncome >= avgExpenses 
+                    ? '$0/yr ✓' 
+                    : `$${Math.round(avgExpenses - avgRetirementIncome).toLocaleString()}/yr`
+                  }
                 </p>
                 <p className="text-xs text-slate-500">
                   {avgRetirementIncome >= avgExpenses 
                     ? `+$${Math.round(avgRetirementIncome - avgExpenses).toLocaleString()} surplus`
-                    : `-$${Math.round(avgExpenses - avgRetirementIncome).toLocaleString()}/yr needed`
+                    : `$${Math.round((avgExpenses - avgRetirementIncome) / 12).toLocaleString()}/mo from 401K`
                   }
                 </p>
               </div>
@@ -287,7 +290,8 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Other</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10">Total Income</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">From Portfolio</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10">Contributions</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">401K Withdrawal</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">End Balance</th>
               </tr>
             </thead>
@@ -350,12 +354,15 @@ export function DetailsTab() {
                     <td className="py-2 px-2 text-right text-red-400">
                       {row.expenses > 0 ? `-$${Math.round(row.expenses).toLocaleString()}` : '-'}
                     </td>
-                    <td className={`py-2 px-2 text-right ${row.netCashFlow >= 0 ? 'text-emerald-400' : 'text-orange-400'}`}>
-                      {row.phase === 'Accumulation' 
-                        ? (row.contributions > 0 ? `+$${Math.round(row.contributions).toLocaleString()}` : '-')
-                        : row.netCashFlow >= 0 
-                          ? (row.netCashFlow > 0 ? `+$${Math.round(row.netCashFlow).toLocaleString()} ✓` : '$0 ✓')
-                          : `-$${Math.round(Math.abs(row.netCashFlow)).toLocaleString()}`
+                    <td className="py-2 px-2 text-right text-blue-400 bg-blue-500/5">
+                      {row.contributions > 0 ? `+$${Math.round(row.contributions).toLocaleString()}` : '-'}
+                    </td>
+                    <td className="py-2 px-2 text-right bg-orange-500/5">
+                      {row.phase === 'Retirement' 
+                        ? row.withdrawal > 0 
+                          ? <span className="text-orange-400 font-medium">-${Math.round(row.withdrawal).toLocaleString()}</span>
+                          : <span className="text-emerald-400">$0 ✓</span>
+                        : <span className="text-slate-500">-</span>
                       }
                     </td>
                     <td className={`py-2 px-2 text-right font-medium ${row.endBalance > 0 ? 'text-white' : 'text-red-400'}`}>
