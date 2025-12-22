@@ -36,14 +36,20 @@ export default function LandingPage() {
         }),
       });
 
-      const { url } = await response.json();
-      if (url) {
-        window.location.href = url;
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.error || 'Checkout failed');
+      }
+      
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('No checkout URL returned');
       }
     } catch (error) {
       console.error('Checkout error:', error);
-      alert('Failed to start checkout. Please try again.');
-    } finally {
+      alert(error instanceof Error ? error.message : 'Failed to start checkout. Please try again.');
       setIsLoading(null);
     }
   };
