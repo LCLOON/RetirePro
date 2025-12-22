@@ -318,7 +318,7 @@ export function AnalysisTab() {
       </div>
 
       {/* Recommendations */}
-      <Card title="💡 Recommendations" icon="💡">
+      <Card title="💡 Personalized Recommendations" icon="💡">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           {readinessScore < 80 && (
             <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
@@ -330,13 +330,13 @@ export function AnalysisTab() {
             </div>
           )}
           
-          {data.safeWithdrawalRate > 4 && (
+          {data.safeWithdrawalRate * 100 > 4 && (
             <div className="p-4 bg-red-500/10 border border-red-500/30 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xl">⚠️</span>
                 <h4 className="text-red-400 font-medium">Reduce Withdrawal Rate</h4>
               </div>
-              <p className="text-slate-300 text-sm">Your withdrawal rate of {data.safeWithdrawalRate}% may be too aggressive. Consider reducing to 4% or less.</p>
+              <p className="text-slate-300 text-sm">Your withdrawal rate of {(data.safeWithdrawalRate * 100).toFixed(1)}% may be too aggressive. Consider reducing to 4% or less for 30+ year retirements.</p>
             </div>
           )}
           
@@ -344,35 +344,104 @@ export function AnalysisTab() {
             <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
               <div className="flex items-center gap-2 mb-2">
                 <span className="text-xl">🏛️</span>
-                <h4 className="text-blue-400 font-medium">Delay Social Security</h4>
+                <h4 className="text-blue-400 font-medium">Consider Delaying Social Security</h4>
               </div>
-              <p className="text-slate-300 text-sm">Delaying SS to age 70 could increase your benefits by up to 24%.</p>
+              <p className="text-slate-300 text-sm">Claiming at {data.socialSecurityStartAge} reduces benefits by ~{Math.round((67 - data.socialSecurityStartAge) * 6.67)}%. Waiting to 70 maximizes lifetime benefits if you live past ~82.</p>
             </div>
           )}
           
-          <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">🎯</span>
-              <h4 className="text-emerald-400 font-medium">Diversify Income</h4>
+          {data.currentSavingsRoth < data.currentSavingsPreTax * 0.3 && data.currentSavingsPreTax > 100000 && (
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">💰</span>
+                <h4 className="text-purple-400 font-medium">Consider Roth Conversions</h4>
+              </div>
+              <p className="text-slate-300 text-sm">Your pre-tax balance is high relative to Roth. Strategic Roth conversions could reduce future RMDs and provide tax-free income.</p>
             </div>
-            <p className="text-slate-300 text-sm">Consider multiple income sources in retirement to reduce risk and provide flexibility.</p>
-          </div>
+          )}
           
-          <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xl">🏥</span>
-              <h4 className="text-purple-400 font-medium">Plan for Healthcare</h4>
+          {yearsToRetirement <= 10 && data.standardDeviation * 100 > 15 && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">🎯</span>
+                <h4 className="text-amber-400 font-medium">Reduce Portfolio Risk</h4>
+              </div>
+              <p className="text-slate-300 text-sm">With {yearsToRetirement} years to retirement and {(data.standardDeviation * 100).toFixed(0)}% volatility, consider shifting toward more conservative investments.</p>
             </div>
-            <p className="text-slate-300 text-sm">Budget for healthcare costs which can average $6,000+ per year in retirement.</p>
-          </div>
+          )}
+          
+          {yearsInRetirement > 30 && (
+            <div className="p-4 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">📅</span>
+                <h4 className="text-blue-400 font-medium">Plan for Longevity</h4>
+              </div>
+              <p className="text-slate-300 text-sm">With {yearsInRetirement} years in retirement, use a conservative 3.5% withdrawal rate and maintain growth investments.</p>
+            </div>
+          )}
+          
+          {!data.hasDividendPortfolio && totalSavings > 200000 && (
+            <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">💹</span>
+                <h4 className="text-emerald-400 font-medium">Consider Dividend Income</h4>
+              </div>
+              <p className="text-slate-300 text-sm">Dividend-paying stocks can provide reliable income without selling shares. A 3% yield on ${totalSavings.toLocaleString()} = ${Math.round(totalSavings * 0.03).toLocaleString()}/yr.</p>
+            </div>
+          )}
+          
+          {data.currentHSA < 50000 && data.currentAge < 65 && (
+            <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-lg">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xl">🏥</span>
+                <h4 className="text-purple-400 font-medium">Maximize HSA</h4>
+              </div>
+              <p className="text-slate-300 text-sm">HSA offers triple tax benefits. Max contributions ($4,150 single / $8,300 family + $1,000 catch-up) and invest for retirement healthcare costs.</p>
+            </div>
+          )}
           
           <div className="p-4 bg-slate-500/10 border border-slate-500/30 rounded-lg">
             <div className="flex items-center gap-2 mb-2">
               <span className="text-xl">📝</span>
               <h4 className="text-slate-300 font-medium">Review Annually</h4>
             </div>
-            <p className="text-slate-400 text-sm">Update your retirement plan annually to account for changes in income, expenses, and goals.</p>
+            <p className="text-slate-400 text-sm">Update your retirement plan annually to account for changes in income, expenses, markets, and life goals.</p>
           </div>
+        </div>
+      </Card>
+
+      {/* Key Milestones */}
+      <Card title="📅 Key Retirement Milestones" icon="📅">
+        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+          {[
+            { age: 50, label: 'Catch-up Eligible', desc: '+$7,500 401k, +$1,000 IRA', icon: '💰', active: data.currentAge >= 50 },
+            { age: 55, label: 'HSA Catch-up', desc: '+$1,000 HSA contribution', icon: '🏥', active: data.currentAge >= 55 },
+            { age: 59.5, label: 'Penalty-Free', desc: '401k/IRA withdrawals OK', icon: '🔓', active: data.currentAge >= 59.5 },
+            { age: 62, label: 'Early SS', desc: 'Earliest claiming age', icon: '🏛️', active: data.currentAge >= 62 },
+            { age: 65, label: 'Medicare', desc: 'Health coverage begins', icon: '⚕️', active: data.currentAge >= 65 },
+            { age: data.retirementAge, label: 'Retirement', desc: 'Your target date', icon: '🎉', active: data.currentAge >= data.retirementAge, highlight: true },
+            { age: 67, label: 'FRA', desc: 'Full SS benefits', icon: '✅', active: data.currentAge >= 67 },
+            { age: 70, label: 'Max SS', desc: '124% of FRA benefit', icon: '🏆', active: data.currentAge >= 70 },
+            { age: 73, label: 'RMDs Begin', desc: 'Required distributions', icon: '📋', active: data.currentAge >= 73 },
+          ].map((milestone) => (
+            <div 
+              key={milestone.age}
+              className={`p-3 rounded-lg text-center transition-all ${
+                milestone.highlight 
+                  ? 'bg-emerald-500/20 border-2 border-emerald-500/50' 
+                  : milestone.active 
+                    ? 'bg-slate-700/50 border border-emerald-500/30' 
+                    : 'bg-slate-800/50 border border-slate-700/50'
+              }`}
+            >
+              <div className="text-2xl mb-1">{milestone.icon}</div>
+              <div className={`text-lg font-bold ${milestone.active ? 'text-emerald-400' : 'text-white'}`}>
+                {milestone.age === 59.5 ? '59½' : milestone.age}
+              </div>
+              <div className="text-xs text-slate-300 font-medium">{milestone.label}</div>
+              <div className="text-xs text-slate-500">{milestone.desc}</div>
+            </div>
+          ))}
         </div>
       </Card>
     </div>
