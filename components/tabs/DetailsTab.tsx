@@ -137,6 +137,12 @@ export function DetailsTab() {
         balance = startBalance + growth + yearContribution;
       }
       
+      // Calculate total spendable (income + 401K withdrawal)
+      const totalSpendable = isRetired ? totalIncome + withdrawal : 0;
+      
+      // Calculate withdrawal rate (withdrawal / start balance)
+      const withdrawalRate = isRetired && startBalance > 0 ? (withdrawal / startBalance) * 100 : 0;
+      
       years.push({
         age,
         year: new Date().getFullYear() + (age - data.currentAge),
@@ -148,11 +154,13 @@ export function DetailsTab() {
         yourSS: ssIncome,
         spouseSS: spouseSsIncome,
         otherIncome: totalOtherIncome,
-        totalIncome: totalIncome, // NEW: Total annual income
+        totalIncome: totalIncome,
         expenses: expenses,
         withdrawal: withdrawal,
-        surplus: surplus, // NEW: Surplus when income > expenses
-        netCashFlow: netCashFlow, // NEW: Net (positive = surplus, negative = withdrawal)
+        surplus: surplus,
+        netCashFlow: netCashFlow,
+        totalSpendable: totalSpendable, // Income + 401K withdrawal
+        withdrawalRate: withdrawalRate, // % of portfolio withdrawn
         endBalance: Math.max(0, balance),
         cumulativeContributions,
         cumulativeGrowth,
@@ -292,6 +300,8 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10">Contributions</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">401K Withdrawal</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10">Total Spendable</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium">W/D Rate</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">End Balance</th>
               </tr>
             </thead>
@@ -362,6 +372,26 @@ export function DetailsTab() {
                         ? row.withdrawal > 0 
                           ? <span className="text-orange-400 font-medium">-${Math.round(row.withdrawal).toLocaleString()}</span>
                           : <span className="text-emerald-400">$0 ✓</span>
+                        : <span className="text-slate-500">-</span>
+                      }
+                    </td>
+                    <td className="py-2 px-2 text-right bg-cyan-500/5">
+                      {row.phase === 'Retirement' 
+                        ? <span className="text-cyan-400 font-semibold">${Math.round(row.totalSpendable).toLocaleString()}</span>
+                        : <span className="text-slate-500">-</span>
+                      }
+                    </td>
+                    <td className="py-2 px-2 text-right">
+                      {row.phase === 'Retirement' 
+                        ? <span className={`font-medium ${
+                            row.withdrawalRate === 0 ? 'text-emerald-400' :
+                            row.withdrawalRate <= 4 ? 'text-emerald-400' : 
+                            row.withdrawalRate <= 5 ? 'text-amber-400' : 'text-red-400'
+                          }`}>
+                            {row.withdrawalRate.toFixed(1)}%
+                            {row.withdrawalRate <= 4 && row.withdrawalRate > 0 && ' ✓'}
+                            {row.withdrawalRate > 5 && ' ⚠️'}
+                          </span>
                         : <span className="text-slate-500">-</span>
                       }
                     </td>
