@@ -118,8 +118,22 @@ export function ChartsTab() {
     .filter(s => retirementData.retirementAge >= s.startAge && retirementData.retirementAge <= s.endAge)
     .reduce((sum, s) => sum + s.amount, 0);
   
+  // Calculate Social Security at retirement (only if at/past claiming age, with COLA)
+  const ssCOLA = retirementData.inflationRate || 0.025;
+  let ssAtRetirement = 0;
+  if (retirementData.retirementAge >= retirementData.socialSecurityStartAge) {
+    const yearsSinceClaim = retirementData.retirementAge - retirementData.socialSecurityStartAge;
+    ssAtRetirement = retirementData.socialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceClaim);
+  }
+  let spouseSsAtRetirement = 0;
+  if (retirementData.hasSpouse && retirementData.retirementAge >= (retirementData.spouseSocialSecurityStartAge || 67)) {
+    const yearsSinceSpouseClaim = retirementData.retirementAge - (retirementData.spouseSocialSecurityStartAge || 67);
+    spouseSsAtRetirement = (retirementData.spouseSocialSecurityBenefit || 0) * Math.pow(1 + ssCOLA, yearsSinceSpouseClaim);
+  }
+  const totalSsAtRetirement = Math.round(ssAtRetirement + spouseSsAtRetirement);
+
   const incomeSourceData = [
-    { name: 'Social Security', value: retirementData.socialSecurityBenefit, color: '#10B981' },
+    { name: 'Social Security' + (retirementData.hasSpouse ? ' (Combined)' : ''), value: totalSsAtRetirement, color: '#10B981' },
     { name: 'Pension', value: pensionAtRetirement, color: '#3B82F6' },
     { name: 'Additional Income', value: additionalIncomeAtRetirement, color: '#8B5CF6' },
     { name: 'Portfolio (SWR)', value: Math.round(scenarioResults.expected.atRetirement * retirementData.safeWithdrawalRate), color: '#F59E0B' },
