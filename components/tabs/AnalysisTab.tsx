@@ -20,6 +20,25 @@ export function AnalysisTab() {
   // Total additional income at retirement age
   const totalAdditionalIncome = getAdditionalIncomeAtAge(data.retirementAge);
 
+  // Calculate Social Security income at retirement (only if at/past claiming age)
+  const ssCOLA = data.inflationRate || 0.025;
+  const getSocialSecurityAtAge = (age: number) => {
+    // Your SS
+    let yourSS = 0;
+    if (age >= data.socialSecurityStartAge) {
+      const yearsSinceClaim = age - data.socialSecurityStartAge;
+      yourSS = data.socialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceClaim);
+    }
+    // Spouse SS
+    let spouseSS = 0;
+    if (data.hasSpouse && age >= (data.spouseSocialSecurityStartAge || 67)) {
+      const yearsSinceSpouseClaim = age - (data.spouseSocialSecurityStartAge || 67);
+      spouseSS = (data.spouseSocialSecurityBenefit || 0) * Math.pow(1 + ssCOLA, yearsSinceSpouseClaim);
+    }
+    return yourSS + spouseSS;
+  };
+  const totalSocialSecurityAtRetirement = getSocialSecurityAtAge(data.retirementAge);
+
   // Calculate key metrics
   const yearsToRetirement = Math.max(0, data.retirementAge - data.currentAge);
   const yearsInRetirement = data.lifeExpectancy - data.retirementAge;
@@ -35,7 +54,7 @@ export function AnalysisTab() {
   
   const pensionAtRetirement = data.hasPension && data.retirementAge >= data.pensionStartAge ? data.pensionIncome : 0;
   const retirementNeeds = data.retirementExpenses * yearsInRetirement;
-  const incomeGap = data.retirementExpenses - (data.socialSecurityBenefit + pensionAtRetirement + totalAdditionalIncome);
+  const incomeGap = data.retirementExpenses - (totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome);
   // safeWithdrawalRate is already decimal (0.04 = 4%)
   const savingsNeeded = incomeGap > 0 && data.safeWithdrawalRate > 0 ? incomeGap / data.safeWithdrawalRate : 0;
   
@@ -159,8 +178,8 @@ export function AnalysisTab() {
             
             <div className="space-y-2">
               <div className="flex justify-between items-center p-2 bg-emerald-500/10 rounded">
-                <span className="text-slate-300">Social Security</span>
-                <span className="text-emerald-400">${data.socialSecurityBenefit.toLocaleString()}/yr</span>
+                <span className="text-slate-300">Social Security{data.hasSpouse ? ' (Combined)' : ''}</span>
+                <span className="text-emerald-400">${Math.round(totalSocialSecurityAtRetirement).toLocaleString()}/yr</span>
               </div>
               <div className="flex justify-between items-center p-2 bg-blue-500/10 rounded">
                 <span className="text-slate-300">Pension</span>
@@ -180,7 +199,7 @@ export function AnalysisTab() {
               <div className="flex justify-between items-center">
                 <span className="text-white font-medium">Total Annual Income</span>
                 <span className="text-2xl font-bold text-emerald-400">
-                  ${(data.socialSecurityBenefit + pensionAtRetirement + totalAdditionalIncome + Math.round(futureValue * data.safeWithdrawalRate)).toLocaleString()}
+                  ${Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome + futureValue * data.safeWithdrawalRate).toLocaleString()}
                 </span>
               </div>
             </div>
