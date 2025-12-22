@@ -29,27 +29,36 @@ export function DetailsTab() {
     let cumulativeContributions = 0;
     let cumulativeGrowth = 0;
     
-    // Track healthcare costs
-    let healthcareCost = data.annualHealthcareCost;
-    let baseExpenses = data.retirementExpenses;
+    // Track healthcare costs and base expenses
+    const baseHealthcareCost = data.annualHealthcareCost;
+    const baseExpenses = data.retirementExpenses;
+    
+    // COLA rate for Social Security (use inflation rate - already stored as decimal like 0.025)
+    const ssCOLA = data.inflationRate || 0.025; // Use inflation rate or default 2.5%
     
     for (let age = data.currentAge; age <= data.lifeExpectancy; age++) {
       const isRetired = age >= data.retirementAge;
-      const yearReturn = isRetired ? data.postRetirementReturn / 100 : data.preRetirementReturn / 100;
+      // Return rates are already stored as decimals (0.07 = 7%)
+      const yearReturn = isRetired ? data.postRetirementReturn : data.preRetirementReturn;
       
-      // Store start balance before any changes
+      // Store start balance BEFORE any changes this year
       const startBalance = balance;
       
-      // YOUR Social Security income (annual)
+      // Calculate years since SS started (for COLA adjustment)
+      const yearsSinceYourSS = Math.max(0, age - data.socialSecurityStartAge);
+      const yearsSinceSpouseSS = Math.max(0, age - data.spouseSocialSecurityStartAge);
+      
+      // YOUR Social Security income (annual) WITH COLA
       let ssIncome = 0;
       if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
-        ssIncome += data.socialSecurityBenefit;
+        // Apply COLA for each year since SS started (inflation rate is decimal)
+        ssIncome = data.socialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceYourSS);
       }
       
-      // SPOUSE Social Security income (annual)
+      // SPOUSE Social Security income (annual) WITH COLA
       let spouseSsIncome = 0;
       if (data.hasSpouse && age >= data.spouseSocialSecurityStartAge) {
-        spouseSsIncome += data.spouseSocialSecurityBenefit;
+        spouseSsIncome = data.spouseSocialSecurityBenefit * Math.pow(1 + ssCOLA, yearsSinceSpouseSS);
       }
       
       const totalSsIncome = ssIncome + spouseSsIncome;
@@ -57,10 +66,22 @@ export function DetailsTab() {
       // Additional income sources (from array)
       const additionalIncome = data.additionalIncome
         .filter(source => age >= source.startAge && age <= source.endAge)
-        .reduce((sum, source) => sum + source.amount, 0);
+        .reduce((sum, source) => {
+          // Adjust for inflation if flagged (inflation rate is decimal)
+          if (source.adjustForInflation) {
+            const yearsFromStart = age - source.startAge;
+            return sum + source.amount * Math.pow(1 + data.inflationRate, yearsFromStart);
+          }
+          return sum + source.amount;
+        }, 0);
       
-      // Pension income
-      const pensionIncome = (data.hasPension && age >= data.pensionStartAge) ? data.pensionIncome : 0;
+      // Pension income (many pensions have COLA too)
+      let pensionIncome = 0;
+      if (data.hasPension && age >= data.pensionStartAge) {
+        const yearsSincePension = age - data.pensionStartAge;
+        // Apply 1.5% pension COLA (typical for government pensions)
+        pensionIncome = data.pensionIncome * Math.pow(1.015, yearsSincePension);
+      }
       
       // Total income from non-portfolio sources
       const totalOtherIncome = additionalIncome + pensionIncome;
@@ -71,15 +92,18 @@ export function DetailsTab() {
       let yearlyHealthcare = 0;
       
       if (isRetired) {
-        // Inflate base expenses from retirement year
+        // Inflate base expenses from retirement year (expenseGrowthRate is decimal)
         const yearsInRetirement = age - data.retirementAge;
         expenses = baseExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
         
-        // Healthcare costs - different before/after Medicare
+        // Healthcare costs - different before/after Medicare (healthcareInflationRate is decimal)
         if (age >= data.medicareStartAge) {
-          yearlyHealthcare = (data.medicarePremium + data.medicareSupplementPremium) * 12;
+          // Medicare costs also inflate
+          const yearsSinceMedicare = age - data.medicareStartAge;
+          yearlyHealthcare = (data.medicarePremium + data.medicareSupplementPremium) * 12 * 
+                             Math.pow(1 + data.healthcareInflationRate, yearsSinceMedicare);
         } else {
-          yearlyHealthcare = healthcareCost * Math.pow(1 + data.healthcareInflationRate, yearsInRetirement);
+          yearlyHealthcare = baseHealthcareCost * Math.pow(1 + data.healthcareInflationRate, yearsInRetirement);
         }
         
         expenses += yearlyHealthcare;
@@ -91,17 +115,17 @@ export function DetailsTab() {
         cumulativeContributions += yearContribution;
       }
       
-      // Calculate growth on STARTING balance
+      // Calculate growth on START balance (before contributions/withdrawals)
       const growth = startBalance * yearReturn;
       cumulativeGrowth += growth;
       
       // Net withdrawal (only in retirement)
-      // Withdrawal = Expenses - Income (from portfolio)
+      // Withdrawal = Expenses - Income (amount needed from portfolio)
       const withdrawal = isRetired ? Math.max(0, expenses - totalIncome) : 0;
       
-      // Update balance
-      // Pre-retirement: balance + growth + contributions
-      // Retirement: balance + growth - withdrawal
+      // Update balance for NEXT year
+      // Pre-retirement: start + growth + contributions
+      // Retirement: start + growth - withdrawal
       if (isRetired) {
         balance = startBalance + growth - withdrawal;
       } else {
