@@ -10,11 +10,17 @@ export function AnalysisTab() {
   const results = state.monteCarloResults;
   const scenarioResults = state.scenarioResults;
 
-  // Helper to calculate total additional income at a given age
+  // Helper to calculate total additional income at a given age (with inflation adjustment)
   const getAdditionalIncomeAtAge = (age: number) => {
     return data.additionalIncome
       .filter(source => age >= source.startAge && age <= source.endAge)
-      .reduce((sum, source) => sum + source.amount, 0);
+      .reduce((sum, source) => {
+        if (source.adjustForInflation) {
+          const yearsFromStart = age - source.startAge;
+          return sum + source.amount * Math.pow(1 + data.inflationRate, yearsFromStart);
+        }
+        return sum + source.amount;
+      }, 0);
   };
 
   // Total additional income at retirement age
