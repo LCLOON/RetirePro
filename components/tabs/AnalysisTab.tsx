@@ -16,16 +16,23 @@ export function AnalysisTab() {
   const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax;
   const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + data.annualContributionAfterTax + data.employerMatch;
   
-  // Future value calculations
-  const futureValue = totalSavings * Math.pow(1 + data.preRetirementReturn / 100, yearsToRetirement) +
-    totalContributions * ((Math.pow(1 + data.preRetirementReturn / 100, yearsToRetirement) - 1) / (data.preRetirementReturn / 100));
+  // Future value calculations (rates are already decimals: 0.07 = 7%)
+  const rate = data.preRetirementReturn;
+  const futureValue = rate > 0 
+    ? totalSavings * Math.pow(1 + rate, yearsToRetirement) +
+      totalContributions * ((Math.pow(1 + rate, yearsToRetirement) - 1) / rate)
+    : totalSavings + totalContributions * yearsToRetirement;
   
   const retirementNeeds = data.retirementExpenses * yearsInRetirement;
   const incomeGap = data.retirementExpenses - (data.socialSecurityBenefit + data.pensionIncome + data.otherIncome);
-  const savingsNeeded = incomeGap > 0 ? incomeGap / (data.safeWithdrawalRate / 100) : 0;
+  // safeWithdrawalRate is already decimal (0.04 = 4%)
+  const savingsNeeded = incomeGap > 0 && data.safeWithdrawalRate > 0 ? incomeGap / data.safeWithdrawalRate : 0;
   
-  // Readiness score
-  const readinessScore = Math.min(100, Math.round((futureValue / savingsNeeded) * 100));
+  // Readiness score - use scenario results if available for more accuracy
+  const projectedAtRetirement = scenarioResults?.expected.atRetirement || futureValue;
+  const readinessScore = savingsNeeded > 0 
+    ? Math.min(100, Math.round((projectedAtRetirement / savingsNeeded) * 100)) 
+    : 100;
 
   return (
     <div className="space-y-6">
@@ -54,21 +61,21 @@ export function AnalysisTab() {
         />
         <StatCard
           label="Projected Savings"
-          value={`$${Math.round(futureValue).toLocaleString()}`}
+          value={`$${Math.round(projectedAtRetirement).toLocaleString()}`}
           icon="💰"
           color="blue"
           subtitle={`At age ${data.retirementAge}`}
         />
         <StatCard
           label="Annual Income Gap"
-          value={`$${Math.round(incomeGap).toLocaleString()}`}
+          value={`$${Math.round(Math.max(0, incomeGap)).toLocaleString()}`}
           icon="📉"
           color={incomeGap <= 0 ? 'emerald' : 'amber'}
-          subtitle="From savings needed"
+          subtitle={incomeGap <= 0 ? 'No gap - covered!' : 'From savings needed'}
         />
         <StatCard
           label="Success Probability"
-          value={results ? `${results.successRate}%` : 'Run Simulation'}
+          value={results ? `${results.successRate.toFixed(0)}%` : 'Run Simulation'}
           icon="📈"
           color={results && results.successRate >= 80 ? 'emerald' : 'amber'}
           subtitle="Monte Carlo result"

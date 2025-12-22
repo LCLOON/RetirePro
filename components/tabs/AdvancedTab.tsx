@@ -56,11 +56,12 @@ export function AdvancedTab() {
 
   const applyScenario = (index: number) => {
     const scenario = scenarios[index];
+    // Convert percentages to decimals for the store
     updateRetirementData({
-      preRetirementReturn: scenario.returnRate,
-      postRetirementReturn: scenario.returnRate - 1,
-      inflationRate: scenario.inflationRate,
-      safeWithdrawalRate: scenario.withdrawalRate,
+      preRetirementReturn: scenario.returnRate / 100,
+      postRetirementReturn: (scenario.returnRate - 1) / 100,
+      inflationRate: scenario.inflationRate / 100,
+      safeWithdrawalRate: scenario.withdrawalRate / 100,
       retirementAge: scenario.retirementAge,
       socialSecurityStartAge: scenario.ssStartAge,
     });
