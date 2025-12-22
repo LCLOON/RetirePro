@@ -10,66 +10,126 @@ export function DetailsTab() {
   const data = state.retirementData;
   const [showAllYears, setShowAllYears] = useState(false);
 
-  // Generate year-by-year projection
+  // Generate year-by-year projection with ALL income sources
   const generateYearByYear = () => {
     const years = [];
-    const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax;
-    const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + data.annualContributionAfterTax + data.employerMatch;
     
-    let balance = totalSavings;
+    // Include all savings: pre-tax, Roth, after-tax, HSA, inherited IRA
+    let balance = data.currentSavingsPreTax + data.currentSavingsRoth + 
+                  data.currentSavingsAfterTax + data.currentHSA;
+    if (data.hasInheritedIRA) {
+      balance += data.inheritedIRA.balance;
+    }
+    
+    // Total contributions including HSA
+    let contribution = data.annualContributionPreTax + data.annualContributionRoth + 
+                       data.annualContributionAfterTax + data.employerMatch + 
+                       data.annualHSAContribution;
+    
     let cumulativeContributions = 0;
     let cumulativeGrowth = 0;
     
+    // Track healthcare costs
+    let healthcareCost = data.annualHealthcareCost;
+    let baseExpenses = data.retirementExpenses;
+    
     for (let age = data.currentAge; age <= data.lifeExpectancy; age++) {
       const isRetired = age >= data.retirementAge;
-      const yearReturn = isRetired ? data.postRetirementReturn : data.preRetirementReturn;
+      const yearReturn = isRetired ? data.postRetirementReturn / 100 : data.preRetirementReturn / 100;
       
-      // Social Security income
-      const ssIncome = age >= data.socialSecurityStartAge ? data.socialSecurityBenefit : 0;
+      // Store start balance before any changes
+      const startBalance = balance;
+      
+      // YOUR Social Security income (annual)
+      let ssIncome = 0;
+      if (data.includeSocialSecurity && age >= data.socialSecurityStartAge) {
+        ssIncome += data.socialSecurityBenefit;
+      }
+      
+      // SPOUSE Social Security income (annual)
+      let spouseSsIncome = 0;
+      if (data.hasSpouse && age >= data.spouseSocialSecurityStartAge) {
+        spouseSsIncome += data.spouseSocialSecurityBenefit;
+      }
+      
+      const totalSsIncome = ssIncome + spouseSsIncome;
       
       // Additional income sources (from array)
       const additionalIncome = data.additionalIncome
         .filter(source => age >= source.startAge && age <= source.endAge)
         .reduce((sum, source) => sum + source.amount, 0);
       
-      // Pension
+      // Pension income
       const pensionIncome = (data.hasPension && age >= data.pensionStartAge) ? data.pensionIncome : 0;
       
       // Total income from non-portfolio sources
-      const totalIncome = ssIncome + additionalIncome + pensionIncome;
+      const totalOtherIncome = additionalIncome + pensionIncome;
+      const totalIncome = totalSsIncome + totalOtherIncome;
       
-      // Expenses (only in retirement)
-      const expenses = isRetired ? data.retirementExpenses * Math.pow(1 + data.inflationRate / 100, age - data.retirementAge) : 0;
+      // Calculate expenses (only in retirement)
+      let expenses = 0;
+      let yearlyHealthcare = 0;
+      
+      if (isRetired) {
+        // Inflate base expenses from retirement year
+        const yearsInRetirement = age - data.retirementAge;
+        expenses = baseExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
+        
+        // Healthcare costs - different before/after Medicare
+        if (age >= data.medicareStartAge) {
+          yearlyHealthcare = (data.medicarePremium + data.medicareSupplementPremium) * 12;
+        } else {
+          yearlyHealthcare = healthcareCost * Math.pow(1 + data.healthcareInflationRate, yearsInRetirement);
+        }
+        
+        expenses += yearlyHealthcare;
+      }
       
       // Contributions (only pre-retirement)
-      const contributions = isRetired ? 0 : totalContributions;
-      cumulativeContributions += contributions;
+      const yearContribution = isRetired ? 0 : contribution;
+      if (!isRetired) {
+        cumulativeContributions += yearContribution;
+      }
       
-      // Net withdrawal/contribution
-      const netFlow = isRetired ? -(expenses - totalIncome) : contributions;
-      
-      // Growth
-      const growth = balance * (yearReturn / 100);
+      // Calculate growth on STARTING balance
+      const growth = startBalance * yearReturn;
       cumulativeGrowth += growth;
       
+      // Net withdrawal (only in retirement)
+      // Withdrawal = Expenses - Income (from portfolio)
+      const withdrawal = isRetired ? Math.max(0, expenses - totalIncome) : 0;
+      
       // Update balance
-      balance = balance + growth + netFlow;
+      // Pre-retirement: balance + growth + contributions
+      // Retirement: balance + growth - withdrawal
+      if (isRetired) {
+        balance = startBalance + growth - withdrawal;
+      } else {
+        balance = startBalance + growth + yearContribution;
+      }
       
       years.push({
         age,
         year: new Date().getFullYear() + (age - data.currentAge),
         phase: isRetired ? 'Retirement' : 'Accumulation',
-        startBalance: balance - growth - netFlow,
-        contributions: contributions,
+        startBalance: startBalance,
+        contributions: yearContribution,
         growth: growth,
-        ssIncome: ssIncome,
-        otherIncome: additionalIncome + pensionIncome,
+        ssIncome: totalSsIncome,
+        yourSS: ssIncome,
+        spouseSS: spouseSsIncome,
+        otherIncome: totalOtherIncome,
         expenses: expenses,
-        withdrawal: isRetired ? Math.max(0, expenses - totalIncome) : 0,
+        withdrawal: withdrawal,
         endBalance: Math.max(0, balance),
         cumulativeContributions,
         cumulativeGrowth,
       });
+      
+      // Grow contributions by growth rate for next year (pre-retirement only)
+      if (!isRetired) {
+        contribution *= (1 + data.contributionGrowthRate);
+      }
     }
     
     return years;
@@ -139,7 +199,10 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Start Balance</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Contributions</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Growth</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">SS Income</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium">Your SS</th>
+                {data.hasSpouse && (
+                  <th className="text-right py-3 px-2 text-slate-400 font-medium">Spouse SS</th>
+                )}
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Other Income</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Withdrawal</th>
@@ -150,6 +213,7 @@ export function DetailsTab() {
               {displayData.map((row, index) => {
                 const isRetirementYear = row.age === data.retirementAge;
                 const isSSYear = row.age === data.socialSecurityStartAge;
+                const isSpouseSSYear = data.hasSpouse && row.age === data.spouseSocialSecurityStartAge;
                 const isMoneyOut = row.endBalance <= 0;
                 
                 return (
@@ -158,9 +222,9 @@ export function DetailsTab() {
                     className={`
                       border-b border-slate-700/50 transition-colors
                       ${isRetirementYear ? 'bg-emerald-500/10' : ''}
-                      ${isSSYear ? 'bg-blue-500/10' : ''}
+                      ${isSSYear || isSpouseSSYear ? 'bg-blue-500/10' : ''}
                       ${isMoneyOut ? 'bg-red-500/10' : ''}
-                      ${!isRetirementYear && !isSSYear && !isMoneyOut ? 'hover:bg-slate-800/50' : ''}
+                      ${!isRetirementYear && !isSSYear && !isSpouseSSYear && !isMoneyOut ? 'hover:bg-slate-800/50' : ''}
                     `}
                   >
                     <td className="py-2 px-2">
@@ -168,6 +232,7 @@ export function DetailsTab() {
                         {row.age}
                         {isRetirementYear && <span className="ml-1">🎉</span>}
                         {isSSYear && <span className="ml-1">🏛️</span>}
+                        {isSpouseSSYear && !isSSYear && <span className="ml-1">👫</span>}
                       </span>
                     </td>
                     <td className="py-2 px-2 text-slate-300">{row.year}</td>
@@ -190,15 +255,20 @@ export function DetailsTab() {
                       {row.growth >= 0 ? '+' : ''}${Math.round(row.growth).toLocaleString()}
                     </td>
                     <td className="py-2 px-2 text-right text-blue-400">
-                      {row.ssIncome > 0 ? `$${Math.round(row.ssIncome).toLocaleString()}` : '-'}
+                      {row.yourSS > 0 ? `$${Math.round(row.yourSS).toLocaleString()}` : '-'}
                     </td>
-                    <td className="py-2 px-2 text-right text-purple-400">
+                    {data.hasSpouse && (
+                      <td className="py-2 px-2 text-right text-purple-400">
+                        {row.spouseSS > 0 ? `$${Math.round(row.spouseSS).toLocaleString()}` : '-'}
+                      </td>
+                    )}
+                    <td className="py-2 px-2 text-right text-amber-400">
                       {row.otherIncome > 0 ? `$${Math.round(row.otherIncome).toLocaleString()}` : '-'}
                     </td>
                     <td className="py-2 px-2 text-right text-red-400">
                       {row.expenses > 0 ? `-$${Math.round(row.expenses).toLocaleString()}` : '-'}
                     </td>
-                    <td className="py-2 px-2 text-right text-amber-400">
+                    <td className="py-2 px-2 text-right text-orange-400">
                       {row.withdrawal > 0 ? `-$${Math.round(row.withdrawal).toLocaleString()}` : '-'}
                     </td>
                     <td className={`py-2 px-2 text-right font-medium ${row.endBalance > 0 ? 'text-white' : 'text-red-400'}`}>
@@ -225,15 +295,20 @@ export function DetailsTab() {
       <div className="flex flex-wrap gap-4 text-sm">
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-emerald-500/20 border border-emerald-500/30 rounded"></div>
-          <span className="text-slate-400">Retirement Year</span>
+          <span className="text-slate-400">Retirement Year 🎉</span>
         </div>
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-blue-500/20 border border-blue-500/30 rounded"></div>
-          <span className="text-slate-400">Social Security Start</span>
+          <span className="text-slate-400">Social Security Start 🏛️</span>
         </div>
+        {data.hasSpouse && (
+          <div className="flex items-center gap-2">
+            <span className="text-slate-400">👫 Spouse SS Start</span>
+          </div>
+        )}
         <div className="flex items-center gap-2">
           <div className="w-4 h-4 bg-red-500/20 border border-red-500/30 rounded"></div>
-          <span className="text-slate-400">Funds Depleted</span>
+          <span className="text-slate-400">Funds Depleted ⚠️</span>
         </div>
       </div>
     </div>
