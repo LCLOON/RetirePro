@@ -100,13 +100,13 @@ export function SocialSecurityTab() {
   ];
   const spouseOptimalAge = spouseLifetimes.reduce((a, b) => (a.value > b.value ? a : b)).age;
   
-  // Sync SS data to retirement data
+  // Sync SS data to retirement data (convert monthly to annual)
   const syncToRetirementData = () => {
     updateRetirementData({
       includeSocialSecurity: true,
-      socialSecurityBenefit: Math.round(yourSelectedBenefit),
+      socialSecurityBenefit: Math.round(yourSelectedBenefit * 12), // Annual
       socialSecurityStartAge: ssData.claimingAge,
-      spouseSocialSecurityBenefit: retData.hasSpouse ? Math.round(spouseSelectedBenefit) : 0,
+      spouseSocialSecurityBenefit: retData.hasSpouse ? Math.round(spouseSelectedBenefit * 12) : 0, // Annual
       spouseSocialSecurityStartAge: ssData.spouseClaimingAge || 67,
     });
     setSynced(true);
@@ -116,9 +116,9 @@ export function SocialSecurityTab() {
   useEffect(() => {
     if (synced) {
       updateRetirementData({
-        socialSecurityBenefit: Math.round(yourSelectedBenefit),
+        socialSecurityBenefit: Math.round(yourSelectedBenefit * 12), // Annual
         socialSecurityStartAge: ssData.claimingAge,
-        spouseSocialSecurityBenefit: retData.hasSpouse ? Math.round(spouseSelectedBenefit) : 0,
+        spouseSocialSecurityBenefit: retData.hasSpouse ? Math.round(spouseSelectedBenefit * 12) : 0, // Annual
         spouseSocialSecurityStartAge: ssData.spouseClaimingAge || 67,
       });
     }
