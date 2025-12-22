@@ -2,10 +2,51 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { loadStripe } from '@stripe/stripe-js';
+
+const stripePromise = loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY!);
+
+// Price IDs from Stripe Dashboard
+const PRICE_IDS = {
+  pro: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || 'price_pro_monthly',
+    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || 'price_pro_yearly',
+  },
+  premium: {
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_MONTHLY || 'price_premium_monthly',
+    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY || 'price_premium_yearly',
+  },
+};
 
 export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [email, setEmail] = useState('');
+  const [isLoading, setIsLoading] = useState<string | null>(null);
+
+  const handleCheckout = async (plan: 'pro' | 'premium') => {
+    setIsLoading(plan);
+    try {
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          priceId: PRICE_IDS[plan][billingPeriod],
+          billingPeriod,
+          plan,
+        }),
+      });
+
+      const { url } = await response.json();
+      if (url) {
+        window.location.href = url;
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      alert('Failed to start checkout. Please try again.');
+    } finally {
+      setIsLoading(null);
+    }
+  };
 
   return (
     <div className="min-h-screen bg-slate-950 text-white">
@@ -238,9 +279,13 @@ export default function LandingPage() {
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Tax optimization</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Email support</li>
               </ul>
-              <Link href="/app" className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                Get Pro
-              </Link>
+              <button 
+                onClick={() => handleCheckout('pro')}
+                disabled={isLoading === 'pro'}
+                className="block w-full text-center bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-600/50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                {isLoading === 'pro' ? 'Loading...' : 'Get Pro'}
+              </button>
             </div>
 
             {/* Premium Plan */}
@@ -257,9 +302,13 @@ export default function LandingPage() {
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Custom scenarios</li>
                 <li className="flex items-center gap-2"><span className="text-emerald-400">✓</span> Priority support</li>
               </ul>
-              <Link href="/app" className="block w-full text-center bg-slate-800 hover:bg-slate-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
-                Get Premium
-              </Link>
+              <button 
+                onClick={() => handleCheckout('premium')}
+                disabled={isLoading === 'premium'}
+                className="block w-full text-center bg-slate-800 hover:bg-slate-700 disabled:bg-slate-800/50 text-white px-6 py-3 rounded-lg font-medium transition-colors"
+              >
+                {isLoading === 'premium' ? 'Loading...' : 'Get Premium'}
+              </button>
             </div>
           </div>
         </div>
