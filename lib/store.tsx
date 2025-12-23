@@ -289,19 +289,39 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     const body = document.body;
+    const nextApp = document.getElementById('__next');
+    
     root.classList.remove('dark', 'medium');
     
     if (state.theme === 'dark') {
       root.classList.add('dark');
+      root.style.backgroundColor = '#0f172a';
+      root.style.color = '#f1f5f9';
       body.style.backgroundColor = '#0f172a';
       body.style.color = '#f1f5f9';
+      if (nextApp) {
+        nextApp.style.backgroundColor = '#0f172a';
+        nextApp.style.color = '#f1f5f9';
+      }
     } else if (state.theme === 'medium') {
       root.classList.add('medium');
+      root.style.backgroundColor = '#e0f2fe';
+      root.style.color = '#0c4a6e';
       body.style.backgroundColor = '#e0f2fe';
       body.style.color = '#0c4a6e';
+      if (nextApp) {
+        nextApp.style.backgroundColor = '#e0f2fe';
+        nextApp.style.color = '#0c4a6e';
+      }
     } else {
+      root.style.backgroundColor = '#f8fafc';
+      root.style.color = '#0f172a';
       body.style.backgroundColor = '#f8fafc';
       body.style.color = '#0f172a';
+      if (nextApp) {
+        nextApp.style.backgroundColor = '#f8fafc';
+        nextApp.style.color = '#0f172a';
+      }
     }
   }, [state.theme]);
   
