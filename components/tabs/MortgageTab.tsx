@@ -333,6 +333,122 @@ function MortgageCard({
             </div>
           </div>
           
+          {/* Visual Charts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Payment Breakdown Pie Chart */}
+            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Monthly Payment Breakdown</h4>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={[
+                        { name: 'Principal & Interest', value: monthlyPayment, color: '#3B82F6' },
+                        { name: 'Property Tax', value: mortgage.propertyTax / 12, color: '#10B981' },
+                        { name: 'Insurance', value: mortgage.insurance / 12, color: '#8B5CF6' },
+                        { name: 'PMI', value: mortgage.pmi / 12, color: '#F59E0B' },
+                        { name: 'HOA', value: mortgage.hoaFees, color: '#EF4444' },
+                      ].filter(d => d.value > 0)}
+                      cx="50%"
+                      cy="50%"
+                      innerRadius={40}
+                      outerRadius={70}
+                      paddingAngle={2}
+                      dataKey="value"
+                    >
+                      {[
+                        { color: '#3B82F6' },
+                        { color: '#10B981' },
+                        { color: '#8B5CF6' },
+                        { color: '#F59E0B' },
+                        { color: '#EF4444' },
+                      ].map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      ))}
+                    </Pie>
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="grid grid-cols-2 gap-1 text-xs mt-2">
+                {[
+                  { name: 'P&I', value: monthlyPayment, color: '#3B82F6' },
+                  { name: 'Tax', value: mortgage.propertyTax / 12, color: '#10B981' },
+                  { name: 'Insurance', value: mortgage.insurance / 12, color: '#8B5CF6' },
+                  { name: 'PMI', value: mortgage.pmi / 12, color: '#F59E0B' },
+                  { name: 'HOA', value: mortgage.hoaFees, color: '#EF4444' },
+                ].filter(d => d.value > 0).map((item) => (
+                  <div key={item.name} className="flex items-center gap-1">
+                    <div className="w-2 h-2 rounded-full flex-shrink-0" style={{ backgroundColor: item.color }} />
+                    <span className="text-gray-600 dark:text-gray-400 truncate">{item.name}: {formatCurrency(item.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Amortization Chart - Principal vs Interest Over Time */}
+            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+              <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Balance Paydown Over Time</h4>
+              <div className="h-48">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={amortization.filter((_, i) => i % 12 === 0 || i === amortization.length - 1).map(row => ({
+                      year: Math.ceil(row.month / 12),
+                      balance: row.endingBalance,
+                      equity: mortgage.currentHomeValue - row.endingBalance,
+                    }))}
+                    margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                    <XAxis dataKey="year" tick={{ fontSize: 10 }} tickFormatter={(v) => `Yr ${v}`} />
+                    <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${(v/1000).toFixed(0)}K`} />
+                    <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                    <Area type="monotone" dataKey="equity" stackId="1" fill="#10B981" stroke="#10B981" name="Equity" />
+                    <Area type="monotone" dataKey="balance" stackId="1" fill="#EF4444" stroke="#EF4444" name="Remaining Debt" />
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="flex justify-center gap-4 text-xs mt-2">
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-green-500" />
+                  <span className="text-gray-600 dark:text-gray-400">Equity</span>
+                </div>
+                <div className="flex items-center gap-1">
+                  <div className="w-3 h-3 rounded bg-red-500" />
+                  <span className="text-gray-600 dark:text-gray-400">Remaining Debt</span>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          {/* Principal vs Interest Over Loan Life */}
+          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Monthly Principal vs Interest</h4>
+            <div className="h-48">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={amortization.filter((_, i) => i % 6 === 0).map(row => ({
+                    month: row.month,
+                    principal: row.principal,
+                    interest: row.interest,
+                  }))}
+                  margin={{ top: 10, right: 10, left: 0, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" opacity={0.3} />
+                  <XAxis dataKey="month" tick={{ fontSize: 10 }} tickFormatter={(v) => `Mo ${v}`} />
+                  <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v.toFixed(0)}`} />
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  <Legend wrapperStyle={{ fontSize: '12px' }} />
+                  <Area type="monotone" dataKey="principal" fill="#3B82F6" stroke="#3B82F6" name="Principal" />
+                  <Area type="monotone" dataKey="interest" fill="#F59E0B" stroke="#F59E0B" name="Interest" />
+                </AreaChart>
+              </ResponsiveContainer>
+            </div>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+              Over time, more of your payment goes to principal as the loan balance decreases
+            </p>
+          </div>
+          
           {/* Amortization Toggle */}
           <div className="flex items-center justify-between">
             <div>
