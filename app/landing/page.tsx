@@ -49,6 +49,7 @@ export default function LandingPage() {
   const [billingPeriod, setBillingPeriod] = useState<'monthly' | 'yearly'>('monthly');
   const [email, setEmail] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Direct redirect to Stripe Payment Link - no server-side API needed
   const handleCheckout = (plan: 'pro' | 'premium') => {
@@ -66,24 +67,81 @@ export default function LandingPage() {
               <span className="text-2xl">💰</span>
               <span className="text-xl font-bold text-white">RetirePro</span>
             </div>
+            {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
               <a href="#features" className="text-slate-400 hover:text-white transition-colors">Features</a>
               <a href="#how-it-works" className="text-slate-400 hover:text-white transition-colors">How It Works</a>
               <a href="#pricing" className="text-slate-400 hover:text-white transition-colors">Pricing</a>
               <a href="#testimonials" className="text-slate-400 hover:text-white transition-colors">Testimonials</a>
             </div>
-            <div className="flex items-center gap-4">
-              <Link href="/app" className="text-slate-400 hover:text-white transition-colors">
+            <div className="flex items-center gap-2 md:gap-4">
+              <Link href="/app" className="hidden sm:block text-slate-400 hover:text-white transition-colors">
                 Sign In
               </Link>
               <Link 
                 href="/app" 
-                className="bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 rounded-lg font-medium transition-colors"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white px-3 py-2 md:px-4 rounded-lg font-medium transition-colors text-sm md:text-base"
               >
                 Start Free
               </Link>
+              {/* Mobile Menu Button */}
+              <button
+                onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                className="md:hidden p-2 text-slate-400 hover:text-white"
+                aria-label="Toggle menu"
+              >
+                {mobileMenuOpen ? (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                ) : (
+                  <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  </svg>
+                )}
+              </button>
             </div>
           </div>
+          {/* Mobile Menu Dropdown */}
+          {mobileMenuOpen && (
+            <div className="md:hidden py-4 border-t border-slate-800 space-y-2">
+              <a 
+                href="#features" 
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+              >
+                Features
+              </a>
+              <a 
+                href="#how-it-works"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+              >
+                How It Works
+              </a>
+              <a 
+                href="#pricing"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+              >
+                Pricing
+              </a>
+              <a 
+                href="#testimonials"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+              >
+                Testimonials
+              </a>
+              <Link 
+                href="/app"
+                onClick={() => setMobileMenuOpen(false)}
+                className="block px-4 py-2 text-slate-400 hover:text-white hover:bg-slate-800/50 rounded-lg transition-colors"
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
         </div>
       </nav>
 

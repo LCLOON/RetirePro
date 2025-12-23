@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { TabId } from '@/lib/types';
 import { useApp } from '@/lib/store';
 import { useSubscription, FEATURE_TIERS, TIER_INFO, SubscriptionTier } from '@/lib/subscription';
+import { useSidebar } from './DashboardLayout';
 import Link from 'next/link';
 
 interface NavItem {
@@ -60,6 +61,7 @@ function TierBadge({ requiredTier, currentTier }: { requiredTier: SubscriptionTi
 export function Sidebar() {
   const { state, setActiveTab } = useApp();
   const { tier, setTier, canAccess } = useSubscription();
+  const { isOpen, setIsOpen } = useSidebar();
   const [showTierDropdown, setShowTierDropdown] = useState(false);
 
   // Calculate stats
@@ -87,10 +89,21 @@ export function Sidebar() {
     premium: 'bg-purple-600 text-white',
   };
 
+  const handleNavClick = (tabId: TabId) => {
+    setActiveTab(tabId);
+    // Close sidebar on mobile after navigation
+    setIsOpen(false);
+  };
+
   return (
-    <aside className="fixed left-0 top-0 h-full w-56 bg-gradient-to-b from-slate-900 to-slate-800 border-r border-slate-700/50 flex flex-col z-40">
+    <aside className={`
+      fixed left-0 top-0 h-full w-64 lg:w-56 bg-gradient-to-b from-slate-900 to-slate-800 
+      border-r border-slate-700/50 flex flex-col z-40
+      transform transition-transform duration-300 ease-in-out
+      ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+    `}>
       {/* Logo */}
-      <div className="p-4 border-b border-slate-700/50">
+      <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
             <span className="text-xl">💎</span>
@@ -100,6 +113,16 @@ export function Sidebar() {
             <p className="text-xs text-slate-400">Plan Your Future</p>
           </div>
         </div>
+        {/* Close button - mobile only */}
+        <button
+          onClick={() => setIsOpen(false)}
+          className="lg:hidden p-2 text-slate-400 hover:text-white"
+          aria-label="Close menu"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
 
       {/* Current Plan Section */}
@@ -116,6 +139,7 @@ export function Sidebar() {
         {tier !== 'premium' && (
           <Link 
             href="/landing#pricing"
+            onClick={() => setIsOpen(false)}
             className="flex items-center justify-center gap-2 w-full bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white text-sm px-3 py-2 rounded-lg font-medium transition-all"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,8 +196,8 @@ export function Sidebar() {
         </div>
       </div>
 
-      {/* Quick Stats */}
-      <div className="px-3 py-3 border-b border-slate-700/50 space-y-2">
+      {/* Quick Stats - hidden on very small screens */}
+      <div className="px-3 py-3 border-b border-slate-700/50 space-y-2 hidden sm:block">
         <div className="flex items-center gap-2">
           <span className="text-sm">📊</span>
           <div className="flex-1">
@@ -217,9 +241,9 @@ export function Sidebar() {
             return (
               <button
                 key={item.id}
-                onClick={() => setActiveTab(item.id)}
+                onClick={() => handleNavClick(item.id)}
                 className={`
-                  w-full flex items-center gap-2 px-3 py-2 rounded-lg text-left transition-all duration-200
+                  w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all duration-200
                   ${isActive 
                     ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 text-emerald-400 border border-emerald-500/30' 
                     : hasAccess
@@ -241,6 +265,7 @@ export function Sidebar() {
       <div className="p-3 border-t border-slate-700/50">
         <Link 
           href="/landing"
+          onClick={() => setIsOpen(false)}
           className="flex items-center justify-center gap-2 w-full text-slate-400 hover:text-white hover:bg-slate-700/50 text-sm px-3 py-2 rounded-lg transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
