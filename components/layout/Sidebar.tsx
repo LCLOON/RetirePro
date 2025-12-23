@@ -154,7 +154,7 @@ export function Sidebar() {
         <div className="relative">
           <button
             onClick={() => setShowTierDropdown(!showTierDropdown)}
-            className="flex items-center gap-2 w-full px-3 py-2 bg-slate-700/50 border border-slate-600 rounded-lg text-xs text-slate-300 hover:bg-slate-600/50 transition-colors"
+            className="flex items-center gap-2 w-full px-3 py-2 bg-gray-200 dark:bg-slate-700/50 border border-gray-300 dark:border-slate-600 rounded-lg text-xs text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600/50 transition-colors"
           >
             <span className="text-emerald-400">⚡</span>
             <span className="flex-1 text-left">Switch Plan Tier</span>
@@ -169,7 +169,7 @@ export function Sidebar() {
                 className="fixed inset-0 z-10" 
                 onClick={() => setShowTierDropdown(false)} 
               />
-              <div className="absolute left-0 right-0 top-full mt-1 bg-slate-800 border border-slate-600 rounded-lg shadow-xl z-20 py-1">
+              <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-xl z-20 py-1">
                 {(['free', 'pro', 'premium'] as SubscriptionTier[]).map((t) => (
                   <button
                     key={t}
@@ -177,8 +177,8 @@ export function Sidebar() {
                       setTier(t);
                       setShowTierDropdown(false);
                     }}
-                    className={`w-full px-3 py-2 text-left text-xs hover:bg-slate-700 flex items-center gap-2 ${
-                      tier === t ? 'bg-slate-700' : ''
+                    className={`w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2 ${
+                      tier === t ? 'bg-gray-100 dark:bg-slate-700' : ''
                     }`}
                   >
                     <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tierColors[t]}`}>
@@ -219,7 +219,7 @@ export function Sidebar() {
           <div className="flex items-center gap-2">
             <span className="text-sm">🏆</span>
             <div className="flex-1">
-              <p className="text-[10px] text-slate-500">Success Rate</p>
+              <p className="text-[10px] text-gray-500 dark:text-slate-500">Success Rate</p>
               <p className={`text-sm font-semibold ${
                 successRate >= 80 ? 'text-emerald-400' : 
                 successRate >= 60 ? 'text-amber-400' : 'text-red-400'

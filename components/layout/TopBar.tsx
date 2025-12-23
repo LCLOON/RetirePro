@@ -54,7 +54,7 @@ export function TopBar() {
           variant="outline"
           size="sm"
           onClick={saveToLocalStorage}
-          className="border-slate-600 text-slate-300 hover:bg-slate-700 hidden sm:flex"
+          className="hidden sm:flex"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
@@ -67,7 +67,7 @@ export function TopBar() {
           variant="outline"
           size="sm"
           onClick={exportToJSON}
-          className="border-slate-600 text-slate-300 hover:bg-slate-700 hidden md:flex"
+          className="hidden md:flex"
         >
           <svg className="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -78,7 +78,7 @@ export function TopBar() {
         {/* Mobile Save Icon Only */}
         <button
           onClick={saveToLocalStorage}
-          className="sm:hidden p-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors"
+          className="sm:hidden p-2 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-100 dark:hover:bg-slate-700/50 transition-colors"
           aria-label="Save"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

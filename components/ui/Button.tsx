@@ -26,9 +26,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
   }, ref) => {
     const variants = {
       primary: 'bg-gradient-to-r from-emerald-500 to-emerald-600 text-white hover:from-emerald-600 hover:to-emerald-700 active:from-emerald-700 active:to-emerald-800 shadow-lg shadow-emerald-500/25',
-      secondary: 'bg-slate-700 text-slate-100 hover:bg-slate-600 active:bg-slate-500',
-      outline: 'border border-slate-600 text-slate-300 hover:bg-slate-700 active:bg-slate-600',
-      ghost: 'text-slate-400 hover:bg-slate-700 hover:text-slate-200 active:bg-slate-600',
+      secondary: 'bg-gray-200 dark:bg-slate-700 text-gray-700 dark:text-slate-100 hover:bg-gray-300 dark:hover:bg-slate-600 active:bg-gray-400 dark:active:bg-slate-500',
+      outline: 'border border-gray-300 dark:border-slate-600 text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 active:bg-gray-200 dark:active:bg-slate-600',
+      ghost: 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-700 hover:text-gray-900 dark:hover:text-slate-200 active:bg-gray-200 dark:active:bg-slate-600',
       danger: 'bg-gradient-to-r from-red-500 to-red-600 text-white hover:from-red-600 hover:to-red-700 active:from-red-700 active:to-red-800 shadow-lg shadow-red-500/25',
     };
     
