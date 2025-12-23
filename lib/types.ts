@@ -589,3 +589,50 @@ export const SS_BENEFIT_MULTIPLIERS = {
   secondTier: 0.32,
   thirdTier: 0.15,
 };
+
+// Legal & Estate Planning Data
+export interface Beneficiary {
+  name: string;
+  relationship: string;
+  percentage: number;
+  contact: string;
+}
+
+export interface LegalData {
+  // Personal Representative & Executor
+  executorName: string;
+  executorRelationship: string;
+  executorPhone: string;
+  executorAddress: string;
+  backupExecutorName: string;
+  backupExecutorPhone: string;
+  
+  // Primary Beneficiaries (up to 3)
+  beneficiaries: Beneficiary[];
+  
+  // Retirement Account Beneficiaries
+  beneficiary401k: string;
+  contingent401k: string;
+  beneficiaryIRA: string;
+  contingentIRA: string;
+  beneficiaryLifeInsurance: string;
+  
+  // Important Documents & Legal Info
+  willLocation: string;
+  willDate: string;
+  attorneyName: string;
+  attorneyContact: string;
+  powerOfAttorney: string;
+  healthcareProxy: string;
+  
+  // Financial Institutions
+  primaryBank: string;
+  primaryBankContact: string;
+  investmentFirm: string;
+  investmentContact: string;
+  employerHR: string;
+  employerContact: string;
+  
+  // Special Instructions
+  specialInstructions: string;
+}
