@@ -7,6 +7,7 @@ import type {
   BudgetData, 
   TaxSettings,
   MortgageData,
+  MortgageEntry,
   SocialSecurityData,
   ScenarioResults,
   MonteCarloResults,
@@ -19,6 +20,7 @@ import {
   DEFAULT_TAX_SETTINGS,
   DEFAULT_MORTGAGE,
   DEFAULT_SOCIAL_SECURITY,
+  createDefaultMortgage,
 } from './types';
 import { calculateScenarioResults, performMonteCarloProjection } from './calculations';
 
@@ -181,6 +183,10 @@ interface AppContextType {
   updateTaxSettings: (data: Partial<TaxSettings>) => void;
   updateMortgageData: (data: Partial<MortgageData>) => void;
   updateSocialSecurityData: (data: Partial<SocialSecurityData>) => void;
+  // Mortgage helpers
+  addMortgage: (name?: string) => void;
+  updateMortgageEntry: (id: string, data: Partial<MortgageEntry>) => void;
+  removeMortgage: (id: string) => void;
   runCalculations: () => Promise<void>;
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
@@ -294,6 +300,38 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_MORTGAGE_DATA', payload: data });
   }, []);
   
+  // Mortgage-specific helpers
+  const addMortgage = useCallback((name?: string) => {
+    const newId = `mortgage-${Date.now()}`;
+    const newMortgage = createDefaultMortgage(newId, name || `Property ${state.mortgageData.mortgages.length + 1}`);
+    dispatch({ 
+      type: 'UPDATE_MORTGAGE_DATA', 
+      payload: { 
+        mortgages: [...state.mortgageData.mortgages, newMortgage] 
+      } 
+    });
+  }, [state.mortgageData.mortgages]);
+  
+  const updateMortgageEntry = useCallback((id: string, data: Partial<MortgageEntry>) => {
+    const updatedMortgages = state.mortgageData.mortgages.map(m => 
+      m.id === id ? { ...m, ...data } : m
+    );
+    dispatch({ 
+      type: 'UPDATE_MORTGAGE_DATA', 
+      payload: { mortgages: updatedMortgages } 
+    });
+  }, [state.mortgageData.mortgages]);
+  
+  const removeMortgage = useCallback((id: string) => {
+    // Prevent removing last mortgage
+    if (state.mortgageData.mortgages.length <= 1) return;
+    const filteredMortgages = state.mortgageData.mortgages.filter(m => m.id !== id);
+    dispatch({ 
+      type: 'UPDATE_MORTGAGE_DATA', 
+      payload: { mortgages: filteredMortgages } 
+    });
+  }, [state.mortgageData.mortgages]);
+  
   const updateSocialSecurityData = useCallback((data: Partial<SocialSecurityData>) => {
     dispatch({ type: 'UPDATE_SOCIAL_SECURITY_DATA', payload: data });
   }, []);
@@ -381,6 +419,9 @@ export function AppProvider({ children }: { children: ReactNode }) {
       updateTaxSettings,
       updateMortgageData,
       updateSocialSecurityData,
+      addMortgage,
+      updateMortgageEntry,
+      removeMortgage,
       runCalculations,
       saveToLocalStorage,
       loadFromLocalStorage,

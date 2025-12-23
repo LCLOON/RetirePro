@@ -567,29 +567,66 @@ export const DEFAULT_TAX_SETTINGS: TaxSettings = {
   stateTaxRate: 0.05,
 };
 
-// Mortgage Types
-export interface MortgageData {
-  homePrice: number;
-  downPayment: number;
+// Mortgage Types - Single mortgage entry
+export interface MortgageEntry {
+  id: string;
+  name: string;
+  propertyType: 'primary' | 'investment' | 'vacation' | 'rental';
+  // Property Details
+  currentHomeValue: number;
+  purchasePrice: number;
+  purchaseYear: number;
+  location: string; // City, State or ZIP
+  // Loan Details
   loanAmount: number;
+  currentBalance: number;
   interestRate: number;
   loanTermYears: number;
+  startYear: number;
   extraPayment: number;
+  // Costs
   propertyTax: number;
   insurance: number;
   pmi: number;
+  hoaFees: number;
+  // For rental/investment properties
+  monthlyRentalIncome: number;
 }
 
-export const DEFAULT_MORTGAGE: MortgageData = {
-  homePrice: 400000,
-  downPayment: 80000,
-  loanAmount: 320000,
+export interface MortgageData {
+  mortgages: MortgageEntry[];
+  // Summary totals (calculated)
+  totalEquity: number;
+  totalDebt: number;
+  totalPropertyValue: number;
+}
+
+export const createDefaultMortgage = (id: string, name: string = 'Primary Residence'): MortgageEntry => ({
+  id,
+  name,
+  propertyType: 'primary',
+  currentHomeValue: 400000,
+  purchasePrice: 350000,
+  purchaseYear: new Date().getFullYear() - 5,
+  location: '',
+  loanAmount: 280000,
+  currentBalance: 250000,
   interestRate: 0.065,
   loanTermYears: 30,
+  startYear: new Date().getFullYear() - 5,
   extraPayment: 0,
   propertyTax: 4800,
   insurance: 1200,
   pmi: 0,
+  hoaFees: 0,
+  monthlyRentalIncome: 0,
+});
+
+export const DEFAULT_MORTGAGE: MortgageData = {
+  mortgages: [createDefaultMortgage('mortgage-1', 'Primary Residence')],
+  totalEquity: 0,
+  totalDebt: 0,
+  totalPropertyValue: 0,
 };
 
 // Social Security Types

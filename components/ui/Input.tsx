@@ -165,3 +165,62 @@ export function PercentInput({ value, onChange, asDecimal = true, helpText, ...p
     />
   );
 }
+
+// Text input with controlled value
+interface TextInputProps extends Omit<InputProps, 'onChange' | 'value'> {
+  value: string;
+  onChange: (value: string) => void;
+}
+
+export function TextInput({ value, onChange, ...props }: TextInputProps) {
+  return (
+    <Input
+      type="text"
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      {...props}
+    />
+  );
+}
+
+// Select wrapper with simpler interface
+interface SelectInputProps {
+  label?: string;
+  value: string;
+  onChange: (value: string) => void;
+  options: { value: string; label: string }[];
+  hint?: string;
+}
+
+export function SelectInput({ label, value, onChange, options, hint }: SelectInputProps) {
+  return (
+    <div className="w-full">
+      {label && (
+        <label className="block text-sm font-medium text-slate-300 mb-1">
+          {label}
+        </label>
+      )}
+      <div className="relative">
+        <select
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          className="w-full px-4 py-2.5 rounded-lg border transition-colors duration-200
+            appearance-none bg-slate-800 text-white cursor-pointer
+            border-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
+        >
+          {options.map((option) => (
+            <option key={option.value} value={option.value} className="bg-slate-800 text-white">
+              {option.label}
+            </option>
+          ))}
+        </select>
+        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
+      {hint && <p className="mt-1 text-sm text-slate-400">{hint}</p>}
+    </div>
+  );
+}

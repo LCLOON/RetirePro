@@ -2,10 +2,11 @@
 
 import { useState } from 'react';
 import { Card, CardGrid, StatCard } from '@/components/ui';
-import { CurrencyInput, NumberInput, PercentInput } from '@/components/ui';
+import { CurrencyInput, NumberInput, PercentInput, SelectInput, TextInput } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp } from '@/lib/store';
 import { calculateMortgagePayment, generateAmortizationSchedule, formatCurrency } from '@/lib/calculations';
+import type { MortgageEntry } from '@/lib/types';
 import {
   LineChart,
   Line,
@@ -17,308 +18,546 @@ import {
   Tooltip,
   Legend,
   ResponsiveContainer,
+  PieChart,
+  Pie,
+  Cell,
 } from 'recharts';
 
-export function MortgageTab() {
-  const { state, updateMortgageData } = useApp();
-  const data = state.mortgageData;
-  
+// Property type options
+const PROPERTY_TYPES = [
+  { value: 'primary', label: 'Primary Residence' },
+  { value: 'investment', label: 'Investment Property' },
+  { value: 'vacation', label: 'Vacation Home' },
+  { value: 'rental', label: 'Rental Property' },
+];
+
+// Collapsible mortgage card
+function MortgageCard({
+  mortgage,
+  onUpdate,
+  onRemove,
+  canRemove,
+  isExpanded,
+  onToggle,
+}: {
+  mortgage: MortgageEntry;
+  onUpdate: (data: Partial<MortgageEntry>) => void;
+  onRemove: () => void;
+  canRemove: boolean;
+  isExpanded: boolean;
+  onToggle: () => void;
+}) {
   const [showAmortization, setShowAmortization] = useState(false);
   
-  // Calculate mortgage
+  // Calculate equity
+  const equity = mortgage.currentHomeValue - mortgage.currentBalance;
+  const equityPercent = mortgage.currentHomeValue > 0 
+    ? (equity / mortgage.currentHomeValue) * 100 
+    : 0;
+  const ltv = mortgage.currentHomeValue > 0 
+    ? (mortgage.currentBalance / mortgage.currentHomeValue) * 100 
+    : 0;
+  
+  // Calculate monthly payment
   const monthlyPayment = calculateMortgagePayment(
-    data.loanAmount,
-    data.interestRate,
-    data.loanTermYears
+    mortgage.currentBalance,
+    mortgage.interestRate,
+    mortgage.loanTermYears - (new Date().getFullYear() - mortgage.startYear)
   );
   
-  const totalPayments = monthlyPayment * data.loanTermYears * 12;
-  const totalInterest = totalPayments - data.loanAmount;
+  const remainingYears = Math.max(0, mortgage.loanTermYears - (new Date().getFullYear() - mortgage.startYear));
+  const totalMonthlyPayment = monthlyPayment + 
+    (mortgage.propertyTax / 12) + 
+    (mortgage.insurance / 12) + 
+    (mortgage.pmi / 12) + 
+    (mortgage.hoaFees);
+  
+  // Amortization
   const amortization = generateAmortizationSchedule(
-    data.loanAmount,
-    data.interestRate,
-    data.loanTermYears,
-    data.extraPayment
+    mortgage.currentBalance,
+    mortgage.interestRate,
+    remainingYears,
+    mortgage.extraPayment
   );
   
-  // Calculate with extra payment impact
-  const lastPayment = amortization.find(a => a.endingBalance <= 0) || amortization[amortization.length - 1];
-  const monthsSaved = data.loanTermYears * 12 - (lastPayment?.month || data.loanTermYears * 12);
-  const interestSaved = totalInterest - amortization.reduce((sum, a) => sum + a.interest, 0);
+  const totalInterest = amortization.reduce((sum, a) => sum + a.interest, 0);
   
-  // Chart data - yearly summary
-  const yearlyData: { year: number; principal: number; interest: number; balance: number }[] = [];
-  for (let year = 1; year <= Math.ceil(amortization.length / 12); year++) {
-    const yearPayments = amortization.filter(a => Math.ceil(a.month / 12) === year);
-    yearlyData.push({
-      year,
-      principal: yearPayments.reduce((sum, a) => sum + a.principal, 0),
-      interest: yearPayments.reduce((sum, a) => sum + a.interest, 0),
-      balance: yearPayments[yearPayments.length - 1]?.endingBalance || 0,
-    });
-  }
-  
-  const formatYAxis = (value: number) => {
-    if (value >= 1000) return `$${(value / 1000).toFixed(0)}K`;
-    return `$${value}`;
+  // Property type color
+  const typeColors: Record<string, string> = {
+    primary: 'bg-blue-500',
+    investment: 'bg-green-500',
+    vacation: 'bg-purple-500',
+    rental: 'bg-orange-500',
   };
   
   return (
-    <div className="space-y-6">
-      {/* Mortgage Input */}
-      <Card title="Mortgage Details" subtitle="Enter your mortgage information">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <CurrencyInput
-            label="Home Price"
-            value={data.homePrice}
-            onChange={(v) => updateMortgageData({ 
-              homePrice: v,
-              loanAmount: v - data.downPayment
-            })}
-          />
-          <CurrencyInput
-            label="Down Payment"
-            value={data.downPayment}
-            onChange={(v) => updateMortgageData({ 
-              downPayment: v,
-              loanAmount: data.homePrice - v
-            })}
-          />
-          <CurrencyInput
-            label="Loan Amount"
-            value={data.loanAmount}
-            onChange={(v) => updateMortgageData({ loanAmount: v })}
-          />
-          <PercentInput
-            label="Interest Rate"
-            value={data.interestRate}
-            onChange={(v) => updateMortgageData({ interestRate: v })}
-          />
-          <NumberInput
-            label="Loan Term"
-            value={data.loanTermYears}
-            onChange={(v) => updateMortgageData({ loanTermYears: v })}
-            min={1}
-            max={40}
-            suffix="years"
-          />
-          <CurrencyInput
-            label="Extra Monthly Payment"
-            value={data.extraPayment}
-            onChange={(v) => updateMortgageData({ extraPayment: v })}
-            hint="Additional principal payment"
-          />
-          <CurrencyInput
-            label="Property Tax (Annual)"
-            value={data.propertyTax}
-            onChange={(v) => updateMortgageData({ propertyTax: v })}
-          />
-          <CurrencyInput
-            label="Insurance (Annual)"
-            value={data.insurance}
-            onChange={(v) => updateMortgageData({ insurance: v })}
-          />
+    <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+      {/* Header */}
+      <div 
+        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+        onClick={onToggle}
+      >
+        <div className="flex items-center gap-3">
+          <div className={`w-3 h-3 rounded-full ${typeColors[mortgage.propertyType]}`} />
+          <div>
+            <h3 className="font-semibold text-gray-900 dark:text-white">{mortgage.name}</h3>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              {mortgage.location || PROPERTY_TYPES.find(t => t.value === mortgage.propertyType)?.label}
+            </p>
+          </div>
         </div>
-      </Card>
+        <div className="flex items-center gap-6">
+          <div className="text-right">
+            <p className="font-bold text-green-600 dark:text-green-400">{formatCurrency(equity)}</p>
+            <p className="text-xs text-gray-500">Equity ({equityPercent.toFixed(1)}%)</p>
+          </div>
+          <div className="text-right">
+            <p className="font-bold text-gray-900 dark:text-white">{formatCurrency(mortgage.currentBalance)}</p>
+            <p className="text-xs text-gray-500">Balance</p>
+          </div>
+          <svg 
+            className={`w-5 h-5 text-gray-500 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+            fill="none" 
+            stroke="currentColor" 
+            viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </div>
+      </div>
       
-      {/* Results */}
+      {/* Expanded Content */}
+      {isExpanded && (
+        <div className="border-t p-4 space-y-6">
+          {/* Quick Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+              <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Home Value</p>
+              <p className="text-lg font-bold text-blue-900 dark:text-blue-300">{formatCurrency(mortgage.currentHomeValue)}</p>
+            </div>
+            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-xs font-medium text-green-600 dark:text-green-400">Equity</p>
+              <p className="text-lg font-bold text-green-900 dark:text-green-300">{formatCurrency(equity)}</p>
+            </div>
+            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">Monthly Payment</p>
+              <p className="text-lg font-bold text-amber-900 dark:text-amber-300">{formatCurrency(totalMonthlyPayment)}</p>
+            </div>
+            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+              <p className="text-xs font-medium text-purple-600 dark:text-purple-400">LTV Ratio</p>
+              <p className="text-lg font-bold text-purple-900 dark:text-purple-300">{ltv.toFixed(1)}%</p>
+            </div>
+          </div>
+          
+          {/* Equity Progress Bar */}
+          <div>
+            <div className="flex justify-between text-sm mb-1">
+              <span className="text-gray-600 dark:text-gray-400">Equity Progress</span>
+              <span className="font-medium text-gray-900 dark:text-white">{equityPercent.toFixed(1)}% owned</span>
+            </div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+              <div 
+                className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
+                style={{ width: `${Math.min(equityPercent, 100)}%` }}
+              />
+            </div>
+            <div className="flex justify-between text-xs mt-1 text-gray-500">
+              <span>{formatCurrency(equity)} equity</span>
+              <span>{formatCurrency(mortgage.currentBalance)} remaining</span>
+            </div>
+          </div>
+          
+          {/* Property Details */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+              Property Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <TextInput
+                label="Property Name"
+                value={mortgage.name}
+                onChange={(v) => onUpdate({ name: v })}
+                placeholder="e.g., 123 Main St"
+              />
+              <SelectInput
+                label="Property Type"
+                value={mortgage.propertyType}
+                onChange={(v) => onUpdate({ propertyType: v as MortgageEntry['propertyType'] })}
+                options={PROPERTY_TYPES}
+              />
+              <TextInput
+                label="Location (City, State)"
+                value={mortgage.location}
+                onChange={(v) => onUpdate({ location: v })}
+                placeholder="e.g., Austin, TX"
+              />
+              <CurrencyInput
+                label="Current Home Value"
+                value={mortgage.currentHomeValue}
+                onChange={(v) => onUpdate({ currentHomeValue: v })}
+              />
+              <CurrencyInput
+                label="Purchase Price"
+                value={mortgage.purchasePrice}
+                onChange={(v) => onUpdate({ purchasePrice: v })}
+              />
+              <NumberInput
+                label="Purchase Year"
+                value={mortgage.purchaseYear}
+                onChange={(v) => onUpdate({ purchaseYear: v })}
+                min={1950}
+                max={new Date().getFullYear()}
+              />
+              {(mortgage.propertyType === 'rental' || mortgage.propertyType === 'investment') && (
+                <CurrencyInput
+                  label="Monthly Rental Income"
+                  value={mortgage.monthlyRentalIncome}
+                  onChange={(v) => onUpdate({ monthlyRentalIncome: v })}
+                />
+              )}
+            </div>
+          </div>
+          
+          {/* Loan Details */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Loan Details
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <CurrencyInput
+                label="Original Loan Amount"
+                value={mortgage.loanAmount}
+                onChange={(v) => onUpdate({ loanAmount: v })}
+              />
+              <CurrencyInput
+                label="Current Balance"
+                value={mortgage.currentBalance}
+                onChange={(v) => onUpdate({ currentBalance: v })}
+              />
+              <PercentInput
+                label="Interest Rate"
+                value={mortgage.interestRate}
+                onChange={(v) => onUpdate({ interestRate: v })}
+              />
+              <NumberInput
+                label="Loan Term"
+                value={mortgage.loanTermYears}
+                onChange={(v) => onUpdate({ loanTermYears: v })}
+                min={1}
+                max={40}
+                suffix="years"
+              />
+              <NumberInput
+                label="Start Year"
+                value={mortgage.startYear}
+                onChange={(v) => onUpdate({ startYear: v })}
+                min={1980}
+                max={new Date().getFullYear()}
+              />
+              <CurrencyInput
+                label="Extra Monthly Payment"
+                value={mortgage.extraPayment}
+                onChange={(v) => onUpdate({ extraPayment: v })}
+                hint="Additional principal"
+              />
+            </div>
+          </div>
+          
+          {/* Monthly Costs */}
+          <div className="space-y-4">
+            <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+              <svg className="w-5 h-5 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z" />
+              </svg>
+              Monthly Costs
+            </h4>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <CurrencyInput
+                label="Property Tax (Annual)"
+                value={mortgage.propertyTax}
+                onChange={(v) => onUpdate({ propertyTax: v })}
+              />
+              <CurrencyInput
+                label="Insurance (Annual)"
+                value={mortgage.insurance}
+                onChange={(v) => onUpdate({ insurance: v })}
+              />
+              <CurrencyInput
+                label="PMI (Annual)"
+                value={mortgage.pmi}
+                onChange={(v) => onUpdate({ pmi: v })}
+                hint={ltv > 80 ? 'PMI required (LTV > 80%)' : 'No PMI needed'}
+              />
+              <CurrencyInput
+                label="HOA Fees (Monthly)"
+                value={mortgage.hoaFees}
+                onChange={(v) => onUpdate({ hoaFees: v })}
+              />
+            </div>
+          </div>
+          
+          {/* Payment Summary */}
+          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Payment Breakdown</h4>
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
+              <div>
+                <p className="text-gray-500">Principal & Interest</p>
+                <p className="font-semibold">{formatCurrency(monthlyPayment)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Property Tax</p>
+                <p className="font-semibold">{formatCurrency(mortgage.propertyTax / 12)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">Insurance</p>
+                <p className="font-semibold">{formatCurrency(mortgage.insurance / 12)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">PMI</p>
+                <p className="font-semibold">{formatCurrency(mortgage.pmi / 12)}</p>
+              </div>
+              <div>
+                <p className="text-gray-500">HOA</p>
+                <p className="font-semibold">{formatCurrency(mortgage.hoaFees)}</p>
+              </div>
+              <div className="bg-blue-100 dark:bg-blue-900/30 -m-2 p-2 rounded">
+                <p className="text-blue-700 dark:text-blue-400 font-medium">Total Monthly</p>
+                <p className="font-bold text-blue-900 dark:text-blue-300">{formatCurrency(totalMonthlyPayment)}</p>
+              </div>
+            </div>
+          </div>
+          
+          {/* Amortization Toggle */}
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-500">
+                Remaining: {remainingYears} years | Total Interest: {formatCurrency(totalInterest)}
+              </p>
+            </div>
+            <div className="flex gap-2">
+              <Button 
+                variant="ghost" 
+                size="sm"
+                onClick={() => setShowAmortization(!showAmortization)}
+              >
+                {showAmortization ? 'Hide' : 'Show'} Amortization
+              </Button>
+              {canRemove && (
+                <Button 
+                  variant="ghost" 
+                  size="sm"
+                  onClick={onRemove}
+                  className="text-red-600 hover:bg-red-50"
+                >
+                  Remove Property
+                </Button>
+              )}
+            </div>
+          </div>
+          
+          {/* Amortization Table */}
+          {showAmortization && (
+            <div className="overflow-x-auto max-h-80 border rounded-lg">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700">
+                  <tr>
+                    <th className="text-left py-2 px-3 font-semibold">Month</th>
+                    <th className="text-right py-2 px-3 font-semibold">Payment</th>
+                    <th className="text-right py-2 px-3 font-semibold">Principal</th>
+                    <th className="text-right py-2 px-3 font-semibold">Interest</th>
+                    <th className="text-right py-2 px-3 font-semibold">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {amortization.slice(0, 60).map((row) => (
+                    <tr key={row.month} className="border-t border-gray-100 dark:border-gray-600">
+                      <td className="py-2 px-3">{row.month}</td>
+                      <td className="py-2 px-3 text-right">{formatCurrency(row.payment)}</td>
+                      <td className="py-2 px-3 text-right text-blue-600">{formatCurrency(row.principal)}</td>
+                      <td className="py-2 px-3 text-right text-red-600">{formatCurrency(row.interest)}</td>
+                      <td className="py-2 px-3 text-right">{formatCurrency(Math.max(0, row.endingBalance))}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {amortization.length > 60 && (
+                <p className="text-center text-gray-500 py-2 text-xs">
+                  Showing first 60 of {amortization.length} months
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export function MortgageTab() {
+  const { state, addMortgage, updateMortgageEntry, removeMortgage } = useApp();
+  const mortgages = state.mortgageData.mortgages;
+  
+  const [expandedId, setExpandedId] = useState<string | null>(mortgages[0]?.id || null);
+  
+  // Calculate totals
+  const totalPropertyValue = mortgages.reduce((sum, m) => sum + m.currentHomeValue, 0);
+  const totalDebt = mortgages.reduce((sum, m) => sum + m.currentBalance, 0);
+  const totalEquity = totalPropertyValue - totalDebt;
+  const totalMonthlyPayments = mortgages.reduce((sum, m) => {
+    const remainingYears = Math.max(0, m.loanTermYears - (new Date().getFullYear() - m.startYear));
+    const payment = calculateMortgagePayment(m.currentBalance, m.interestRate, remainingYears);
+    return sum + payment + (m.propertyTax / 12) + (m.insurance / 12) + (m.pmi / 12) + m.hoaFees;
+  }, 0);
+  const totalRentalIncome = mortgages.reduce((sum, m) => sum + m.monthlyRentalIncome, 0);
+  
+  // Chart data for equity distribution
+  const equityData = mortgages.map((m, i) => ({
+    name: m.name,
+    equity: m.currentHomeValue - m.currentBalance,
+    debt: m.currentBalance,
+    color: ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'][i % 5],
+  }));
+  
+  const COLORS = ['#3B82F6', '#10B981', '#8B5CF6', '#F59E0B', '#EF4444'];
+  
+  return (
+    <div className="space-y-6">
+      {/* Portfolio Summary */}
       <CardGrid columns={4}>
         <StatCard
-          label="Monthly Payment"
-          value={formatCurrency(monthlyPayment)}
-          subValue="Principal & Interest"
+          label="Total Property Value"
+          value={formatCurrency(totalPropertyValue)}
           icon={
             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
             </svg>
           }
         />
         <StatCard
-          label="Total Monthly Cost"
-          value={formatCurrency(monthlyPayment + data.propertyTax / 12 + data.insurance / 12 + (data.pmi || 0))}
-          subValue="Including taxes & insurance"
+          label="Total Equity"
+          value={formatCurrency(totalEquity)}
+          trend={totalEquity > 0 ? 'up' : 'neutral'}
+          trendValue={`${((totalEquity / totalPropertyValue) * 100 || 0).toFixed(1)}% ownership`}
         />
         <StatCard
-          label="Total Interest"
-          value={formatCurrency(totalInterest)}
-          subValue={`Over ${data.loanTermYears} years`}
+          label="Total Debt"
+          value={formatCurrency(totalDebt)}
+          subValue={`${mortgages.length} ${mortgages.length === 1 ? 'property' : 'properties'}`}
         />
         <StatCard
-          label="Loan-to-Value"
-          value={`${((data.loanAmount / data.homePrice) * 100).toFixed(1)}%`}
-          subValue={data.loanAmount / data.homePrice > 0.8 ? 'PMI may apply' : 'No PMI required'}
-          trend={data.loanAmount / data.homePrice > 0.8 ? 'down' : 'up'}
+          label="Monthly Costs"
+          value={formatCurrency(totalMonthlyPayments)}
+          subValue={totalRentalIncome > 0 ? `Net: ${formatCurrency(totalMonthlyPayments - totalRentalIncome)}` : 'All properties'}
         />
       </CardGrid>
       
-      {/* Extra Payment Impact */}
-      {data.extraPayment > 0 && (
-        <Card title="Extra Payment Impact" subtitle="Benefits of making additional principal payments">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="p-4 bg-green-50 rounded-lg">
-              <p className="text-sm font-medium text-green-700">Interest Saved</p>
-              <p className="text-2xl font-bold text-green-900">{formatCurrency(interestSaved)}</p>
+      {/* Portfolio Overview */}
+      {mortgages.length > 1 && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <Card title="Equity by Property">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={equityData.filter(d => d.equity > 0)}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={50}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="equity"
+                    nameKey="name"
+                  >
+                    {equityData.map((entry, index) => (
+                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                </PieChart>
+              </ResponsiveContainer>
             </div>
-            <div className="p-4 bg-blue-50 rounded-lg">
-              <p className="text-sm font-medium text-blue-700">Months Saved</p>
-              <p className="text-2xl font-bold text-blue-900">{monthsSaved} months</p>
-              <p className="text-sm text-blue-600">{(monthsSaved / 12).toFixed(1)} years earlier</p>
+            <div className="grid grid-cols-2 gap-2 mt-2">
+              {equityData.map((item, index) => (
+                <div key={item.name} className="flex items-center gap-2">
+                  <div 
+                    className="w-3 h-3 rounded-full flex-shrink-0" 
+                    style={{ backgroundColor: COLORS[index % COLORS.length] }}
+                  />
+                  <span className="text-sm text-gray-600 dark:text-gray-400 truncate">
+                    {item.name}: {formatCurrency(item.equity)}
+                  </span>
+                </div>
+              ))}
             </div>
-            <div className="p-4 bg-purple-50 rounded-lg">
-              <p className="text-sm font-medium text-purple-700">New Payoff Date</p>
-              <p className="text-2xl font-bold text-purple-900">
-                {new Date(Date.now() + (amortization.length) * 30 * 24 * 60 * 60 * 1000).getFullYear()}
-              </p>
+          </Card>
+          
+          <Card title="Property Comparison">
+            <div className="h-64">
+              <ResponsiveContainer width="100%" height="100%">
+                <AreaChart
+                  data={equityData}
+                  layout="vertical"
+                  margin={{ top: 10, right: 30, left: 100, bottom: 0 }}
+                >
+                  <CartesianGrid strokeDasharray="3 3" />
+                  <XAxis type="number" tickFormatter={(v) => `$${(v/1000).toFixed(0)}K`} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 12 }} />
+                  <Tooltip formatter={(value) => formatCurrency(value as number)} />
+                  <Legend />
+                  <Area type="monotone" dataKey="equity" stackId="1" fill="#10B981" stroke="#10B981" name="Equity" />
+                  <Area type="monotone" dataKey="debt" stackId="1" fill="#EF4444" stroke="#EF4444" name="Debt" />
+                </AreaChart>
+              </ResponsiveContainer>
             </div>
-          </div>
-        </Card>
+          </Card>
+        </div>
       )}
       
-      {/* Payment Breakdown Chart */}
-      <Card title="Payment Breakdown Over Time" subtitle="How your payments are split between principal and interest">
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <defs>
-                <linearGradient id="principalGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3B82F6" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#3B82F6" stopOpacity={0.2}/>
-                </linearGradient>
-                <linearGradient id="interestGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#EF4444" stopOpacity={0.8}/>
-                  <stop offset="95%" stopColor="#EF4444" stopOpacity={0.2}/>
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis 
-                dataKey="year" 
-                stroke="#6B7280"
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-                label={{ value: 'Year', position: 'bottom', fill: '#6B7280' }}
-              />
-              <YAxis 
-                tickFormatter={formatYAxis}
-                stroke="#6B7280"
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-              />
-              <Tooltip
-                formatter={(value) => formatCurrency(value as number)}
-                labelFormatter={(label) => `Year ${label}`}
-                contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px'
-                }}
-              />
-              <Legend />
-              <Area
-                type="monotone"
-                dataKey="principal"
-                name="Principal"
-                stroke="#3B82F6"
-                fill="url(#principalGradient)"
-                stackId="1"
-              />
-              <Area
-                type="monotone"
-                dataKey="interest"
-                name="Interest"
-                stroke="#EF4444"
-                fill="url(#interestGradient)"
-                stackId="1"
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      {/* Add Property Button */}
+      <div className="flex justify-between items-center">
+        <h2 className="text-lg font-semibold text-gray-900 dark:text-white">
+          Properties ({mortgages.length})
+        </h2>
+        <Button onClick={() => addMortgage()}>
+          <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+          Add Property
+        </Button>
+      </div>
       
-      {/* Balance Over Time */}
-      <Card title="Loan Balance" subtitle="Remaining balance over the life of the loan">
-        <div className="h-80">
-          <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={yearlyData} margin={{ top: 10, right: 30, left: 0, bottom: 0 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#E5E7EB" />
-              <XAxis 
-                dataKey="year" 
-                stroke="#6B7280"
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-              />
-              <YAxis 
-                tickFormatter={formatYAxis}
-                stroke="#6B7280"
-                tick={{ fill: '#6B7280', fontSize: 12 }}
-              />
-              <Tooltip
-                formatter={(value) => formatCurrency(value as number)}
-                labelFormatter={(label) => `Year ${label}`}
-                contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '1px solid #E5E7EB',
-                  borderRadius: '8px'
-                }}
-              />
-              <Line
-                type="monotone"
-                dataKey="balance"
-                name="Remaining Balance"
-                stroke="#8B5CF6"
-                strokeWidth={3}
-                dot={false}
-              />
-            </LineChart>
-          </ResponsiveContainer>
-        </div>
-      </Card>
+      {/* Mortgage Cards */}
+      <div className="space-y-4">
+        {mortgages.map((mortgage) => (
+          <MortgageCard
+            key={mortgage.id}
+            mortgage={mortgage}
+            onUpdate={(data) => updateMortgageEntry(mortgage.id, data)}
+            onRemove={() => removeMortgage(mortgage.id)}
+            canRemove={mortgages.length > 1}
+            isExpanded={expandedId === mortgage.id}
+            onToggle={() => setExpandedId(expandedId === mortgage.id ? null : mortgage.id)}
+          />
+        ))}
+      </div>
       
-      {/* Amortization Table */}
-      <Card 
-        title="Amortization Schedule" 
-        action={
-          <Button 
-            variant="ghost" 
-            size="sm"
-            onClick={() => setShowAmortization(!showAmortization)}
-          >
-            {showAmortization ? 'Hide' : 'Show'} Table
-          </Button>
-        }
-      >
-        {showAmortization && (
-          <div className="overflow-x-auto max-h-96">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-gray-50">
-                <tr>
-                  <th className="text-left py-2 px-3 font-semibold">Month</th>
-                  <th className="text-right py-2 px-3 font-semibold">Payment</th>
-                  <th className="text-right py-2 px-3 font-semibold">Principal</th>
-                  <th className="text-right py-2 px-3 font-semibold">Interest</th>
-                  <th className="text-right py-2 px-3 font-semibold">Balance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {amortization.slice(0, 120).map((row) => (
-                  <tr key={row.month} className="border-t border-gray-100">
-                    <td className="py-2 px-3">{row.month}</td>
-                    <td className="py-2 px-3 text-right">{formatCurrency(row.payment)}</td>
-                    <td className="py-2 px-3 text-right text-blue-600">{formatCurrency(row.principal)}</td>
-                    <td className="py-2 px-3 text-right text-red-600">{formatCurrency(row.interest)}</td>
-                    <td className="py-2 px-3 text-right">{formatCurrency(Math.max(0, row.endingBalance))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-            {amortization.length > 120 && (
-              <p className="text-center text-gray-500 py-4">
-                Showing first 120 months of {amortization.length} total
-              </p>
-            )}
-          </div>
-        )}
-        {!showAmortization && (
-          <p className="text-gray-500 text-center py-8">
-            Click &quot;Show Table&quot; to view the full amortization schedule
-          </p>
-        )}
+      {/* Tips */}
+      <Card>
+        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Mortgage Tips</h4>
+          <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
+            <li>• <strong>LTV &gt; 80%:</strong> You may be paying PMI (Private Mortgage Insurance)</li>
+            <li>• <strong>Extra payments:</strong> Even $100/month extra can save years of payments and thousands in interest</li>
+            <li>• <strong>Equity:</strong> Your equity grows as you pay down the loan and as property values increase</li>
+            <li>• <strong>Investment properties:</strong> Track rental income to see your true cash flow</li>
+          </ul>
+        </div>
       </Card>
     </div>
   );
