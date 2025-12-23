@@ -1,6 +1,7 @@
 'use client';
 
 import { ReactNode } from 'react';
+import { useApp } from '@/lib/store';
 
 interface CardProps {
   children: ReactNode;
@@ -13,6 +14,13 @@ interface CardProps {
   noWrapper?: boolean; // Don't wrap children in a div
 }
 
+// Theme colors
+const cardThemes = {
+  light: { bg: '#ffffff', border: '#e2e8f0', text: '#0f172a', muted: '#64748b' },
+  dark: { bg: 'rgba(30, 41, 59, 0.5)', border: 'rgba(51, 65, 85, 0.5)', text: '#f1f5f9', muted: '#94a3b8' },
+  medium: { bg: '#f0f9ff', border: '#bae6fd', text: '#0c4a6e', muted: '#0369a1' },
+};
+
 export function Card({ 
   children, 
   className = '', 
@@ -23,15 +31,24 @@ export function Card({
   noPadding = false,
   noWrapper = false 
 }: CardProps) {
+  const { state } = useApp();
+  const theme = cardThemes[state.theme];
+
   return (
-    <div className={`bg-[var(--card-bg)] backdrop-blur-sm rounded-xl border border-[var(--card-border)] shadow-lg ${className}`}>
+    <div 
+      className={`backdrop-blur-sm rounded-xl shadow-lg ${className}`}
+      style={{ backgroundColor: theme.bg, borderWidth: 1, borderStyle: 'solid', borderColor: theme.border }}
+    >
       {(title || action) && (
-        <div className="flex items-center justify-between px-5 py-4 border-b border-[var(--card-border)]">
+        <div 
+          className="flex items-center justify-between px-5 py-4"
+          style={{ borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: theme.border }}
+        >
           <div className="flex items-center gap-2">
             {icon && <span className="text-xl">{icon}</span>}
             <div>
-              {title && <h3 className="text-base font-semibold text-[var(--foreground)]">{title}</h3>}
-              {subtitle && <p className="text-xs text-[var(--muted)] mt-0.5">{subtitle}</p>}
+              {title && <h3 className="text-base font-semibold" style={{ color: theme.text }}>{title}</h3>}
+              {subtitle && <p className="text-xs mt-0.5" style={{ color: theme.muted }}>{subtitle}</p>}
             </div>
           </div>
           {action && <div>{action}</div>}

@@ -96,13 +96,23 @@ export function Sidebar() {
     setIsOpen(false);
   };
 
+  // Theme-aware sidebar backgrounds
+  const sidebarBg = state.theme === 'dark' 
+    ? '#1e293b' 
+    : state.theme === 'medium' 
+      ? '#bae6fd' 
+      : '#e2e8f0';
+
   return (
-    <aside className={`
-      fixed left-0 top-0 h-full w-64 lg:w-56 bg-[var(--card-bg)] 
-      border-r border-[var(--card-border)] flex flex-col z-40
-      transform transition-transform duration-300 ease-in-out
-      ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-    `}>
+    <aside 
+      className={`
+        fixed left-0 top-0 h-full w-64 lg:w-56
+        border-r border-[var(--card-border)] flex flex-col z-40
+        transform transition-transform duration-300 ease-in-out
+        ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}
+      style={{ backgroundColor: sidebarBg }}
+    >
       {/* Logo */}
       <div className="p-4 border-b border-gray-200 dark:border-slate-700/50 flex items-center justify-between">
         <div className="flex items-center gap-3">

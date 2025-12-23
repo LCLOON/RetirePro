@@ -8,8 +8,18 @@ export function TopBar() {
   const { state, saveToLocalStorage, exportToJSON } = useApp();
   const { toggle } = useSidebar();
 
+  // Theme-aware header background
+  const headerBg = state.theme === 'dark' 
+    ? 'rgba(30, 41, 59, 0.8)' 
+    : state.theme === 'medium' 
+      ? 'rgba(186, 230, 253, 0.8)' 
+      : 'rgba(255, 255, 255, 0.8)';
+
   return (
-    <header className="h-14 bg-[var(--card-bg)]/80 backdrop-blur-sm border-b border-[var(--card-border)] flex items-center justify-between px-4 md:px-6">
+    <header 
+      className="h-14 backdrop-blur-sm border-b border-[var(--card-border)] flex items-center justify-between px-4 md:px-6"
+      style={{ backgroundColor: headerBg }}
+    >
       {/* Left Side - Hamburger + Page Title */}
       <div className="flex items-center gap-3">
         {/* Hamburger Menu - Mobile Only */}
