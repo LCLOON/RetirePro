@@ -8,8 +8,6 @@ import { useApp } from '@/lib/store';
 import { calculateMortgagePayment, generateAmortizationSchedule, formatCurrency } from '@/lib/calculations';
 import type { MortgageEntry } from '@/lib/types';
 import {
-  LineChart,
-  Line,
   AreaChart,
   Area,
   XAxis,

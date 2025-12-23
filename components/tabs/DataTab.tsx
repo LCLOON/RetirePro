@@ -11,7 +11,7 @@ import { US_STATES, IncomeSource, DEFAULT_INHERITED_IRA, DEFAULT_DIVIDEND_PORTFO
 export function DataTab() {
   const { state, updateRetirementData, runCalculations } = useApp();
   const data = state.retirementData;
-  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
+  const [_expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
     spouse: data.filingStatus === 'married',
     hsa: data.currentHSA > 0 || data.annualHSAContribution > 0,
     inheritedIra: data.hasInheritedIRA,
@@ -22,7 +22,7 @@ export function DataTab() {
     rothConversion: data.rothConversionEnabled,
   });
 
-  const toggleSection = (section: string) => {
+  const _toggleSection = (section: string) => {
     setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
   };
 

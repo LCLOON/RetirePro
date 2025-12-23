@@ -59,7 +59,6 @@ export function AnalysisTab() {
     : totalSavings + totalContributions * yearsToRetirement;
   
   const pensionAtRetirement = data.hasPension && data.retirementAge >= data.pensionStartAge ? data.pensionIncome : 0;
-  const retirementNeeds = data.retirementExpenses * yearsInRetirement;
   const incomeGap = data.retirementExpenses - (totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome);
   // safeWithdrawalRate is already decimal (0.04 = 4%)
   const savingsNeeded = incomeGap > 0 && data.safeWithdrawalRate > 0 ? incomeGap / data.safeWithdrawalRate : 0;

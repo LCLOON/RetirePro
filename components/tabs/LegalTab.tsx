@@ -37,23 +37,55 @@ const DEFAULT_LEGAL_DATA: LegalData = {
   specialInstructions: '',
 };
 
-export function LegalTab() {
-  const [legalData, setLegalData] = useState<LegalData>(DEFAULT_LEGAL_DATA);
-  const [isSaved, setIsSaved] = useState(true);
-  const [showSummary, setShowSummary] = useState(false);
+// InputField component defined OUTSIDE of LegalTab to prevent re-creation
+function InputField({ 
+  label, 
+  value, 
+  onChange, 
+  placeholder = '',
+  type = 'text',
+  className = ''
+}: { 
+  label: string; 
+  value: string; 
+  onChange: (value: string) => void;
+  placeholder?: string;
+  type?: string;
+  className?: string;
+}) {
+  return (
+    <div className={className}>
+      <label className="block text-slate-400 text-sm mb-1">{label}</label>
+      <input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        placeholder={placeholder}
+        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+      />
+    </div>
+  );
+}
 
-  // Load data from localStorage
-  useEffect(() => {
+// Load legal data from localStorage synchronously for initial state
+function getInitialLegalData(): LegalData {
+  if (typeof window === 'undefined') return DEFAULT_LEGAL_DATA;
+  try {
     const saved = localStorage.getItem('retirepro-legal-data');
     if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        setLegalData({ ...DEFAULT_LEGAL_DATA, ...parsed });
-      } catch (e) {
-        console.error('Failed to load legal data:', e);
-      }
+      const parsed = JSON.parse(saved);
+      return { ...DEFAULT_LEGAL_DATA, ...parsed };
     }
-  }, []);
+  } catch (e) {
+    console.error('Failed to load legal data:', e);
+  }
+  return DEFAULT_LEGAL_DATA;
+}
+
+export function LegalTab() {
+  const [legalData, setLegalData] = useState<LegalData>(getInitialLegalData);
+  const [isSaved, setIsSaved] = useState(true);
+  const [showSummary, setShowSummary] = useState(false);
 
   // Auto-save when data changes
   useEffect(() => {
@@ -88,33 +120,6 @@ export function LegalTab() {
   const printSummary = () => {
     window.print();
   };
-
-  const InputField = ({ 
-    label, 
-    value, 
-    onChange, 
-    placeholder = '',
-    type = 'text',
-    className = ''
-  }: { 
-    label: string; 
-    value: string; 
-    onChange: (value: string) => void;
-    placeholder?: string;
-    type?: string;
-    className?: string;
-  }) => (
-    <div className={className}>
-      <label className="block text-slate-400 text-sm mb-1">{label}</label>
-      <input
-        type={type}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        placeholder={placeholder}
-        className="w-full bg-slate-700/50 border border-slate-600 rounded-lg px-3 py-2 text-white placeholder-slate-500 focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
-      />
-    </div>
-  );
 
   return (
     <div className="space-y-6">

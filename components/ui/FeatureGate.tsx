@@ -11,8 +11,6 @@ interface UpgradeModalProps {
 }
 
 export function UpgradeModal({ isOpen, onClose, requiredTier, featureName }: UpgradeModalProps) {
-  const { tier } = useSubscription();
-
   if (!isOpen) return null;
 
   const tierInfo = TIER_INFO[requiredTier];

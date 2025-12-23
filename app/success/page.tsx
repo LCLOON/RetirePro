@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
@@ -8,16 +8,14 @@ function SuccessContent() {
   const searchParams = useSearchParams();
   const plan = searchParams.get('plan') || 'pro';
   const sessionId = searchParams.get('session_id');
-  const [tier, setTier] = useState<'pro' | 'premium'>('pro');
+  
+  // Derive tier directly from plan - no need for state
+  const tier: 'pro' | 'premium' = plan === 'premium' ? 'premium' : 'pro';
 
   useEffect(() => {
-    // Set the tier based on the plan from URL
-    const newTier = plan === 'premium' ? 'premium' : 'pro';
-    setTier(newTier);
-    
     // Store the subscription tier in localStorage
-    localStorage.setItem('retirepro_subscription_tier', newTier);
-  }, [plan]);
+    localStorage.setItem('retirepro_subscription_tier', tier);
+  }, [tier]);
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 text-white flex items-center justify-center p-4">

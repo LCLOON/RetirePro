@@ -5,7 +5,7 @@ import { useSidebar } from './DashboardLayout';
 import { Button } from '@/components/ui/Button';
 
 export function TopBar() {
-  const { state, runCalculations, saveToLocalStorage, exportToJSON } = useApp();
+  const { state, saveToLocalStorage, exportToJSON } = useApp();
   const { toggle } = useSidebar();
 
   return (

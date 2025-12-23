@@ -117,10 +117,10 @@ export function SocialSecurityTab() {
   const spousalBenefitFromYou = pia * 0.5; // Spouse could get 50% of your PIA
   const spousalBenefitFromSpouse = spousePIA * 0.5; // You could get 50% of spouse's PIA
   const spouseQualifiesForSpousal = retData.hasSpouse && spousalBenefitFromYou > spousePIA;
-  const youQualifyForSpousal = retData.hasSpouse && spousalBenefitFromSpouse > pia;
+  const _youQualifyForSpousal = retData.hasSpouse && spousalBenefitFromSpouse > pia;
   
   // If spouse qualifies, their effective benefit at FRA would be spousal benefit
-  const spouseEffectiveBenefit67 = spouseQualifiesForSpousal 
+  const _spouseEffectiveBenefit67 = spouseQualifiesForSpousal 
     ? Math.max(spouseBenefit67, spousalBenefitFromYou) 
     : spouseBenefit67;
   
@@ -183,6 +183,7 @@ export function SocialSecurityTab() {
         spouseSocialSecurityStartAge: ssData.spouseClaimingAge || 67,
       });
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [yourSelectedBenefit, spouseSelectedBenefit, ssData.claimingAge, ssData.spouseClaimingAge, retData.hasSpouse]);
   
   return (

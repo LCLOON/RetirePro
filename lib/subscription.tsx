@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, ReactNode } from 'react';
 
 // Subscription tiers
 export type SubscriptionTier = 'free' | 'pro' | 'premium';
@@ -84,18 +84,20 @@ const SubscriptionContext = createContext<SubscriptionContextType | null>(null);
 // Storage key for persisting tier
 const STORAGE_KEY = 'retirepro_subscription_tier';
 
-export function SubscriptionProvider({ children }: { children: ReactNode }) {
-  const [tier, setTierState] = useState<SubscriptionTier>('free');
-  const [isLoading, setIsLoading] = useState(true);
+// Get initial tier from localStorage synchronously
+function getInitialTier(): SubscriptionTier {
+  if (typeof window === 'undefined') return 'free';
+  const stored = localStorage.getItem(STORAGE_KEY);
+  if (stored && ['free', 'pro', 'premium'].includes(stored)) {
+    return stored as SubscriptionTier;
+  }
+  return 'free';
+}
 
-  // Load tier from localStorage on mount
-  useEffect(() => {
-    const stored = localStorage.getItem(STORAGE_KEY);
-    if (stored && ['free', 'pro', 'premium'].includes(stored)) {
-      setTierState(stored as SubscriptionTier);
-    }
-    setIsLoading(false);
-  }, []);
+export function SubscriptionProvider({ children }: { children: ReactNode }) {
+  const [tier, setTierState] = useState<SubscriptionTier>(getInitialTier);
+  // Not loading since we initialize synchronously from localStorage
+  const isLoading = false;
 
   // Save tier to localStorage
   const setTier = (newTier: SubscriptionTier) => {

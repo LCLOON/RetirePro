@@ -526,14 +526,14 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10">Total Income</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10">Contributions</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">Add'l W/D</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">Add&apos;l W/D</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10">Total Spendable</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">W/D Rate</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">End Balance</th>
               </tr>
             </thead>
             <tbody>
-              {displayData.map((row, index) => {
+              {displayData.map((row) => {
                 const isRetirementYear = row.age === data.retirementAge;
                 const isSSYear = row.age === data.socialSecurityStartAge;
                 const isSpouseSSYear = data.hasSpouse && row.age === data.spouseSocialSecurityStartAge;
