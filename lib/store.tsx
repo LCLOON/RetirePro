@@ -166,7 +166,14 @@ function appReducer(state: AppState, action: Action): AppState {
     case 'UPDATE_BUDGET_DATA':
       return {
         ...state,
-        budgetData: { ...state.budgetData, ...action.payload },
+        budgetData: { 
+          income: { ...state.budgetData.income, ...action.payload.income },
+          fixedExpenses: { ...state.budgetData.fixedExpenses, ...action.payload.fixedExpenses },
+          debtPayments: { ...state.budgetData.debtPayments, ...action.payload.debtPayments },
+          subscriptions: { ...state.budgetData.subscriptions, ...action.payload.subscriptions },
+          variableExpenses: { ...state.budgetData.variableExpenses, ...action.payload.variableExpenses },
+          savings: { ...state.budgetData.savings, ...action.payload.savings },
+        },
         hasUnsavedChanges: true,
       };
       
