@@ -470,6 +470,23 @@ export function DataTab() {
                   { value: 'year_10_lump_sum', label: 'Year 10 Lump Sum' },
                 ]}
               />
+              <Checkbox
+                label="Original owner was already taking RMDs"
+                checked={data.inheritedIRA.originalOwnerStartedRMD}
+                onChange={(v) => updateRetirementData({ 
+                  inheritedIRA: { ...data.inheritedIRA, originalOwnerStartedRMD: v }
+                })}
+              />
+              {data.inheritedIRA.originalOwnerStartedRMD && (
+                <div className="col-span-full p-3 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                  <p className="text-sm text-amber-400 font-medium">⚠️ Annual RMDs Required</p>
+                  <p className="text-xs text-slate-400 mt-1">
+                    Since the original owner was already taking RMDs when they passed, you are required to take 
+                    annual RMDs based on your life expectancy AND empty the account within 10 years. 
+                    The calculator will automatically use the Annual RMD strategy.
+                  </p>
+                </div>
+              )}
               {data.inheritedIRA.beneficiaryType === 'non_spouse_eligible' && (
                 <Checkbox
                   label="Use Stretch IRA (Life Expectancy)"

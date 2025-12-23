@@ -109,12 +109,14 @@ const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
 
 // Calculate Inherited IRA withdrawal (10-year rule with multiple strategies)
 // Supports: spread_evenly, year_10_lump_sum, back_loaded, annual_rmd
+// IMPORTANT: If original owner died AFTER starting RMDs, annual_rmd is REQUIRED by IRS
 function calculateInheritedIRAWithdrawal(
   inheritedBalance: number,
   currentYear: number,
   inheritedYear: number,
   withdrawalStrategy: 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd' = 'annual_rmd',
-  beneficiaryAge?: number
+  beneficiaryAge?: number,
+  originalOwnerStartedRMD: boolean = false
 ): number {
   if (inheritedBalance <= 0) return 0;
   
@@ -124,7 +126,11 @@ function calculateInheritedIRAWithdrawal(
   // Account must be emptied by year 10
   if (yearsRemaining <= 0) return inheritedBalance;
   
-  switch (withdrawalStrategy) {
+  // IRS RULE: If original owner died AFTER RBD, annual RMDs are REQUIRED
+  // Override user's strategy choice if they selected something invalid
+  const effectiveStrategy = originalOwnerStartedRMD ? 'annual_rmd' : withdrawalStrategy;
+  
+  switch (effectiveStrategy) {
     case 'annual_rmd':
       // Annual RMDs based on Single Life Expectancy Table
       // This applies when original owner died AFTER their RBD (already taking RMDs)
@@ -250,7 +256,8 @@ function generateYearByYear(
         year, 
         data.inheritedIRA.inheritedYear,
         data.inheritedIRA.withdrawalStrategy || 'annual_rmd',
-        age // Pass current age for life expectancy calculation
+        age, // Pass current age for life expectancy calculation
+        data.inheritedIRA.originalOwnerStartedRMD || false // Force annual RMD if original owner was taking RMDs
       );
     }
     
