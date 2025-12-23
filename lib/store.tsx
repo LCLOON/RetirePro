@@ -266,6 +266,7 @@ interface AppContextType {
   addDebt: (name?: string) => void;
   updateDebt: (id: string, data: Partial<DebtEntry>) => void;
   removeDebt: (id: string) => void;
+  syncMortgageToNetWorth: () => void;
   runCalculations: () => Promise<void>;
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
@@ -602,6 +603,30 @@ export function AppProvider({ children }: { children: ReactNode }) {
     dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { debts: filtered } });
   }, [state.netWorthData.debts]);
 
+  // Sync mortgage data to net worth properties
+  const syncMortgageToNetWorth = useCallback(() => {
+    const newProperties: PropertyEntry[] = state.mortgageData.mortgages.map(m => ({
+      id: `synced-${m.id}`,
+      name: m.name,
+      type: m.propertyType === 'primary' ? 'primary_residence' as const : 
+            m.propertyType === 'investment' ? 'investment' as const :
+            m.propertyType === 'vacation' ? 'vacation' as const : 'investment' as const,
+      currentValue: m.currentHomeValue,
+      purchasePrice: m.purchasePrice,
+      purchaseYear: m.purchaseYear,
+      address: m.location,
+      mortgageBalance: m.currentBalance,
+      rentalIncome: m.monthlyRentalIncome,
+    }));
+    
+    // Replace existing synced properties, keep manually added ones
+    const manualProperties = state.netWorthData.properties.filter(p => !p.id.startsWith('synced-'));
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { properties: [...newProperties, ...manualProperties] } 
+    });
+  }, [state.mortgageData.mortgages, state.netWorthData.properties]);
+
   const updateSocialSecurityData = useCallback((data: Partial<SocialSecurityData>) => {
     dispatch({ type: 'UPDATE_SOCIAL_SECURITY_DATA', payload: data });
   }, []);
@@ -743,6 +768,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addDebt,
       updateDebt,
       removeDebt,
+      syncMortgageToNetWorth,
       runCalculations,
       saveToLocalStorage,
       loadFromLocalStorage,

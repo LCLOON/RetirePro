@@ -578,6 +578,7 @@ export function NetWorthTab() {
     addRetirementAccount, updateRetirementAccount, removeRetirementAccount,
     addPersonalAsset, updatePersonalAsset, removePersonalAsset,
     addDebt, updateDebt, removeDebt,
+    syncMortgageToNetWorth,
   } = useApp();
   
   const data = state.netWorthData;
@@ -725,6 +726,27 @@ export function NetWorthTab() {
             total={propertyTotal}
             count={data.properties.length}
           >
+            {/* Sync from Mortgage Tab button */}
+            {state.mortgageData.mortgages.length > 0 && (
+              <div className="mb-4 p-3 bg-blue-500/10 border border-blue-500/30 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-blue-400">
+                      📋 {state.mortgageData.mortgages.length} propert{state.mortgageData.mortgages.length === 1 ? 'y' : 'ies'} found in Mortgage tab
+                    </p>
+                    <p className="text-xs text-slate-400 mt-1">
+                      Click to sync property values and mortgage balances automatically
+                    </p>
+                  </div>
+                  <button
+                    onClick={syncMortgageToNetWorth}
+                    className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors"
+                  >
+                    Sync from Mortgage
+                  </button>
+                </div>
+              </div>
+            )}
             {data.properties.length === 0 ? (
               <p className="text-gray-500 text-sm">No properties added. Click below to add your first property.</p>
             ) : (
