@@ -78,7 +78,7 @@ function migrateData(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 // Theme type
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'medium';
 
 // App State
 interface AppState {
@@ -279,7 +279,7 @@ const AppContext = createContext<AppContextType | null>(null);
 function getInitialState(): AppState {
   if (typeof window !== 'undefined') {
     const savedTheme = localStorage.getItem('retirepro-theme-v3') as Theme | null;
-    if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
+    if (savedTheme && ['light', 'dark', 'medium'].includes(savedTheme)) {
       return { ...initialState, theme: savedTheme };
     }
   }
@@ -295,6 +295,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', state.theme === 'dark');
+    root.classList.toggle('medium', state.theme === 'medium');
   }, [state.theme]);
   
   // AUTO-LOAD data from localStorage on mount
