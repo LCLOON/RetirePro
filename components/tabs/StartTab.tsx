@@ -346,13 +346,22 @@ export function StartTab() {
                   { name: '💳 Debt Payments', value: totalDebtPayments, color: 'text-red-400' },
                   { name: '📺 Subscriptions', value: totalSubscriptions, color: 'text-purple-400' },
                   { name: '🛒 Variable', value: totalVariableExpenses, color: 'text-amber-400' },
-                  { name: '💎 Savings', value: totalBudgetSavings, color: 'text-emerald-400' },
                 ].filter(item => item.value > 0).map((item, idx) => (
                   <div key={idx} className="flex justify-between text-sm">
                     <span className="text-slate-400">{item.name}</span>
                     <span className={item.color}>-${item.value.toLocaleString()}</span>
                   </div>
                 ))}
+                {/* Total Expenses */}
+                <div className="flex justify-between text-sm pt-1 border-t border-slate-700">
+                  <span className="text-white font-medium">📊 Total Expenses</span>
+                  <span className="text-red-400 font-bold">-${totalExpenses.toLocaleString()}</span>
+                </div>
+                {/* Savings - separate from expenses */}
+                <div className="flex justify-between text-sm pt-1">
+                  <span className="text-slate-400">💎 Savings</span>
+                  <span className="text-emerald-400">-${totalBudgetSavings.toLocaleString()}</span>
+                </div>
               </div>
 
               {/* Progress Bars */}
