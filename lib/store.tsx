@@ -288,11 +288,20 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Apply theme to document IMMEDIATELY on mount and when theme changes
   useEffect(() => {
     const root = document.documentElement;
+    const body = document.body;
     root.classList.remove('dark', 'medium');
+    
     if (state.theme === 'dark') {
       root.classList.add('dark');
+      body.style.backgroundColor = '#0f172a';
+      body.style.color = '#f1f5f9';
     } else if (state.theme === 'medium') {
       root.classList.add('medium');
+      body.style.backgroundColor = '#e0f2fe';
+      body.style.color = '#0c4a6e';
+    } else {
+      body.style.backgroundColor = '#f8fafc';
+      body.style.color = '#0f172a';
     }
   }, [state.theme]);
   
