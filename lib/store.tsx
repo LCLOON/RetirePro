@@ -269,7 +269,7 @@ interface AppContextType {
   runCalculations: () => Promise<void>;
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
-  exportToJSON: () => void;
+  exportToJSON: () => void | Promise<void>;
   resetAll: () => void;
 }
 
@@ -278,12 +278,13 @@ const AppContext = createContext<AppContextType | null>(null);
 // Lazy initializer for state with theme from localStorage
 function getInitialState(): AppState {
   if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem('retirepro-theme') as Theme | null;
+    const savedTheme = localStorage.getItem('retirepro-theme-v3') as Theme | null;
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
       return { ...initialState, theme: savedTheme };
     }
   }
-  return initialState;
+  // Default to dark if no saved theme
+  return { ...initialState, theme: 'dark' };
 }
 
 // Provider
@@ -359,7 +360,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   
   const setTheme = useCallback((theme: Theme) => {
     dispatch({ type: 'SET_THEME', payload: theme });
-    localStorage.setItem('retirepro-theme', theme);
+    localStorage.setItem('retirepro-theme-v3', theme);
   }, []);
   
   const updateRetirementData = useCallback((data: Partial<RetirementData>) => {
@@ -638,7 +639,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
-  const exportToJSON = useCallback(() => {
+  const exportToJSON = useCallback(async () => {
     const dataToExport = {
       version: '3.0',
       exportDate: new Date().toISOString(),
@@ -652,11 +653,37 @@ export function AppProvider({ children }: { children: ReactNode }) {
       monteCarloResults: state.monteCarloResults,
     };
     
-    const blob = new Blob([JSON.stringify(dataToExport, null, 2)], { type: 'application/json' });
+    const jsonString = JSON.stringify(dataToExport, null, 2);
+    const fileName = `retirepro-export-${new Date().toISOString().split('T')[0]}.json`;
+
+    try {
+      // Try to use the File System Access API for "Save As" functionality
+      if ('showSaveFilePicker' in window) {
+        const handle = await (window as any).showSaveFilePicker({
+          suggestedName: fileName,
+          types: [{
+            description: 'JSON File',
+            accept: { 'application/json': ['.json'] },
+          }],
+        });
+        const writable = await handle.createWritable();
+        await writable.write(jsonString);
+        await writable.close();
+        return;
+      }
+    } catch (err) {
+      // If user cancels or API fails, fall back to download
+      if ((err as Error).name === 'AbortError') {
+        return; // User cancelled
+      }
+      console.error('Error saving file:', err);
+    }
+    
+    const blob = new Blob([jsonString], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `retirepro-export-${new Date().toISOString().split('T')[0]}.json`;
+    a.download = fileName;
     a.click();
     URL.revokeObjectURL(url);
   }, [state]);
