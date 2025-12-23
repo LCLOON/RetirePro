@@ -96,12 +96,12 @@ export function HelpTab() {
           {faqs.map((faq, index) => (
             <details 
               key={index} 
-              className="group border border-gray-200 dark:border-gray-700 rounded-lg"
+              className="group border border-slate-600 rounded-lg bg-slate-700/50"
             >
-              <summary className="flex items-center justify-between p-4 cursor-pointer list-none">
-                <span className="font-medium text-gray-900 dark:text-white">{faq.question}</span>
+              <summary className="flex items-center justify-between p-4 cursor-pointer list-none hover:bg-slate-600/50 rounded-lg transition-colors">
+                <span className="font-medium text-white">{faq.question}</span>
                 <svg 
-                  className="w-5 h-5 text-gray-500 transition-transform group-open:rotate-180" 
+                  className="w-5 h-5 text-slate-400 transition-transform group-open:rotate-180" 
                   fill="none" 
                   stroke="currentColor" 
                   viewBox="0 0 24 24"
@@ -109,7 +109,7 @@ export function HelpTab() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
-              <div className="px-4 pb-4 text-sm text-slate-400">
+              <div className="px-4 pb-4 text-sm text-slate-300">
                 {faq.answer}
               </div>
             </details>
