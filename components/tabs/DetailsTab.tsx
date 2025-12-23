@@ -39,12 +39,14 @@ const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
 
 // Calculate Inherited IRA RMD (10-year rule for non-spouse)
 // Supports different strategies: spread_evenly, year_10_lump_sum, back_loaded, annual_rmd
+// IMPORTANT: If original owner died AFTER starting RMDs, annual_rmd is REQUIRED by IRS
 function calculateInheritedIRAWithdrawal(
   inheritedBalance: number,
   currentYear: number,
   inheritedYear: number,
   withdrawalStrategy: 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd' = 'annual_rmd',
-  beneficiaryAge?: number
+  beneficiaryAge?: number,
+  originalOwnerStartedRMD: boolean = false
 ): number {
   if (inheritedBalance <= 0) return 0;
   
@@ -54,7 +56,11 @@ function calculateInheritedIRAWithdrawal(
   // Account must be emptied by year 10
   if (yearsRemaining <= 0) return inheritedBalance;
   
-  switch (withdrawalStrategy) {
+  // IRS RULE: If original owner died AFTER RBD, annual RMDs are REQUIRED
+  // Override user's strategy choice if they selected something invalid
+  const effectiveStrategy = originalOwnerStartedRMD ? 'annual_rmd' : withdrawalStrategy;
+  
+  switch (effectiveStrategy) {
     case 'annual_rmd':
       // Annual RMDs based on Single Life Expectancy Table
       // This applies when original owner died AFTER their RBD (already taking RMDs)
@@ -200,12 +206,17 @@ export function DetailsTab() {
       
       // Inherited IRA withdrawals (10-year rule)
       if (data.hasInheritedIRA && startInherited > 0) {
+        // Calculate this year's growth first so year-10 lump sum includes final year growth
+        const inheritedIRAGrowthForRMD = startInherited * (data.inheritedIRA?.expectedGrowthRate ?? yearReturn);
+        const balanceWithGrowth = startInherited + inheritedIRAGrowthForRMD;
+        
         rmdInherited = calculateInheritedIRAWithdrawal(
-          startInherited,
+          balanceWithGrowth, // Use balance INCLUDING this year's growth
           currentYear,
           data.inheritedIRA.inheritedYear,
           data.inheritedIRA.withdrawalStrategy || 'annual_rmd',
-          age // Pass current age for life expectancy calculation
+          age, // Pass current age for life expectancy calculation
+          data.inheritedIRA.originalOwnerStartedRMD || false // Force annual RMD if original owner was taking RMDs
         );
       }
       
@@ -531,7 +542,7 @@ export function DetailsTab() {
         <div className="p-4 bg-slate-800/50 border border-slate-700 rounded-xl">
           <p className="text-slate-400 text-sm">Starting Balance</p>
           <p className="text-2xl font-bold text-white">
-            ${(data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax).toLocaleString()}
+            ${Math.round(yearData[0]?.startBalance || 0).toLocaleString()}
           </p>
         </div>
         <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-xl">
