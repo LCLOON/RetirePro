@@ -36,7 +36,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarContext.Provider value={sidebarContext}>
-      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white transition-colors">
+      <div className="min-h-screen bg-[var(--background)] text-[var(--foreground)] transition-colors">
         {/* Mobile Overlay */}
         {isSidebarOpen && (
           <div 

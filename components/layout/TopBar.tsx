@@ -9,7 +9,7 @@ export function TopBar() {
   const { toggle } = useSidebar();
 
   return (
-    <header className="h-14 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-b border-gray-200 dark:border-slate-700/50 flex items-center justify-between px-4 md:px-6">
+    <header className="h-14 bg-[var(--card-bg)]/80 backdrop-blur-sm border-b border-[var(--card-border)] flex items-center justify-between px-4 md:px-6">
       {/* Left Side - Hamburger + Page Title */}
       <div className="flex items-center gap-3">
         {/* Hamburger Menu - Mobile Only */}

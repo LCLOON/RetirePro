@@ -98,8 +98,8 @@ export function Sidebar() {
 
   return (
     <aside className={`
-      fixed left-0 top-0 h-full w-64 lg:w-56 bg-gradient-to-b from-gray-100 to-gray-200 dark:from-slate-900 dark:to-slate-800 
-      border-r border-gray-200 dark:border-slate-700/50 flex flex-col z-40
+      fixed left-0 top-0 h-full w-64 lg:w-56 bg-[var(--card-bg)] 
+      border-r border-[var(--card-border)] flex flex-col z-40
       transform transition-transform duration-300 ease-in-out
       ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
     `}>

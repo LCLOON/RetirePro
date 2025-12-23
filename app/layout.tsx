@@ -318,8 +318,15 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  // Always start in dark mode
+                  var theme = localStorage.getItem('retirepro-theme-v3');
+                  // Always start with dark, then useEffect will adjust
                   document.documentElement.classList.add('dark');
+                  if (theme === 'medium') {
+                    document.documentElement.classList.add('medium');
+                    document.documentElement.classList.remove('dark');
+                  } else if (theme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                  }
                 } catch (e) {}
               })();
             `,
