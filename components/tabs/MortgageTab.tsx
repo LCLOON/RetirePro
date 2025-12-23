@@ -56,27 +56,47 @@ function MortgageCard({
     ? (mortgage.currentBalance / mortgage.currentHomeValue) * 100 
     : 0;
   
-  // Calculate monthly payment
-  const monthlyPayment = calculateMortgagePayment(
-    mortgage.currentBalance,
+  // Calculate monthly P&I based on ORIGINAL loan terms
+  const originalMonthlyPayment = calculateMortgagePayment(
+    mortgage.loanAmount, // Original loan amount
     mortgage.interestRate,
-    mortgage.loanTermYears - (new Date().getFullYear() - mortgage.startYear)
+    mortgage.loanTermYears // Original term
   );
   
   const remainingYears = Math.max(0, mortgage.loanTermYears - (new Date().getFullYear() - mortgage.startYear));
-  const totalMonthlyPayment = monthlyPayment + 
+  const totalMonthlyPayment = originalMonthlyPayment + 
     (mortgage.propertyTax / 12) + 
     (mortgage.insurance / 12) + 
     (mortgage.pmi / 12) + 
     (mortgage.hoaFees);
   
-  // Amortization
-  const amortization = generateAmortizationSchedule(
-    mortgage.currentBalance,
-    mortgage.interestRate,
-    remainingYears,
-    mortgage.extraPayment
-  );
+  // Amortization - use current balance but calculate with ORIGINAL payment amount
+  // This shows how many months until the balance reaches $0
+  const monthlyRate = mortgage.interestRate / 12;
+  const amortizationData: { month: number; payment: number; principal: number; interest: number; endingBalance: number }[] = [];
+  let balance = mortgage.currentBalance;
+  let month = 0;
+  
+  while (balance > 0.01 && month < 600) { // Max 50 years as safety
+    month++;
+    const interest = balance * monthlyRate;
+    const principalPayment = originalMonthlyPayment + mortgage.extraPayment - interest;
+    const actualPrincipal = Math.min(principalPayment, balance);
+    balance = Math.max(0, balance - actualPrincipal);
+    
+    amortizationData.push({
+      month,
+      payment: balance > 0 ? originalMonthlyPayment + mortgage.extraPayment : actualPrincipal + interest,
+      principal: actualPrincipal,
+      interest,
+      endingBalance: balance,
+    });
+    
+    if (balance <= 0) break;
+  }
+  
+  const amortization = amortizationData;
+  const monthlyPayment = originalMonthlyPayment; // For display purposes
   
   const totalInterest = amortization.reduce((sum, a) => sum + a.interest, 0);
   
