@@ -518,8 +518,8 @@ export function DetailsTab() {
 
       {/* Year-by-Year Table */}
       <Card title="📅 Annual Projections" icon="📅">
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm min-w-[1400px]">
+        <div className="overflow-x-auto -mx-4 px-4">
+          <table className="text-sm" style={{ minWidth: '1200px' }}>
             <thead>
               <tr className="border-b border-slate-700">
                 <th className="text-left py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Age</th>
@@ -582,7 +582,7 @@ export function DetailsTab() {
                         {row.phase}
                       </span>
                     </td>
-                    <td className="py-2 px-2 text-right text-slate-300">
+                    <td className="py-2 px-2 text-right text-slate-300 whitespace-nowrap">
                       ${Math.round(row.startBalance).toLocaleString()}
                     </td>
                     <td className={`py-2 px-2 text-right ${row.growth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
