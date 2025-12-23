@@ -151,35 +151,35 @@ export function BudgetTab() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card title="Annual Summary">
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <p className="text-sm font-medium text-green-700 dark:text-green-400">Annual Income</p>
-              <p className="text-xl font-bold text-green-900 dark:text-green-300">{formatCurrency(summary.totalIncome * 12)}</p>
+            <div className="p-4 bg-green-900/30 rounded-lg">
+              <p className="text-sm font-medium text-green-400">Annual Income</p>
+              <p className="text-xl font-bold text-green-300">{formatCurrency(summary.totalIncome * 12)}</p>
             </div>
-            <div className="p-4 bg-red-50 dark:bg-red-900/20 rounded-lg">
-              <p className="text-sm font-medium text-red-700 dark:text-red-400">Annual Expenses</p>
-              <p className="text-xl font-bold text-red-900 dark:text-red-300">{formatCurrency(summary.totalExpenses * 12)}</p>
+            <div className="p-4 bg-red-900/30 rounded-lg">
+              <p className="text-sm font-medium text-red-400">Annual Expenses</p>
+              <p className="text-xl font-bold text-red-300">{formatCurrency(summary.totalExpenses * 12)}</p>
             </div>
-            <div className={`p-4 rounded-lg ${summary.netIncome >= 0 ? 'bg-blue-50 dark:bg-blue-900/20' : 'bg-amber-50 dark:bg-amber-900/20'}`}>
-              <p className={`text-sm font-medium ${summary.netIncome >= 0 ? 'text-blue-700 dark:text-blue-400' : 'text-amber-700 dark:text-amber-400'}`}>
+            <div className={`p-4 rounded-lg ${summary.netIncome >= 0 ? 'bg-blue-900/30' : 'bg-amber-900/30'}`}>
+              <p className={`text-sm font-medium ${summary.netIncome >= 0 ? 'text-blue-400' : 'text-amber-400'}`}>
                 Annual Net
               </p>
-              <p className={`text-xl font-bold ${summary.netIncome >= 0 ? 'text-blue-900 dark:text-blue-300' : 'text-amber-900 dark:text-amber-300'}`}>
+              <p className={`text-xl font-bold ${summary.netIncome >= 0 ? 'text-blue-300' : 'text-amber-300'}`}>
                 {formatCurrency(summary.netIncome * 12)}
               </p>
             </div>
           </div>
-          <div className="mt-4 p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-lg">
+          <div className="mt-4 p-4 bg-emerald-900/30 rounded-lg">
             <div className="flex justify-between items-center">
-              <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">Savings Rate</p>
-              <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">{savingsRate.toFixed(1)}%</p>
+              <p className="text-sm font-medium text-emerald-400">Savings Rate</p>
+              <p className="text-2xl font-bold text-emerald-300">{savingsRate.toFixed(1)}%</p>
             </div>
-            <div className="mt-2 h-2 bg-emerald-200 dark:bg-emerald-800 rounded-full overflow-hidden">
+            <div className="mt-2 h-2 bg-emerald-800 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-emerald-500 transition-all duration-500"
                 style={{ width: `${Math.min(savingsRate, 100)}%` }}
               />
             </div>
-            <p className="text-xs text-emerald-600 dark:text-emerald-500 mt-1">
+            <p className="text-xs text-emerald-500 mt-1">
               {savingsRate >= 20 ? '🎉 Excellent! You\'re on track for financial independence' : 
                savingsRate >= 15 ? '👍 Great! Above average savings rate' :
                savingsRate >= 10 ? '📈 Good start, try to increase to 15-20%' :
