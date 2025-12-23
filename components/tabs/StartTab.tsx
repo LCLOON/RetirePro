@@ -71,6 +71,18 @@ export function StartTab() {
   const totalAssets = realEstateValue + vehicleAssets + bankAccounts + brokerageAccounts + cryptoAssets + totalSavings;
   const totalLiabilities = realEstateMortgage + vehicleLoans + otherDebts;
   const netWorth = totalAssets - totalLiabilities;
+
+  // Calculate Budget KPIs
+  const budgetData = state.budgetData;
+  const totalIncome = Object.values(budgetData.income).reduce((sum, val) => sum + val, 0);
+  const totalFixedExpenses = Object.values(budgetData.fixedExpenses).reduce((sum, val) => sum + val, 0);
+  const totalDebtPayments = Object.values(budgetData.debtPayments).reduce((sum, val) => sum + val, 0);
+  const totalSubscriptions = Object.values(budgetData.subscriptions).reduce((sum, val) => sum + val, 0);
+  const totalVariableExpenses = Object.values(budgetData.variableExpenses).reduce((sum, val) => sum + val, 0);
+  const totalBudgetSavings = Object.values(budgetData.savings).reduce((sum, val) => sum + val, 0);
+  const totalExpenses = totalFixedExpenses + totalDebtPayments + totalSubscriptions + totalVariableExpenses;
+  const monthlyCashflow = totalIncome - totalExpenses - totalBudgetSavings;
+  const savingsRate = totalIncome > 0 ? ((totalBudgetSavings / totalIncome) * 100) : 0;
   
   return (
     <div className="space-y-6">
@@ -317,8 +329,101 @@ export function StartTab() {
           </div>
         </Card>
 
+        {/* Monthly Budget Summary */}
+        <Card icon="💵" title="Monthly Budget">
+          {totalIncome > 0 ? (
+            <div className="space-y-4">
+              {/* Income */}
+              <div className="flex justify-between items-center">
+                <span className="text-sm text-slate-400">💰 Monthly Income</span>
+                <span className="text-emerald-400 font-bold">${totalIncome.toLocaleString()}</span>
+              </div>
+
+              {/* Expense Breakdown */}
+              <div className="space-y-2">
+                {[
+                  { name: '🏠 Fixed Expenses', value: totalFixedExpenses, color: 'text-blue-400' },
+                  { name: '💳 Debt Payments', value: totalDebtPayments, color: 'text-red-400' },
+                  { name: '📺 Subscriptions', value: totalSubscriptions, color: 'text-purple-400' },
+                  { name: '🛒 Variable', value: totalVariableExpenses, color: 'text-amber-400' },
+                  { name: '💎 Savings', value: totalBudgetSavings, color: 'text-emerald-400' },
+                ].filter(item => item.value > 0).map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="text-slate-400">{item.name}</span>
+                    <span className={item.color}>-${item.value.toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Progress Bars */}
+              <div className="space-y-2 pt-2">
+                {/* Expenses vs Income */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-400">Expenses</span>
+                    <span className="text-slate-300">{((totalExpenses / totalIncome) * 100).toFixed(0)}%</span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className="h-full bg-gradient-to-r from-blue-500 via-purple-500 to-amber-500 rounded-full"
+                      style={{ width: `${Math.min((totalExpenses / totalIncome) * 100, 100)}%` }}
+                    />
+                  </div>
+                </div>
+                {/* Savings Rate */}
+                <div>
+                  <div className="flex justify-between text-xs mb-1">
+                    <span className="text-slate-400">Savings Rate</span>
+                    <span className={savingsRate >= 20 ? 'text-emerald-400' : savingsRate >= 10 ? 'text-amber-400' : 'text-red-400'}>
+                      {savingsRate.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div className="h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div 
+                      className={`h-full rounded-full ${savingsRate >= 20 ? 'bg-emerald-500' : savingsRate >= 10 ? 'bg-amber-500' : 'bg-red-500'}`}
+                      style={{ width: `${Math.min(savingsRate, 100)}%` }}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* Cash Flow */}
+              <div className="pt-3 border-t border-slate-700">
+                <div className="flex justify-between items-center">
+                  <span className="text-sm text-slate-400">Monthly Cash Flow</span>
+                  <span className={`text-lg font-bold ${monthlyCashflow >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                    {monthlyCashflow >= 0 ? '+' : ''}{monthlyCashflow.toLocaleString('en-US', { style: 'currency', currency: 'USD', maximumFractionDigits: 0 })}
+                  </span>
+                </div>
+                {savingsRate >= 20 && (
+                  <div className="text-xs text-emerald-500 mt-1">🎯 Great savings rate! 20%+ is excellent</div>
+                )}
+                {savingsRate >= 10 && savingsRate < 20 && (
+                  <div className="text-xs text-amber-500 mt-1">📈 Good progress! Aim for 20%+ savings</div>
+                )}
+                {savingsRate < 10 && savingsRate > 0 && (
+                  <div className="text-xs text-red-400 mt-1">⚠️ Try to increase savings rate to 10%+</div>
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-400">
+              <p className="text-lg mb-2">💵 No budget configured</p>
+              <button
+                onClick={() => setActiveTab('budget')}
+                className="text-emerald-400 hover:text-emerald-300 text-sm"
+              >
+                Set up your budget →
+              </button>
+            </div>
+          )}
+        </Card>
+      </div>
+
+      {/* Real Estate Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Real Estate Summary */}
-        <Card icon="🏠" title="Real Estate & Mortgage">
+        <Card icon="🏠" title="Real Estate & Mortgage" className="lg:col-span-2">
           {mortgageData.mortgages.length > 0 ? (
             <div className="space-y-4">
               {mortgageData.mortgages.map((mortgage, idx) => {
