@@ -91,10 +91,10 @@ function MortgageCard({
   };
   
   return (
-    <div className="border rounded-lg overflow-hidden bg-white dark:bg-gray-800">
+    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800 shadow-sm">
       {/* Header */}
       <div 
-        className="p-4 flex items-center justify-between cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700"
+        className="p-4 flex items-center justify-between cursor-pointer bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ function MortgageCard({
       
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="border-t p-4 space-y-6">
+        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-6 bg-white dark:bg-gray-900">
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">

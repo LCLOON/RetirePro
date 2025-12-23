@@ -11,7 +11,15 @@ import type {
   SocialSecurityData,
   ScenarioResults,
   MonteCarloResults,
-  TabId 
+  TabId,
+  PropertyEntry,
+  VehicleEntry,
+  BankAccountEntry,
+  BrokerageAccountEntry,
+  CryptoEntry,
+  RetirementAccountEntry,
+  PersonalAssetEntry,
+  DebtEntry,
 } from './types';
 import {
   DEFAULT_RETIREMENT_DATA,
@@ -21,8 +29,44 @@ import {
   DEFAULT_MORTGAGE,
   DEFAULT_SOCIAL_SECURITY,
   createDefaultMortgage,
+  createDefaultProperty,
+  createDefaultVehicle,
+  createDefaultBankAccount,
+  createDefaultBrokerageAccount,
+  createDefaultCrypto,
+  createDefaultRetirementAccount,
+  createDefaultPersonalAsset,
+  createDefaultDebt,
 } from './types';
 import { calculateScenarioResults, performMonteCarloProjection } from './calculations';
+
+// Migration helper to handle old data formats
+function migrateData(data: Record<string, unknown>): Record<string, unknown> {
+  const migrated = { ...data };
+  
+  // Migrate old NetWorthData format (flat assets/liabilities) to new array-based format
+  if (data.netWorthData && typeof data.netWorthData === 'object') {
+    const nw = data.netWorthData as Record<string, unknown>;
+    // Check if it's old format (has 'assets' object with flat values instead of arrays)
+    if (nw.assets && typeof nw.assets === 'object' && !Array.isArray(nw.properties)) {
+      // Old format detected, use defaults instead
+      migrated.netWorthData = DEFAULT_NET_WORTH;
+    }
+  }
+  
+  // Migrate old BudgetData format if needed
+  if (data.budgetData && typeof data.budgetData === 'object') {
+    const budget = data.budgetData as Record<string, unknown>;
+    // Check if it has all required nested objects
+    if (!budget.income || !budget.fixedExpenses || !budget.debtPayments || 
+        !budget.subscriptions || !budget.variableExpenses || !budget.savings) {
+      // Old or incomplete format, use defaults
+      migrated.budgetData = DEFAULT_BUDGET;
+    }
+  }
+  
+  return migrated;
+}
 
 // Theme type
 export type Theme = 'light' | 'dark' | 'system';
@@ -162,7 +206,8 @@ function appReducer(state: AppState, action: Action): AppState {
       return { ...initialState };
       
     case 'LOAD_DATA':
-      return { ...state, ...action.payload, hasUnsavedChanges: false };
+      const migratedPayload = migrateData(action.payload as Record<string, unknown>);
+      return { ...state, ...migratedPayload, hasUnsavedChanges: false };
       
     default:
       return state;
@@ -187,6 +232,31 @@ interface AppContextType {
   addMortgage: (name?: string) => void;
   updateMortgageEntry: (id: string, data: Partial<MortgageEntry>) => void;
   removeMortgage: (id: string) => void;
+  // Net Worth helpers
+  addProperty: (name?: string) => void;
+  updateProperty: (id: string, data: Partial<PropertyEntry>) => void;
+  removeProperty: (id: string) => void;
+  addVehicle: (name?: string) => void;
+  updateVehicle: (id: string, data: Partial<VehicleEntry>) => void;
+  removeVehicle: (id: string) => void;
+  addBankAccount: (name?: string) => void;
+  updateBankAccount: (id: string, data: Partial<BankAccountEntry>) => void;
+  removeBankAccount: (id: string) => void;
+  addBrokerageAccount: (name?: string) => void;
+  updateBrokerageAccount: (id: string, data: Partial<BrokerageAccountEntry>) => void;
+  removeBrokerageAccount: (id: string) => void;
+  addCrypto: (name?: string) => void;
+  updateCrypto: (id: string, data: Partial<CryptoEntry>) => void;
+  removeCrypto: (id: string) => void;
+  addRetirementAccount: (name?: string) => void;
+  updateRetirementAccount: (id: string, data: Partial<RetirementAccountEntry>) => void;
+  removeRetirementAccount: (id: string) => void;
+  addPersonalAsset: (name?: string) => void;
+  updatePersonalAsset: (id: string, data: Partial<PersonalAssetEntry>) => void;
+  removePersonalAsset: (id: string) => void;
+  addDebt: (name?: string) => void;
+  updateDebt: (id: string, data: Partial<DebtEntry>) => void;
+  removeDebt: (id: string) => void;
   runCalculations: () => Promise<void>;
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
@@ -332,6 +402,182 @@ export function AppProvider({ children }: { children: ReactNode }) {
     });
   }, [state.mortgageData.mortgages]);
   
+  // Net Worth helpers - Properties
+  const addProperty = useCallback((name?: string) => {
+    const newProperty = createDefaultProperty();
+    newProperty.name = name || `Property ${state.netWorthData.properties.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { properties: [...state.netWorthData.properties, newProperty] } 
+    });
+  }, [state.netWorthData.properties]);
+  
+  const updateProperty = useCallback((id: string, data: Partial<PropertyEntry>) => {
+    const updated = state.netWorthData.properties.map(p => 
+      p.id === id ? { ...p, ...data } : p
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { properties: updated } });
+  }, [state.netWorthData.properties]);
+  
+  const removeProperty = useCallback((id: string) => {
+    const filtered = state.netWorthData.properties.filter(p => p.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { properties: filtered } });
+  }, [state.netWorthData.properties]);
+  
+  // Net Worth helpers - Vehicles
+  const addVehicle = useCallback((name?: string) => {
+    const newVehicle = createDefaultVehicle();
+    newVehicle.name = name || `Vehicle ${state.netWorthData.vehicles.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { vehicles: [...state.netWorthData.vehicles, newVehicle] } 
+    });
+  }, [state.netWorthData.vehicles]);
+  
+  const updateVehicle = useCallback((id: string, data: Partial<VehicleEntry>) => {
+    const updated = state.netWorthData.vehicles.map(v => 
+      v.id === id ? { ...v, ...data } : v
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { vehicles: updated } });
+  }, [state.netWorthData.vehicles]);
+  
+  const removeVehicle = useCallback((id: string) => {
+    const filtered = state.netWorthData.vehicles.filter(v => v.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { vehicles: filtered } });
+  }, [state.netWorthData.vehicles]);
+  
+  // Net Worth helpers - Bank Accounts
+  const addBankAccount = useCallback((name?: string) => {
+    const newAccount = createDefaultBankAccount();
+    newAccount.name = name || `Account ${state.netWorthData.bankAccounts.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { bankAccounts: [...state.netWorthData.bankAccounts, newAccount] } 
+    });
+  }, [state.netWorthData.bankAccounts]);
+  
+  const updateBankAccount = useCallback((id: string, data: Partial<BankAccountEntry>) => {
+    const updated = state.netWorthData.bankAccounts.map(a => 
+      a.id === id ? { ...a, ...data } : a
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { bankAccounts: updated } });
+  }, [state.netWorthData.bankAccounts]);
+  
+  const removeBankAccount = useCallback((id: string) => {
+    const filtered = state.netWorthData.bankAccounts.filter(a => a.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { bankAccounts: filtered } });
+  }, [state.netWorthData.bankAccounts]);
+  
+  // Net Worth helpers - Brokerage Accounts
+  const addBrokerageAccount = useCallback((name?: string) => {
+    const newAccount = createDefaultBrokerageAccount();
+    newAccount.name = name || `Brokerage ${state.netWorthData.brokerageAccounts.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { brokerageAccounts: [...state.netWorthData.brokerageAccounts, newAccount] } 
+    });
+  }, [state.netWorthData.brokerageAccounts]);
+  
+  const updateBrokerageAccount = useCallback((id: string, data: Partial<BrokerageAccountEntry>) => {
+    const updated = state.netWorthData.brokerageAccounts.map(a => 
+      a.id === id ? { ...a, ...data } : a
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { brokerageAccounts: updated } });
+  }, [state.netWorthData.brokerageAccounts]);
+  
+  const removeBrokerageAccount = useCallback((id: string) => {
+    const filtered = state.netWorthData.brokerageAccounts.filter(a => a.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { brokerageAccounts: filtered } });
+  }, [state.netWorthData.brokerageAccounts]);
+  
+  // Net Worth helpers - Crypto
+  const addCrypto = useCallback((name?: string) => {
+    const newCrypto = createDefaultCrypto();
+    newCrypto.name = name || `Crypto ${state.netWorthData.cryptoHoldings.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { cryptoHoldings: [...state.netWorthData.cryptoHoldings, newCrypto] } 
+    });
+  }, [state.netWorthData.cryptoHoldings]);
+  
+  const updateCrypto = useCallback((id: string, data: Partial<CryptoEntry>) => {
+    const updated = state.netWorthData.cryptoHoldings.map(c => 
+      c.id === id ? { ...c, ...data } : c
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { cryptoHoldings: updated } });
+  }, [state.netWorthData.cryptoHoldings]);
+  
+  const removeCrypto = useCallback((id: string) => {
+    const filtered = state.netWorthData.cryptoHoldings.filter(c => c.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { cryptoHoldings: filtered } });
+  }, [state.netWorthData.cryptoHoldings]);
+  
+  // Net Worth helpers - Retirement Accounts
+  const addRetirementAccount = useCallback((name?: string) => {
+    const newAccount = createDefaultRetirementAccount();
+    newAccount.name = name || `Retirement ${state.netWorthData.retirementAccounts.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { retirementAccounts: [...state.netWorthData.retirementAccounts, newAccount] } 
+    });
+  }, [state.netWorthData.retirementAccounts]);
+  
+  const updateRetirementAccount = useCallback((id: string, data: Partial<RetirementAccountEntry>) => {
+    const updated = state.netWorthData.retirementAccounts.map(a => 
+      a.id === id ? { ...a, ...data } : a
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { retirementAccounts: updated } });
+  }, [state.netWorthData.retirementAccounts]);
+  
+  const removeRetirementAccount = useCallback((id: string) => {
+    const filtered = state.netWorthData.retirementAccounts.filter(a => a.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { retirementAccounts: filtered } });
+  }, [state.netWorthData.retirementAccounts]);
+  
+  // Net Worth helpers - Personal Assets
+  const addPersonalAsset = useCallback((name?: string) => {
+    const newAsset = createDefaultPersonalAsset();
+    newAsset.name = name || `Asset ${state.netWorthData.personalAssets.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { personalAssets: [...state.netWorthData.personalAssets, newAsset] } 
+    });
+  }, [state.netWorthData.personalAssets]);
+  
+  const updatePersonalAsset = useCallback((id: string, data: Partial<PersonalAssetEntry>) => {
+    const updated = state.netWorthData.personalAssets.map(a => 
+      a.id === id ? { ...a, ...data } : a
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { personalAssets: updated } });
+  }, [state.netWorthData.personalAssets]);
+  
+  const removePersonalAsset = useCallback((id: string) => {
+    const filtered = state.netWorthData.personalAssets.filter(a => a.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { personalAssets: filtered } });
+  }, [state.netWorthData.personalAssets]);
+  
+  // Net Worth helpers - Debts
+  const addDebt = useCallback((name?: string) => {
+    const newDebt = createDefaultDebt();
+    newDebt.name = name || `Debt ${state.netWorthData.debts.length + 1}`;
+    dispatch({ 
+      type: 'UPDATE_NET_WORTH_DATA', 
+      payload: { debts: [...state.netWorthData.debts, newDebt] } 
+    });
+  }, [state.netWorthData.debts]);
+  
+  const updateDebt = useCallback((id: string, data: Partial<DebtEntry>) => {
+    const updated = state.netWorthData.debts.map(d => 
+      d.id === id ? { ...d, ...data } : d
+    );
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { debts: updated } });
+  }, [state.netWorthData.debts]);
+  
+  const removeDebt = useCallback((id: string) => {
+    const filtered = state.netWorthData.debts.filter(d => d.id !== id);
+    dispatch({ type: 'UPDATE_NET_WORTH_DATA', payload: { debts: filtered } });
+  }, [state.netWorthData.debts]);
+
   const updateSocialSecurityData = useCallback((data: Partial<SocialSecurityData>) => {
     dispatch({ type: 'UPDATE_SOCIAL_SECURITY_DATA', payload: data });
   }, []);
@@ -422,6 +668,31 @@ export function AppProvider({ children }: { children: ReactNode }) {
       addMortgage,
       updateMortgageEntry,
       removeMortgage,
+      // Net Worth helpers
+      addProperty,
+      updateProperty,
+      removeProperty,
+      addVehicle,
+      updateVehicle,
+      removeVehicle,
+      addBankAccount,
+      updateBankAccount,
+      removeBankAccount,
+      addBrokerageAccount,
+      updateBrokerageAccount,
+      removeBrokerageAccount,
+      addCrypto,
+      updateCrypto,
+      removeCrypto,
+      addRetirementAccount,
+      updateRetirementAccount,
+      removeRetirementAccount,
+      addPersonalAsset,
+      updatePersonalAsset,
+      removePersonalAsset,
+      addDebt,
+      updateDebt,
+      removeDebt,
       runCalculations,
       saveToLocalStorage,
       loadFromLocalStorage,

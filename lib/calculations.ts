@@ -737,14 +737,44 @@ export function formatPercent(value: number, decimals: number = 1): string {
 }
 
 /**
- * Calculate net worth summary
+ * Calculate net worth summary from array-based data
  */
 export function calculateNetWorthSummary(data: NetWorthData) {
-  const totalAssets = Object.values(data.assets).reduce((sum, val) => sum + val, 0);
-  const totalLiabilities = Object.values(data.liabilities).reduce((sum, val) => sum + val, 0);
+  // Calculate asset totals
+  const propertyValue = data.properties.reduce((sum, p) => sum + p.currentValue, 0);
+  const vehicleValue = data.vehicles.reduce((sum, v) => sum + v.currentValue, 0);
+  const bankTotal = data.bankAccounts.reduce((sum, a) => sum + a.balance, 0);
+  const brokerageTotal = data.brokerageAccounts.reduce((sum, a) => sum + a.balance, 0);
+  const cryptoTotal = data.cryptoHoldings.reduce((sum, c) => sum + c.currentValue, 0);
+  const retirementTotal = data.retirementAccounts.reduce((sum, a) => sum + a.balance, 0);
+  const personalTotal = data.personalAssets.reduce((sum, a) => sum + a.currentValue, 0);
+  
+  const totalAssets = propertyValue + vehicleValue + bankTotal + brokerageTotal + cryptoTotal + retirementTotal + personalTotal;
+  
+  // Calculate liability totals (including linked mortgages and loans)
+  const propertyMortgages = data.properties.reduce((sum, p) => sum + p.mortgageBalance, 0);
+  const vehicleLoans = data.vehicles.reduce((sum, v) => sum + v.loanBalance, 0);
+  const debtTotal = data.debts.reduce((sum, d) => sum + d.balance, 0);
+  
+  const totalLiabilities = debtTotal + propertyMortgages + vehicleLoans;
   const netWorth = totalAssets - totalLiabilities;
   
-  return { totalAssets, totalLiabilities, netWorth };
+  return { 
+    totalAssets, 
+    totalLiabilities, 
+    netWorth,
+    // Detailed breakdowns
+    propertyValue,
+    vehicleValue,
+    bankTotal,
+    brokerageTotal,
+    cryptoTotal,
+    retirementTotal,
+    personalTotal,
+    propertyMortgages,
+    vehicleLoans,
+    debtTotal,
+  };
 }
 
 /**

@@ -358,43 +358,200 @@ export interface MonteCarloResults {
   max: number;
 }
 
-// Net Worth Types - Simplified for web
+// Net Worth Types - Comprehensive tracking with multiple items
+
+// Property entry for real estate (land, homes, investment properties)
+export interface PropertyEntry {
+  id: string;
+  name: string;
+  type: 'primary_residence' | 'land' | 'investment' | 'vacation' | 'commercial';
+  currentValue: number;
+  purchasePrice: number;
+  purchaseYear: number;
+  address: string;
+  mortgageBalance: number; // Linked liability
+  rentalIncome: number; // Monthly rental income if applicable
+}
+
+// Vehicle entry
+export interface VehicleEntry {
+  id: string;
+  name: string;
+  type: 'car' | 'truck' | 'suv' | 'motorcycle' | 'rv' | 'boat' | 'other';
+  year: number;
+  currentValue: number;
+  loanBalance: number; // Linked liability
+}
+
+// Bank account entry
+export interface BankAccountEntry {
+  id: string;
+  name: string;
+  type: 'checking' | 'savings' | 'money_market' | 'cd';
+  institution: string;
+  balance: number;
+  interestRate: number;
+}
+
+// Brokerage account entry
+export interface BrokerageAccountEntry {
+  id: string;
+  name: string;
+  institution: string;
+  balance: number;
+  accountType: 'individual' | 'joint' | 'custodial';
+}
+
+// Crypto holding entry
+export interface CryptoEntry {
+  id: string;
+  name: string;
+  symbol: string;
+  quantity: number;
+  currentValue: number;
+}
+
+// Retirement account entry
+export interface RetirementAccountEntry {
+  id: string;
+  name: string;
+  type: '401k' | 'roth_401k' | 'traditional_ira' | 'roth_ira' | 'inherited_ira' | 'sep_ira' | 'simple_ira' | '403b' | '457b' | 'pension';
+  institution: string;
+  balance: number;
+  employerMatch: number; // For 401k types
+}
+
+// Personal property / other assets entry
+export interface PersonalAssetEntry {
+  id: string;
+  name: string;
+  category: 'electronics' | 'jewelry' | 'collectibles' | 'art' | 'tools' | 'furniture' | 'equipment' | 'other';
+  currentValue: number;
+  purchasePrice: number;
+}
+
+// Debt/Liability entry
+export interface DebtEntry {
+  id: string;
+  name: string;
+  type: 'mortgage' | 'heloc' | 'auto_loan' | 'student_loan' | 'credit_card' | 'personal_loan' | 'medical_debt' | 'business_loan' | 'other';
+  creditor: string;
+  balance: number;
+  interestRate: number;
+  minimumPayment: number;
+}
+
 export interface NetWorthData {
-  assets: {
-    cashSavings: number;
-    checking: number;
-    retirement: number;
-    brokerage: number;
-    realEstate: number;
-    vehicles: number;
-    other: number;
+  // Multi-item arrays for comprehensive tracking
+  properties: PropertyEntry[];
+  vehicles: VehicleEntry[];
+  bankAccounts: BankAccountEntry[];
+  brokerageAccounts: BrokerageAccountEntry[];
+  cryptoHoldings: CryptoEntry[];
+  retirementAccounts: RetirementAccountEntry[];
+  personalAssets: PersonalAssetEntry[];
+  debts: DebtEntry[];
+}
+
+// Factory functions for creating default entries
+export function createDefaultProperty(): PropertyEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    type: 'primary_residence',
+    currentValue: 0,
+    purchasePrice: 0,
+    purchaseYear: new Date().getFullYear(),
+    address: '',
+    mortgageBalance: 0,
+    rentalIncome: 0,
   };
-  liabilities: {
-    mortgage: number;
-    autoLoans: number;
-    studentLoans: number;
-    creditCards: number;
-    other: number;
+}
+
+export function createDefaultVehicle(): VehicleEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    type: 'car',
+    year: new Date().getFullYear(),
+    currentValue: 0,
+    loanBalance: 0,
+  };
+}
+
+export function createDefaultBankAccount(): BankAccountEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    type: 'checking',
+    institution: '',
+    balance: 0,
+    interestRate: 0,
+  };
+}
+
+export function createDefaultBrokerageAccount(): BrokerageAccountEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    institution: '',
+    balance: 0,
+    accountType: 'individual',
+  };
+}
+
+export function createDefaultCrypto(): CryptoEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    symbol: '',
+    quantity: 0,
+    currentValue: 0,
+  };
+}
+
+export function createDefaultRetirementAccount(): RetirementAccountEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    type: '401k',
+    institution: '',
+    balance: 0,
+    employerMatch: 0,
+  };
+}
+
+export function createDefaultPersonalAsset(): PersonalAssetEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    category: 'other',
+    currentValue: 0,
+    purchasePrice: 0,
+  };
+}
+
+export function createDefaultDebt(): DebtEntry {
+  return {
+    id: crypto.randomUUID(),
+    name: '',
+    type: 'other',
+    creditor: '',
+    balance: 0,
+    interestRate: 0,
+    minimumPayment: 0,
   };
 }
 
 export const DEFAULT_NET_WORTH: NetWorthData = {
-  assets: {
-    cashSavings: 0,
-    checking: 0,
-    retirement: 0,
-    brokerage: 0,
-    realEstate: 0,
-    vehicles: 0,
-    other: 0,
-  },
-  liabilities: {
-    mortgage: 0,
-    autoLoans: 0,
-    studentLoans: 0,
-    creditCards: 0,
-    other: 0,
-  },
+  properties: [],
+  vehicles: [],
+  bankAccounts: [],
+  brokerageAccounts: [],
+  cryptoHoldings: [],
+  retirementAccounts: [],
+  personalAssets: [],
+  debts: [],
 };
 
 // Budget Types - Comprehensive expense tracking matching desktop
