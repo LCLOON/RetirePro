@@ -477,7 +477,7 @@ function MortgageCard({
           
           {/* Amortization Table */}
           {showAmortization && (
-            <div className="overflow-x-auto max-h-80 border rounded-lg">
+            <div className="overflow-x-auto max-h-[500px] border rounded-lg">
               <table className="w-full text-sm">
                 <thead className="sticky top-0 bg-slate-700">
                   <tr>
@@ -489,7 +489,7 @@ function MortgageCard({
                   </tr>
                 </thead>
                 <tbody>
-                  {amortization.slice(0, 60).map((row) => (
+                  {amortization.map((row) => (
                     <tr key={row.month} className="border-t border-gray-100 dark:border-gray-600">
                       <td className="py-2 px-3">{row.month}</td>
                       <td className="py-2 px-3 text-right">{formatCurrency(row.payment)}</td>
@@ -500,11 +500,9 @@ function MortgageCard({
                   ))}
                 </tbody>
               </table>
-              {amortization.length > 60 && (
-                <p className="text-center text-gray-500 py-2 text-xs">
-                  Showing first 60 of {amortization.length} months
-                </p>
-              )}
+              <p className="text-center text-gray-500 py-2 text-xs bg-slate-700/50">
+                Showing all {amortization.length} months ({(amortization.length / 12).toFixed(1)} years)
+              </p>
             </div>
           )}
         </div>
