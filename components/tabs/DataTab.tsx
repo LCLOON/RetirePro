@@ -1,6 +1,4 @@
 'use client';
-
-import { useState } from 'react';
 import { Card } from '@/components/ui';
 import { CurrencyInput, PercentInput, NumberInput } from '@/components/ui';
 import { Select, Checkbox } from '@/components/ui';
@@ -11,20 +9,6 @@ import { US_STATES, IncomeSource, DEFAULT_INHERITED_IRA, DEFAULT_DIVIDEND_PORTFO
 export function DataTab() {
   const { state, updateRetirementData, runCalculations } = useApp();
   const data = state.retirementData;
-  const [_expandedSections, setExpandedSections] = useState<Record<string, boolean>>({
-    spouse: data.filingStatus === 'married',
-    hsa: data.currentHSA > 0 || data.annualHSAContribution > 0,
-    inheritedIra: data.hasInheritedIRA,
-    pension: data.hasPension,
-    additionalIncome: data.additionalIncome.length > 0,
-    healthcare: true,
-    drawdown: false,
-    rothConversion: data.rothConversionEnabled,
-  });
-
-  const _toggleSection = (section: string) => {
-    setExpandedSections(prev => ({ ...prev, [section]: !prev[section] }));
-  };
 
   // Helper to generate unique ID
   const generateId = () => Math.random().toString(36).substring(2, 9);
@@ -141,7 +125,6 @@ export function DataTab() {
                 filingStatus: v as 'single' | 'married' | 'head_of_household',
                 hasSpouse: isMarried
               });
-              if (isMarried) setExpandedSections(prev => ({ ...prev, spouse: true }));
             }}
             options={[
               { value: 'single', label: 'Single' },
@@ -753,6 +736,8 @@ export function DataTab() {
                     type="text"
                     value={source.name}
                     onChange={(e) => updateIncomeSource(source.id, { name: e.target.value })}
+                    placeholder="Enter income source name"
+                    title="Income source name"
                     className="w-full px-3 py-2 bg-slate-800 border border-slate-600 rounded-lg text-white focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
                   />
                 </div>

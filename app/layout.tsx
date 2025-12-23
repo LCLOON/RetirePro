@@ -25,6 +25,17 @@ export const metadata: Metadata = {
     template: '%s | RetirePro - Retirement Calculator',
   },
   description: 'Free professional retirement planning calculator. Calculate your retirement income, run Monte Carlo simulations, optimize Social Security, and get AI-powered insights. Plan with confidence using our 401k, IRA, and pension calculators.',
+  icons: {
+    icon: [
+      { url: '/favicon.ico', sizes: 'any' },
+      { url: '/favicon-32x32.png', type: 'image/png', sizes: '32x32' },
+      { url: '/favicon-16x16.png', type: 'image/png', sizes: '16x16' },
+    ],
+    apple: [
+      { url: '/apple-touch-icon.png', sizes: '180x180' },
+    ],
+  },
+  manifest: '/manifest.json',
   keywords: [
     'retirement calculator',
     'retirement planning',
@@ -332,13 +343,6 @@ export default function RootLayout({
             `,
           }}
         />
-        
-        {/* Favicon and Icons */}
-        <link rel="icon" href="/favicon.ico" sizes="any" />
-        <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
-        <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
-        <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
-        <link rel="manifest" href="/manifest.json" />
         
         {/* Preconnect to external domains for performance */}
         <link rel="preconnect" href="https://fonts.googleapis.com" />

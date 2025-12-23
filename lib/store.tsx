@@ -670,7 +670,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
     try {
       // Try to use the File System Access API for "Save As" functionality
       if ('showSaveFilePicker' in window) {
-        const handle = await (window as any).showSaveFilePicker({
+        const handle = await (window as unknown as { showSaveFilePicker: (options: object) => Promise<FileSystemFileHandle> }).showSaveFilePicker({
           suggestedName: fileName,
           types: [{
             description: 'JSON File',

@@ -204,6 +204,8 @@ export function SelectInput({ label, value, onChange, options, hint }: SelectInp
         <select
           value={value}
           onChange={(e) => onChange(e.target.value)}
+          title={label || 'Select option'}
+          aria-label={label || 'Select option'}
           className="w-full px-4 py-2.5 rounded-lg border transition-colors duration-200
             appearance-none bg-slate-800 text-white cursor-pointer
             border-slate-600 focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/30"
