@@ -288,17 +288,13 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Apply theme to document IMMEDIATELY on mount and when theme changes
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('dark', state.theme === 'dark');
-    root.classList.toggle('medium', state.theme === 'medium');
-  }, [state.theme]);
-  
-  // Load saved theme after mount
-  useEffect(() => {
-    const saved = localStorage.getItem('retirepro-theme-v3');
-    if (saved && ['light', 'dark', 'medium'].includes(saved)) {
-      dispatch({ type: 'SET_THEME', payload: saved as Theme });
+    root.classList.remove('dark', 'medium');
+    if (state.theme === 'dark') {
+      root.classList.add('dark');
+    } else if (state.theme === 'medium') {
+      root.classList.add('medium');
     }
-  }, []);
+  }, [state.theme]);
   
   // AUTO-LOAD data from localStorage on mount
   useEffect(() => {
