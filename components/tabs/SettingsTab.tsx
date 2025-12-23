@@ -67,7 +67,7 @@ export function SettingsTab() {
                     p-3 rounded-lg
                     ${state.theme === theme.id
                       ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300'
-                      : 'bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400'
+                      : 'bg-slate-600 text-slate-400'
                     }
                   `}>
                     {theme.icon}
@@ -91,7 +91,7 @@ export function SettingsTab() {
       {/* Data Management */}
       <Card title="Data Management" subtitle="Save, load, and export your data">
         <CardGrid columns={2}>
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="p-4 bg-slate-700/50 rounded-lg">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">Local Storage</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Save your data to browser storage for quick access.
@@ -106,7 +106,7 @@ export function SettingsTab() {
             </div>
           </div>
           
-          <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="p-4 bg-slate-700/50 rounded-lg">
             <h4 className="font-medium text-gray-900 dark:text-white mb-2">Export Data</h4>
             <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
               Download your data as a JSON file for backup.
@@ -156,7 +156,7 @@ export function SettingsTab() {
       <Card title="Subscription" subtitle="Manage your RetirePro subscription">
         <div className="space-y-6">
           {/* Current Plan */}
-          <div className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+          <div className="flex items-center justify-between p-4 bg-slate-700/50 rounded-lg">
             <div>
               <p className="text-sm text-gray-500 dark:text-gray-400">Current Plan</p>
               <p className={`text-xl font-bold ${TIER_INFO[tier].color}`}>

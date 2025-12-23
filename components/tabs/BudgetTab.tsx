@@ -40,10 +40,10 @@ function ExpenseSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800 shadow-sm">
+    <div className="border border-slate-700/50 rounded-lg overflow-hidden bg-slate-800/50 shadow-sm">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full p-4 flex items-center justify-between bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className="w-full p-4 flex items-center justify-between bg-slate-700/50 hover:bg-slate-600/50 transition-colors"
       >
         <div className="flex items-center gap-3">
           <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${color}`}>
@@ -69,7 +69,7 @@ function ExpenseSection({
         </div>
       </button>
       {isOpen && (
-        <div className="p-4 pt-0 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
+        <div className="p-4 pt-0 border-t border-slate-700/50 bg-slate-800/30">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 pt-4">
             {children}
           </div>

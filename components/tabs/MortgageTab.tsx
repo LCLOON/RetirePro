@@ -91,10 +91,10 @@ function MortgageCard({
   };
   
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden bg-gray-50 dark:bg-gray-800 shadow-sm">
+    <div className="border border-slate-700/50 rounded-lg overflow-hidden bg-slate-800/50 shadow-sm">
       {/* Header */}
       <div 
-        className="p-4 flex items-center justify-between cursor-pointer bg-white dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className="p-4 flex items-center justify-between cursor-pointer bg-slate-700/50 hover:bg-slate-600/50 transition-colors"
         onClick={onToggle}
       >
         <div className="flex items-center gap-3">
@@ -128,7 +128,7 @@ function MortgageCard({
       
       {/* Expanded Content */}
       {isExpanded && (
-        <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-6 bg-white dark:bg-gray-900">
+        <div className="border-t border-slate-700/50 p-4 space-y-6 bg-slate-800/30">
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
@@ -303,8 +303,8 @@ function MortgageCard({
           </div>
           
           {/* Payment Summary */}
-          <div className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-lg">
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-3">Payment Breakdown</h4>
+          <div className="p-4 bg-slate-700/50 rounded-lg">
+            <h4 className="font-semibold text-white mb-3">Payment Breakdown</h4>
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4 text-sm">
               <div>
                 <p className="text-gray-500">Principal & Interest</p>
@@ -336,8 +336,8 @@ function MortgageCard({
           {/* Visual Charts */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Payment Breakdown Pie Chart */}
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Monthly Payment Breakdown</h4>
+            <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50">
+              <h4 className="font-semibold text-white mb-3 text-sm">Monthly Payment Breakdown</h4>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
@@ -387,8 +387,8 @@ function MortgageCard({
             </div>
             
             {/* Amortization Chart - Principal vs Interest Over Time */}
-            <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-              <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Balance Paydown Over Time</h4>
+            <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50">
+              <h4 className="font-semibold text-white mb-3 text-sm">Balance Paydown Over Time</h4>
               <div className="h-48">
                 <ResponsiveContainer width="100%" height="100%">
                   <AreaChart
@@ -422,8 +422,8 @@ function MortgageCard({
           </div>
           
           {/* Principal vs Interest Over Loan Life */}
-          <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-            <h4 className="font-semibold text-gray-900 dark:text-white mb-3 text-sm">Monthly Principal vs Interest</h4>
+          <div className="p-4 bg-slate-700/50 rounded-lg border border-slate-600/50">
+            <h4 className="font-semibold text-white mb-3 text-sm">Monthly Principal vs Interest</h4>
             <div className="h-48">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart
@@ -481,7 +481,7 @@ function MortgageCard({
           {showAmortization && (
             <div className="overflow-x-auto max-h-80 border rounded-lg">
               <table className="w-full text-sm">
-                <thead className="sticky top-0 bg-gray-50 dark:bg-gray-700">
+                <thead className="sticky top-0 bg-slate-700">
                   <tr>
                     <th className="text-left py-2 px-3 font-semibold">Month</th>
                     <th className="text-right py-2 px-3 font-semibold">Payment</th>

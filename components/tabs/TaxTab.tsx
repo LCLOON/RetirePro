@@ -117,8 +117,8 @@ export function TaxTab() {
                     className={`
                       flex-1 py-3 px-4 rounded-lg border-2 text-sm font-medium transition-all
                       ${tax.filingStatus === status.value
-                        ? 'border-blue-500 bg-blue-50 text-blue-700 dark:bg-blue-900/30 dark:text-blue-300'
-                        : 'border-gray-200 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:border-gray-300'
+                        ? 'border-blue-500 bg-blue-900/30 text-blue-300'
+                        : 'border-slate-600 text-slate-300 hover:border-slate-500'
                       }
                     `}
                   >
@@ -142,10 +142,10 @@ export function TaxTab() {
               helpText="Your state's income tax rate"
             />
             
-            <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
+            <div className="pt-4 border-t border-slate-700/50">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-600 dark:text-gray-400">Standard Deduction</span>
-                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(standardDeduction)}</span>
+                <span className="text-slate-400">Standard Deduction</span>
+                <span className="font-medium text-white">{formatCurrency(standardDeduction)}</span>
               </div>
             </div>
           </div>
@@ -153,29 +153,29 @@ export function TaxTab() {
         
         <Card title="Retirement Tax Projection" subtitle="Estimated taxes in retirement">
           <div className="space-y-4">
-            <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div className="p-4 bg-slate-700/50 rounded-lg">
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Retirement Expenses</span>
-                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(retirementIncome)}/yr</span>
+                <span className="text-sm text-slate-400">Retirement Expenses</span>
+                <span className="font-medium text-white">{formatCurrency(retirementIncome)}/yr</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Estimated Federal Tax</span>
-                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(retirementFederalTax)}</span>
+                <span className="text-sm text-slate-400">Estimated Federal Tax</span>
+                <span className="font-medium text-white">{formatCurrency(retirementFederalTax)}</span>
               </div>
               <div className="flex justify-between mb-2">
-                <span className="text-sm text-gray-600 dark:text-gray-400">Estimated State Tax</span>
-                <span className="font-medium text-gray-900 dark:text-white">{formatCurrency(retirementStateTax)}</span>
+                <span className="text-sm text-slate-400">Estimated State Tax</span>
+                <span className="font-medium text-white">{formatCurrency(retirementStateTax)}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
-                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Effective Rate</span>
-                <span className="font-bold text-blue-600 dark:text-blue-400">{formatPercent(retirementEffectiveRate)}</span>
+              <div className="flex justify-between pt-2 border-t border-slate-600/50">
+                <span className="text-sm font-medium text-slate-300">Effective Rate</span>
+                <span className="font-bold text-blue-400">{formatPercent(retirementEffectiveRate)}</span>
               </div>
             </div>
             
             <div className={`p-4 rounded-lg ${
               retirementEffectiveRate < effectiveRate 
-                ? 'bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800' 
-                : 'bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800'
+                ? 'bg-green-900/20 border border-green-800' 
+                : 'bg-amber-900/20 border border-amber-800'
             }`}>
               <div className="flex items-center gap-3">
                 {retirementEffectiveRate < effectiveRate ? (

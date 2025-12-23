@@ -49,27 +49,27 @@ function AssetSection({
   const [isOpen, setIsOpen] = useState(defaultOpen);
   
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden">
+    <div className="border border-slate-700/50 rounded-lg overflow-hidden">
       <button
         onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-4 py-3 flex items-center justify-between bg-gray-50 dark:bg-gray-800 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+        className="w-full px-4 py-3 flex items-center justify-between bg-slate-700/50 hover:bg-slate-600/50 transition-colors"
       >
         <div className="flex items-center gap-3">
-          <span className="font-medium text-gray-900 dark:text-white">{title}</span>
+          <span className="font-medium text-white">{title}</span>
           {count !== undefined && count > 0 && (
-            <span className="text-xs bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300 px-2 py-0.5 rounded-full">
+            <span className="text-xs bg-blue-900/50 text-blue-300 px-2 py-0.5 rounded-full">
               {count} item{count !== 1 ? 's' : ''}
             </span>
           )}
         </div>
         <div className="flex items-center gap-4">
           {total !== undefined && (
-            <span className={`font-semibold ${total >= 0 ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            <span className={`font-semibold ${total >= 0 ? 'text-green-400' : 'text-red-400'}`}>
               {formatCurrency(total)}
             </span>
           )}
           <svg 
-            className={`w-5 h-5 text-gray-500 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
+            className={`w-5 h-5 text-slate-400 transition-transform ${isOpen ? 'rotate-180' : ''}`} 
             fill="none" 
             stroke="currentColor" 
             viewBox="0 0 24 24"
@@ -79,12 +79,12 @@ function AssetSection({
         </div>
       </button>
       {isOpen && (
-        <div className="p-4 space-y-4 bg-white dark:bg-gray-900">
+        <div className="p-4 space-y-4 bg-slate-800/30">
           {children}
           {onAdd && (
             <button
               onClick={onAdd}
-              className="flex items-center gap-2 text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 text-sm font-medium"
+              className="flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm font-medium"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
@@ -111,7 +111,7 @@ function PropertyCard({
   const equity = property.currentValue - property.mortgageBalance;
   
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 space-y-4 bg-slate-700/50">
       <div className="flex items-center justify-between">
         <TextInput
           label="Property Name"
@@ -192,7 +192,7 @@ function VehicleCard({
   const equity = vehicle.currentValue - vehicle.loanBalance;
   
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 space-y-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 space-y-4 bg-slate-700/50">
       <div className="flex items-center justify-between">
         <TextInput
           label="Vehicle Name"
@@ -253,7 +253,7 @@ function BankAccountCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-700/50">
       <div className="flex items-center justify-between mb-4">
         <TextInput
           label="Account Name"
@@ -306,7 +306,7 @@ function BrokerageCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-700/50">
       <div className="flex items-center justify-between mb-4">
         <TextInput
           label="Account Name"
@@ -358,7 +358,7 @@ function CryptoCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-700/50">
       <div className="flex items-center justify-between mb-4">
         <TextInput
           label="Cryptocurrency"
@@ -400,7 +400,7 @@ function RetirementCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-700/50">
       <div className="flex items-center justify-between mb-4">
         <TextInput
           label="Account Name"
@@ -459,7 +459,7 @@ function PersonalAssetCard({
   onRemove: () => void;
 }) {
   return (
-    <div className="border border-gray-200 dark:border-gray-700 rounded-lg p-4 bg-gray-50 dark:bg-gray-800">
+    <div className="border border-slate-700/50 rounded-lg p-4 bg-slate-700/50">
       <div className="flex items-center justify-between mb-4">
         <TextInput
           label="Asset Name"
@@ -910,7 +910,7 @@ export function NetWorthTab() {
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Property Mortgages (linked from Real Estate)</h4>
                 <div className="space-y-2">
                   {data.properties.filter(p => p.mortgageBalance > 0).map((p) => (
-                    <div key={p.id} className="flex justify-between items-center text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                    <div key={p.id} className="flex justify-between items-center text-sm bg-slate-600/50 p-2 rounded">
                       <span>{p.name || 'Unnamed Property'} - Mortgage</span>
                       <span className="text-red-600 font-medium">{formatCurrency(p.mortgageBalance)}</span>
                     </div>
@@ -925,7 +925,7 @@ export function NetWorthTab() {
                 <h4 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">Vehicle Loans (linked from Vehicles)</h4>
                 <div className="space-y-2">
                   {data.vehicles.filter(v => v.loanBalance > 0).map((v) => (
-                    <div key={v.id} className="flex justify-between items-center text-sm bg-gray-100 dark:bg-gray-800 p-2 rounded">
+                    <div key={v.id} className="flex justify-between items-center text-sm bg-slate-600/50 p-2 rounded">
                       <span>{v.name || 'Unnamed Vehicle'} - Loan</span>
                       <span className="text-red-600 font-medium">{formatCurrency(v.loanBalance)}</span>
                     </div>

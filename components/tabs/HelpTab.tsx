@@ -58,7 +58,7 @@ export function HelpTab() {
             </div>
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Enter Your Data</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Go to the Data Entry tab and fill in your current financial situation.
               </p>
             </div>
@@ -70,7 +70,7 @@ export function HelpTab() {
             </div>
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Calculate</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Click the Calculate button to run projections and Monte Carlo simulations.
               </p>
             </div>
@@ -82,7 +82,7 @@ export function HelpTab() {
             </div>
             <div>
               <h4 className="font-medium text-gray-900 dark:text-white">Review Results</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              <p className="text-sm text-slate-400 mt-1">
                 Check Results and Charts tabs to see if you&apos;re on track for retirement.
               </p>
             </div>
@@ -109,7 +109,7 @@ export function HelpTab() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                 </svg>
               </summary>
-              <div className="px-4 pb-4 text-sm text-gray-600 dark:text-gray-400">
+              <div className="px-4 pb-4 text-sm text-slate-400">
                 {faq.answer}
               </div>
             </details>
@@ -121,9 +121,9 @@ export function HelpTab() {
       <Card title="Key Terms" subtitle="Common retirement planning terminology">
         <CardGrid columns={2}>
           {keyTerms.map((item, index) => (
-            <div key={index} className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg">
+            <div key={index} className="p-4 bg-slate-700/50 rounded-lg">
               <h4 className="font-bold text-gray-900 dark:text-white">{item.term}</h4>
-              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">{item.definition}</p>
+              <p className="text-sm text-slate-400 mt-1">{item.definition}</p>
             </div>
           ))}
         </CardGrid>
@@ -184,7 +184,7 @@ export function HelpTab() {
       
       {/* Disclaimer */}
       <Card title="Disclaimer">
-        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-lg text-sm text-gray-600 dark:text-gray-400">
+        <div className="p-4 bg-slate-700/50 rounded-lg text-sm text-slate-400">
           <p className="mb-3">
             <strong className="text-gray-900 dark:text-white">Important:</strong> RetirePro is for educational and planning purposes only. 
             It is not financial advice.
