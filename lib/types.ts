@@ -397,23 +397,76 @@ export const DEFAULT_NET_WORTH: NetWorthData = {
   },
 };
 
-// Budget Types - Simplified for web
+// Budget Types - Comprehensive expense tracking matching desktop
 export interface BudgetData {
   income: {
     salary: number;
     spouseSalary: number;
-    investment: number;
+    bonusIncome: number;
+    investmentIncome: number;
+    sideHustle: number;
     other: number;
   };
-  expenses: {
-    housing: number;
+  fixedExpenses: {
+    mortgageRent: number;
+    propertyTaxHoa: number;
+    homeInsurance: number;
     utilities: number;
-    food: number;
-    transportation: number;
+    autoPayment: number;
+  };
+  debtPayments: {
+    creditCard1: number;
+    creditCard2: number;
+    creditCard3: number;
+    phoneEquipment: number;
+    computerLaptop: number;
+    furnitureFinancing: number;
+    applianceFinancing: number;
+    otherEquipment: number;
+    studentLoans: number;
+    personalLoans: number;
+    medicalDebt: number;
+    otherDebt: number;
+  };
+  subscriptions: {
+    internet: number;
+    starlink: number;
+    cellPhone: number;
+    cableTv: number;
+    netflix: number;
+    otherStreaming: number;
+    musicStreaming: number;
+    xTwitter: number;
+    socialMedia: number;
+    softwareApps: number;
+    gymFitness: number;
+    newsMagazines: number;
+    learningPlatforms: number;
+    cloudStorage: number;
+    otherSubscriptions: number;
+  };
+  variableExpenses: {
+    groceries: number;
+    diningOut: number;
+    gas: number;
+    carMaintenance: number;
+    carInsurance: number;
+    otherTransportation: number;
+    hairCare: number;
+    nailCare: number;
+    personalCare: number;
+    petCare: number;
     healthcare: number;
-    insurance: number;
     entertainment: number;
-    other: number;
+    clothing: number;
+    travel: number;
+    miscellaneous: number;
+  };
+  savings: {
+    contribution401k: number;
+    iraContribution: number;
+    emergencyFund: number;
+    otherSavings: number;
   };
 }
 
@@ -421,18 +474,71 @@ export const DEFAULT_BUDGET: BudgetData = {
   income: {
     salary: 0,
     spouseSalary: 0,
-    investment: 0,
+    bonusIncome: 0,
+    investmentIncome: 0,
+    sideHustle: 0,
     other: 0,
   },
-  expenses: {
-    housing: 0,
+  fixedExpenses: {
+    mortgageRent: 0,
+    propertyTaxHoa: 0,
+    homeInsurance: 0,
     utilities: 0,
-    food: 0,
-    transportation: 0,
+    autoPayment: 0,
+  },
+  debtPayments: {
+    creditCard1: 0,
+    creditCard2: 0,
+    creditCard3: 0,
+    phoneEquipment: 0,
+    computerLaptop: 0,
+    furnitureFinancing: 0,
+    applianceFinancing: 0,
+    otherEquipment: 0,
+    studentLoans: 0,
+    personalLoans: 0,
+    medicalDebt: 0,
+    otherDebt: 0,
+  },
+  subscriptions: {
+    internet: 0,
+    starlink: 0,
+    cellPhone: 0,
+    cableTv: 0,
+    netflix: 0,
+    otherStreaming: 0,
+    musicStreaming: 0,
+    xTwitter: 0,
+    socialMedia: 0,
+    softwareApps: 0,
+    gymFitness: 0,
+    newsMagazines: 0,
+    learningPlatforms: 0,
+    cloudStorage: 0,
+    otherSubscriptions: 0,
+  },
+  variableExpenses: {
+    groceries: 0,
+    diningOut: 0,
+    gas: 0,
+    carMaintenance: 0,
+    carInsurance: 0,
+    otherTransportation: 0,
+    hairCare: 0,
+    nailCare: 0,
+    personalCare: 0,
+    petCare: 0,
     healthcare: 0,
-    insurance: 0,
     entertainment: 0,
-    other: 0,
+    clothing: 0,
+    travel: 0,
+    miscellaneous: 0,
+  },
+  savings: {
+    contribution401k: 0,
+    iraContribution: 0,
+    emergencyFund: 0,
+    otherSavings: 0,
   },
 };
 

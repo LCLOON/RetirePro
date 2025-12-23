@@ -748,14 +748,31 @@ export function calculateNetWorthSummary(data: NetWorthData) {
 }
 
 /**
- * Calculate budget summary
+ * Calculate budget summary with detailed expense breakdown
  */
 export function calculateBudgetSummary(data: BudgetData) {
   const totalIncome = Object.values(data.income).reduce((sum, val) => sum + val, 0);
-  const totalExpenses = Object.values(data.expenses).reduce((sum, val) => sum + val, 0);
-  const netIncome = totalIncome - totalExpenses;
   
-  return { totalIncome, totalExpenses, netIncome };
+  // Calculate each expense category total
+  const fixedExpensesTotal = Object.values(data.fixedExpenses).reduce((sum, val) => sum + val, 0);
+  const debtPaymentsTotal = Object.values(data.debtPayments).reduce((sum, val) => sum + val, 0);
+  const subscriptionsTotal = Object.values(data.subscriptions).reduce((sum, val) => sum + val, 0);
+  const variableExpensesTotal = Object.values(data.variableExpenses).reduce((sum, val) => sum + val, 0);
+  const savingsTotal = Object.values(data.savings).reduce((sum, val) => sum + val, 0);
+  
+  const totalExpenses = fixedExpensesTotal + debtPaymentsTotal + subscriptionsTotal + variableExpensesTotal;
+  const netIncome = totalIncome - totalExpenses - savingsTotal;
+  
+  return { 
+    totalIncome, 
+    totalExpenses, 
+    netIncome,
+    fixedExpensesTotal,
+    debtPaymentsTotal,
+    subscriptionsTotal,
+    variableExpensesTotal,
+    savingsTotal
+  };
 }
 
 /**
