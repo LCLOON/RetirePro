@@ -296,7 +296,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const saved = localStorage.getItem('retirepro-theme-v3');
     if (saved && ['light', 'dark', 'medium'].includes(saved)) {
-      dispatch({ type: 'SET_THEME', payload: saved });
+      dispatch({ type: 'SET_THEME', payload: saved as Theme });
     }
   }, []);
   
