@@ -59,6 +59,14 @@
   --chart-grid: #bae6fd;
 }
 
+.medium,
+.medium body,
+.medium #__next,
+.medium > * {
+  background-color: #e0f2fe !important;
+  color: #0c4a6e !important;
+}
+
 body {
   background: var(--background);
   color: var(--foreground);
