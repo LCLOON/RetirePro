@@ -319,11 +319,10 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('retirepro-theme-v3');
-                  // If theme is light, remove dark class
+                  // If theme is light, remove dark class; otherwise, ensure dark
                   if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
                   } else {
-                    // For 'dark', 'system', or no theme: ensure dark is present
                     document.documentElement.classList.add('dark');
                   }
                 } catch (e) {}

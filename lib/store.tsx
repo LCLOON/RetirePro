@@ -78,7 +78,7 @@ function migrateData(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 // Theme type
-export type Theme = 'light' | 'dark' | 'system';
+export type Theme = 'light' | 'dark';
 
 // App State
 interface AppState {
@@ -279,11 +279,7 @@ const AppContext = createContext<AppContextType | null>(null);
 function getInitialState(): AppState {
   if (typeof window !== 'undefined') {
     const savedTheme = localStorage.getItem('retirepro-theme-v3') as Theme | null;
-    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
-      // Migrate 'system' to 'dark' since we want dark as default
-      if (savedTheme === 'system') {
-        return { ...initialState, theme: 'dark' };
-      }
+    if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
       return { ...initialState, theme: savedTheme };
     }
   }
@@ -298,24 +294,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
   // Apply theme to document IMMEDIATELY on mount and when theme changes
   useEffect(() => {
     const root = document.documentElement;
-    
-    if (state.theme === 'system') {
-      const isDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.toggle('dark', isDark);
-    } else {
-      root.classList.toggle('dark', state.theme === 'dark');
-    }
-    
-    // Listen for system theme changes
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (state.theme === 'system') {
-        root.classList.toggle('dark', e.matches);
-      }
-    };
-    
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
+    root.classList.toggle('dark', state.theme === 'dark');
   }, [state.theme]);
   
   // AUTO-LOAD data from localStorage on mount
