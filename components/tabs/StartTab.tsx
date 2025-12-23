@@ -109,6 +109,17 @@ export function StartTab() {
         <Card icon="⚡" title="Quick Actions" className="lg:col-span-1">
           <div className="space-y-3">
             <button
+              onClick={() => setActiveTab('social')}
+              className="w-full flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
+            >
+              <span className="text-xl">🏛️</span>
+              <div>
+                <p className="text-sm font-medium text-white">Social Security</p>
+                <p className="text-xs text-slate-400">Start here first</p>
+              </div>
+            </button>
+            
+            <button
               onClick={() => setActiveTab('data')}
               className="w-full flex items-center gap-3 p-3 bg-slate-700/50 hover:bg-slate-700 rounded-lg transition-colors text-left"
             >

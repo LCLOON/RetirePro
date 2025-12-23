@@ -57,9 +57,9 @@ export function HelpTab() {
               1
             </div>
             <div>
-              <h4 className="font-medium text-white">Enter Your Data</h4>
+              <h4 className="font-medium text-white">Social Security</h4>
               <p className="text-sm text-slate-400 mt-1">
-                Go to the Data Entry tab and fill in your current financial situation.
+                Start with the Social Security tab to enter your earnings history and claiming age.
               </p>
             </div>
           </div>
@@ -69,9 +69,9 @@ export function HelpTab() {
               2
             </div>
             <div>
-              <h4 className="font-medium text-white">Calculate</h4>
+              <h4 className="font-medium text-white">Enter Your Data</h4>
               <p className="text-sm text-slate-400 mt-1">
-                Click the Calculate button to run projections and Monte Carlo simulations.
+                Go to the Data Entry tab and fill in your current financial situation.
               </p>
             </div>
           </div>
