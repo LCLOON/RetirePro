@@ -7,7 +7,43 @@ import type {
   YearProjection,
   NetWorthData,
   BudgetData,
+  MortgageData,
 } from './types';
+
+// Mortgage payoff calculation helper
+export interface MortgagePayoff {
+  name: string;
+  payoffYear: number;
+  annualPayment: number;
+}
+
+export function calculateMortgagePayoffs(mortgageData?: MortgageData): MortgagePayoff[] {
+  if (!mortgageData?.mortgages?.length) return [];
+  
+  const currentYear = new Date().getFullYear();
+  return mortgageData.mortgages.map(m => {
+    const yearsElapsed = currentYear - m.startYear;
+    const yearsRemaining = Math.max(0, m.loanTermYears - yearsElapsed);
+    const payoffYear = currentYear + yearsRemaining;
+    
+    // Calculate monthly payment
+    const monthlyRate = m.interestRate / 12;
+    const numPayments = yearsRemaining * 12;
+    let monthlyPayment = 0;
+    if (numPayments > 0 && monthlyRate > 0) {
+      monthlyPayment = m.currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                       (Math.pow(1 + monthlyRate, numPayments) - 1);
+    }
+    // Add escrow costs (property tax, insurance, HOA, PMI)
+    const totalMonthlyPayment = monthlyPayment + (m.propertyTax / 12) + (m.insurance / 12) + m.hoaFees + m.pmi;
+    
+    return {
+      name: m.name,
+      payoffYear,
+      annualPayment: totalMonthlyPayment * 12,
+    };
+  });
+}
 
 /**
  * Calculate future value of a present sum
@@ -491,9 +527,9 @@ function randomNormal(mean: number, stdDev: number): number {
 
 /**
  * Perform Monte Carlo simulation
- * SYNCHRONIZED with DetailsTab.tsx - includes RMDs, SS COLA, separate accounts
+ * SYNCHRONIZED with DetailsTab.tsx - includes RMDs, SS COLA, separate accounts, mortgage payoff
  */
-export function performMonteCarloProjection(data: RetirementData): MonteCarloResults {
+export function performMonteCarloProjection(data: RetirementData, mortgageData?: MortgageData): MonteCarloResults {
   const numSimulations = data.monteCarloRuns;
   const currentYear = new Date().getFullYear();
   
@@ -501,6 +537,9 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
   const rmdStartAge = data.rmdStartAge || 73;
   const includeRMD = data.includeRMD !== false;
   const ssCOLA = data.inflationRate || 0.025;
+  
+  // Mortgage payoff data
+  const mortgagePayoffs = calculateMortgagePayoffs(mortgageData);
   
   const finalBalances: number[] = [];
   let successCount = 0;
@@ -635,6 +674,12 @@ export function performMonteCarloProjection(data: RetirementData): MonteCarloRes
       if (isRetired) {
         const yearsInRetirement = age - data.retirementAge;
         expenses = data.retirementExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
+        
+        // Reduce expenses for paid-off mortgages
+        const mortgageSavings = mortgagePayoffs
+          .filter(m => year >= m.payoffYear)
+          .reduce((sum, m) => sum + m.annualPayment, 0);
+        expenses = Math.max(0, expenses - mortgageSavings);
         
         // Healthcare
         if (age >= data.medicareStartAge) {

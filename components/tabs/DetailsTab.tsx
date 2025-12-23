@@ -97,7 +97,35 @@ function calculateInheritedIRAWithdrawal(
 export function DetailsTab() {
   const { state } = useApp();
   const data = state.retirementData;
+  const mortgageData = state.mortgageData;
   const [showAllYears, setShowAllYears] = useState(false);
+
+  // Calculate mortgage payoff years and monthly payment
+  const mortgagePayoffs = mortgageData.mortgages.map(m => {
+    const currentYear = new Date().getFullYear();
+    const yearsElapsed = currentYear - m.startYear;
+    const yearsRemaining = Math.max(0, m.loanTermYears - yearsElapsed);
+    const payoffYear = currentYear + yearsRemaining;
+    
+    // Calculate monthly payment
+    const monthlyRate = m.interestRate / 12;
+    const numPayments = yearsRemaining * 12;
+    let monthlyPayment = 0;
+    if (numPayments > 0 && monthlyRate > 0) {
+      monthlyPayment = m.currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+                       (Math.pow(1 + monthlyRate, numPayments) - 1);
+    }
+    // Add escrow costs (property tax, insurance, HOA, PMI)
+    const totalMonthlyPayment = monthlyPayment + (m.propertyTax / 12) + (m.insurance / 12) + m.hoaFees + m.pmi;
+    
+    return {
+      name: m.name,
+      payoffYear,
+      annualPayment: totalMonthlyPayment * 12,
+    };
+  });
+  
+  const totalAnnualMortgagePayment = mortgagePayoffs.reduce((sum, m) => sum + m.annualPayment, 0);
 
   // Generate year-by-year projection with ALL income sources
   const generateYearByYear = () => {
@@ -251,10 +279,19 @@ export function DetailsTab() {
       // Calculate expenses (only in retirement)
       let expenses = 0;
       let yearlyHealthcare = 0;
+      let mortgageSavings = 0;
       
       if (isRetired) {
         const yearsInRetirement = age - data.retirementAge;
         expenses = baseExpenses * Math.pow(1 + data.expenseGrowthRate, yearsInRetirement);
+        
+        // Calculate mortgage savings - reduce expenses for each paid-off mortgage
+        mortgageSavings = mortgagePayoffs
+          .filter(m => currentYear >= m.payoffYear)
+          .reduce((sum, m) => sum + m.annualPayment, 0);
+        
+        // Subtract mortgage payments that are now paid off
+        expenses = Math.max(0, expenses - mortgageSavings);
         
         if (age >= data.medicareStartAge) {
           const yearsSinceMedicare = age - data.medicareStartAge;
