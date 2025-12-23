@@ -78,7 +78,7 @@ function migrateData(data: Record<string, unknown>): Record<string, unknown> {
 }
 
 // Theme type
-export type Theme = 'light' | 'dark';
+export type Theme = 'light' | 'dark' | 'medium';
 
 // App State
 interface AppState {
@@ -277,13 +277,7 @@ const AppContext = createContext<AppContextType | null>(null);
 
 // Lazy initializer for state with theme from localStorage
 function getInitialState(): AppState {
-  if (typeof window !== 'undefined') {
-    const savedTheme = localStorage.getItem('retirepro-theme-v3') as Theme | null;
-    if (savedTheme && ['light', 'dark'].includes(savedTheme)) {
-      return { ...initialState, theme: savedTheme };
-    }
-  }
-  // Default to dark if no saved theme
+  // Always start in dark mode, ignore saved theme for startup
   return { ...initialState, theme: 'dark' };
 }
 
@@ -295,7 +289,16 @@ export function AppProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const root = document.documentElement;
     root.classList.toggle('dark', state.theme === 'dark');
+    root.classList.toggle('medium', state.theme === 'medium');
   }, [state.theme]);
+  
+  // Load saved theme after mount
+  useEffect(() => {
+    const saved = localStorage.getItem('retirepro-theme-v3');
+    if (saved && ['light', 'dark', 'medium'].includes(saved)) {
+      dispatch({ type: 'SET_THEME', payload: saved });
+    }
+  }, []);
   
   // AUTO-LOAD data from localStorage on mount
   useEffect(() => {
