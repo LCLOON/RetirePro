@@ -81,8 +81,8 @@ export function AnalysisTab() {
           </h1>
           <p className="text-slate-400 mt-1">Comprehensive analysis of your retirement readiness</p>
         </div>
-        <Button variant="primary">
-          📊 Generate Full Report
+        <Button variant="primary" onClick={() => window.print()}>
+          📊 Print Report
         </Button>
       </div>
 

@@ -16,7 +16,7 @@ interface CustomScenario {
 }
 
 export function AdvancedTab() {
-  const { state, updateRetirementData } = useApp();
+  const { state, updateRetirementData, runCalculations } = useApp();
   const data = state.retirementData;
   
   const [scenarios, setScenarios] = useState<CustomScenario[]>([
@@ -186,7 +186,7 @@ export function AdvancedTab() {
             hint="Target success rate"
           />
           <div className="flex items-end">
-            <Button variant="primary" className="w-full">
+            <Button variant="primary" className="w-full" onClick={runCalculations} loading={state.isCalculating}>
               🎲 Run Simulation
             </Button>
           </div>
@@ -263,10 +263,11 @@ export function AdvancedTab() {
               <tr className="border-b border-slate-700/50">
                 <td className="py-3 px-4 text-white">Return Rate</td>
                 {[-2, -1, 0, 1, 2].map((delta) => {
-                  const rate = data.preRetirementReturn + delta;
+                  // data.preRetirementReturn is decimal (e.g., 0.07), convert to percentage and add delta
+                  const ratePercent = (data.preRetirementReturn * 100) + delta;
                   const outcome = calculateScenarioOutcome({
                     ...scenarios[1],
-                    returnRate: rate,
+                    returnRate: ratePercent,
                   });
                   return (
                     <td key={delta} className={`py-3 px-4 text-center ${delta === 0 ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}>
@@ -279,7 +280,7 @@ export function AdvancedTab() {
                 <td className="py-3 px-4 text-white">Inflation Rate</td>
                 {[-2, -1, 0, 1, 2].map((delta) => (
                   <td key={delta} className={`py-3 px-4 text-center ${delta === 0 ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}>
-                    {(data.inflationRate + delta).toFixed(1)}%
+                    {((data.inflationRate * 100) + delta).toFixed(1)}%
                   </td>
                 ))}
               </tr>
@@ -287,7 +288,7 @@ export function AdvancedTab() {
                 <td className="py-3 px-4 text-white">Withdrawal Rate</td>
                 {[-2, -1, 0, 1, 2].map((delta) => (
                   <td key={delta} className={`py-3 px-4 text-center ${delta === 0 ? 'text-emerald-400 font-medium' : 'text-slate-300'}`}>
-                    {(data.safeWithdrawalRate + delta).toFixed(1)}%
+                    {((data.safeWithdrawalRate * 100) + delta).toFixed(1)}%
                   </td>
                 ))}
               </tr>
