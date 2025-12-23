@@ -310,8 +310,29 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark">
       <head>
+        {/* Theme initialization - runs before React hydrates to prevent flash */}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var theme = localStorage.getItem('retirepro-theme');
+                  if (theme === 'light') {
+                    document.documentElement.classList.remove('dark');
+                  } else if (theme === 'system') {
+                    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                      document.documentElement.classList.remove('dark');
+                    }
+                  }
+                  // Default is dark, which is already set on html element
+                } catch (e) {}
+              })();
+            `,
+          }}
+        />
+        
         {/* Favicon and Icons */}
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />

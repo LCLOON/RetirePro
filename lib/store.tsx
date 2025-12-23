@@ -126,7 +126,7 @@ type Action =
 // Initial state
 const initialState: AppState = {
   activeTab: 'start',
-  theme: 'system',
+  theme: 'dark',
   retirementData: DEFAULT_RETIREMENT_DATA,
   netWorthData: DEFAULT_NET_WORTH,
   budgetData: DEFAULT_BUDGET,
@@ -275,11 +275,22 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | null>(null);
 
+// Lazy initializer for state with theme from localStorage
+function getInitialState(): AppState {
+  if (typeof window !== 'undefined') {
+    const savedTheme = localStorage.getItem('retirepro-theme') as Theme | null;
+    if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+      return { ...initialState, theme: savedTheme };
+    }
+  }
+  return initialState;
+}
+
 // Provider
 export function AppProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(appReducer, initialState);
+  const [state, dispatch] = useReducer(appReducer, initialState, getInitialState);
   
-  // Apply theme to document
+  // Apply theme to document IMMEDIATELY on mount and when theme changes
   useEffect(() => {
     const root = document.documentElement;
     
@@ -301,14 +312,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
     mediaQuery.addEventListener('change', handleChange);
     return () => mediaQuery.removeEventListener('change', handleChange);
   }, [state.theme]);
-  
-  // Load theme from localStorage on mount
-  useEffect(() => {
-    const savedTheme = localStorage.getItem('retirepro-theme') as Theme | null;
-    if (savedTheme) {
-      dispatch({ type: 'SET_THEME', payload: savedTheme });
-    }
-  }, []);
   
   // AUTO-LOAD data from localStorage on mount
   useEffect(() => {
