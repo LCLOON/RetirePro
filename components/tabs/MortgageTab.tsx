@@ -131,37 +131,37 @@ function MortgageCard({
         <div className="border-t border-slate-700/50 p-4 space-y-6 bg-slate-800/30">
           {/* Quick Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-              <p className="text-xs font-medium text-blue-600 dark:text-blue-400">Home Value</p>
-              <p className="text-lg font-bold text-blue-900 dark:text-blue-300">{formatCurrency(mortgage.currentHomeValue)}</p>
+            <div className="p-3 bg-blue-900/30 rounded-lg">
+              <p className="text-xs font-medium text-blue-400">Home Value</p>
+              <p className="text-lg font-bold text-blue-300">{formatCurrency(mortgage.currentHomeValue)}</p>
             </div>
-            <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-              <p className="text-xs font-medium text-green-600 dark:text-green-400">Equity</p>
-              <p className="text-lg font-bold text-green-900 dark:text-green-300">{formatCurrency(equity)}</p>
+            <div className="p-3 bg-green-900/30 rounded-lg">
+              <p className="text-xs font-medium text-green-400">Equity</p>
+              <p className="text-lg font-bold text-green-300">{formatCurrency(equity)}</p>
             </div>
-            <div className="p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-              <p className="text-xs font-medium text-amber-600 dark:text-amber-400">Monthly Payment</p>
-              <p className="text-lg font-bold text-amber-900 dark:text-amber-300">{formatCurrency(totalMonthlyPayment)}</p>
+            <div className="p-3 bg-amber-900/30 rounded-lg">
+              <p className="text-xs font-medium text-amber-400">Monthly Payment</p>
+              <p className="text-lg font-bold text-amber-300">{formatCurrency(totalMonthlyPayment)}</p>
             </div>
-            <div className="p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-              <p className="text-xs font-medium text-purple-600 dark:text-purple-400">LTV Ratio</p>
-              <p className="text-lg font-bold text-purple-900 dark:text-purple-300">{ltv.toFixed(1)}%</p>
+            <div className="p-3 bg-purple-900/30 rounded-lg">
+              <p className="text-xs font-medium text-purple-400">LTV Ratio</p>
+              <p className="text-lg font-bold text-purple-300">{ltv.toFixed(1)}%</p>
             </div>
           </div>
           
           {/* Equity Progress Bar */}
           <div>
             <div className="flex justify-between text-sm mb-1">
-              <span className="text-gray-600 dark:text-gray-400">Equity Progress</span>
-              <span className="font-medium text-gray-900 dark:text-white">{equityPercent.toFixed(1)}% owned</span>
+              <span className="text-slate-400">Equity Progress</span>
+              <span className="font-medium text-white">{equityPercent.toFixed(1)}% owned</span>
             </div>
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+            <div className="h-4 bg-slate-600 rounded-full overflow-hidden">
               <div 
                 className="h-full bg-gradient-to-r from-green-400 to-green-600 transition-all duration-500"
                 style={{ width: `${Math.min(equityPercent, 100)}%` }}
               />
             </div>
-            <div className="flex justify-between text-xs mt-1 text-gray-500">
+            <div className="flex justify-between text-xs mt-1 text-slate-400">
               <span>{formatCurrency(equity)} equity</span>
               <span>{formatCurrency(mortgage.currentBalance)} remaining</span>
             </div>
@@ -169,7 +169,7 @@ function MortgageCard({
           
           {/* Property Details */}
           <div className="space-y-4">
-            <h4 className="font-semibold text-gray-900 dark:text-white flex items-center gap-2">
+            <h4 className="font-semibold text-white flex items-center gap-2">
               <svg className="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
@@ -326,9 +326,9 @@ function MortgageCard({
                 <p className="text-gray-500">HOA</p>
                 <p className="font-semibold">{formatCurrency(mortgage.hoaFees)}</p>
               </div>
-              <div className="bg-blue-100 dark:bg-blue-900/30 -m-2 p-2 rounded">
-                <p className="text-blue-700 dark:text-blue-400 font-medium">Total Monthly</p>
-                <p className="font-bold text-blue-900 dark:text-blue-300">{formatCurrency(totalMonthlyPayment)}</p>
+              <div className="bg-blue-900/40 -m-2 p-2 rounded">
+                <p className="text-blue-400 font-medium">Total Monthly</p>
+                <p className="font-bold text-blue-300">{formatCurrency(totalMonthlyPayment)}</p>
               </div>
             </div>
           </div>

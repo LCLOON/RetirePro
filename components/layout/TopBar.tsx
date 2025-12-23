@@ -39,6 +39,7 @@ export function TopBar() {
           {state.activeTab === 'legal' && '⚖️ Legal'}
           {state.activeTab === 'ai' && '🤖 AI Advisor'}
           {state.activeTab === 'settings' && '⚙️ Settings'}
+          {state.activeTab === 'help' && '❓ Help'}
         </h2>
       </div>
 

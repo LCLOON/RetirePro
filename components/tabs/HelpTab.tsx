@@ -52,36 +52,36 @@ export function HelpTab() {
       {/* Quick Start Guide */}
       <Card title="Quick Start Guide" subtitle="Get started with RetirePro in 5 minutes">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <div className="flex gap-4 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="flex gap-4 p-4 bg-blue-900/30 rounded-lg">
             <div className="flex-shrink-0 w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-bold">
               1
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Enter Your Data</h4>
+              <h4 className="font-medium text-white">Enter Your Data</h4>
               <p className="text-sm text-slate-400 mt-1">
                 Go to the Data Entry tab and fill in your current financial situation.
               </p>
             </div>
           </div>
           
-          <div className="flex gap-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div className="flex gap-4 p-4 bg-green-900/30 rounded-lg">
             <div className="flex-shrink-0 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-bold">
               2
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Calculate</h4>
+              <h4 className="font-medium text-white">Calculate</h4>
               <p className="text-sm text-slate-400 mt-1">
                 Click the Calculate button to run projections and Monte Carlo simulations.
               </p>
             </div>
           </div>
           
-          <div className="flex gap-4 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+          <div className="flex gap-4 p-4 bg-purple-900/30 rounded-lg">
             <div className="flex-shrink-0 w-10 h-10 bg-purple-500 rounded-full flex items-center justify-center text-white font-bold">
               3
             </div>
             <div>
-              <h4 className="font-medium text-gray-900 dark:text-white">Review Results</h4>
+              <h4 className="font-medium text-white">Review Results</h4>
               <p className="text-sm text-slate-400 mt-1">
                 Check Results and Charts tabs to see if you&apos;re on track for retirement.
               </p>
@@ -132,49 +132,49 @@ export function HelpTab() {
       {/* Tips */}
       <Card title="Pro Tips" subtitle="Get the most out of RetirePro">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex gap-3 p-4 border border-green-200 dark:border-green-800 bg-green-50 dark:bg-green-900/20 rounded-lg">
+          <div className="flex gap-3 p-4 border border-green-800 bg-green-900/30 rounded-lg">
             <svg className="w-6 h-6 text-green-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-green-800 dark:text-green-200">Save Regularly</h4>
-              <p className="text-sm text-green-700 dark:text-green-300">
+              <h4 className="font-medium text-green-200">Save Regularly</h4>
+              <p className="text-sm text-green-300">
                 Use the Save button to store your data locally. Export to JSON for backups.
               </p>
             </div>
           </div>
           
-          <div className="flex gap-3 p-4 border border-blue-200 dark:border-blue-800 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+          <div className="flex gap-3 p-4 border border-blue-800 bg-blue-900/30 rounded-lg">
             <svg className="w-6 h-6 text-blue-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
             </svg>
             <div>
-              <h4 className="font-medium text-blue-800 dark:text-blue-200">Try Different Scenarios</h4>
-              <p className="text-sm text-blue-700 dark:text-blue-300">
+              <h4 className="font-medium text-blue-200">Try Different Scenarios</h4>
+              <p className="text-sm text-blue-300">
                 Adjust retirement age, expenses, and return rates to see how changes affect outcomes.
               </p>
             </div>
           </div>
           
-          <div className="flex gap-3 p-4 border border-purple-200 dark:border-purple-800 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+          <div className="flex gap-3 p-4 border border-purple-800 bg-purple-900/30 rounded-lg">
             <svg className="w-6 h-6 text-purple-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
             </svg>
             <div>
-              <h4 className="font-medium text-purple-800 dark:text-purple-200">Track Your Progress</h4>
-              <p className="text-sm text-purple-700 dark:text-purple-300">
+              <h4 className="font-medium text-purple-200">Track Your Progress</h4>
+              <p className="text-sm text-purple-300">
                 Use Net Worth tab to monitor your total wealth over time.
               </p>
             </div>
           </div>
           
-          <div className="flex gap-3 p-4 border border-amber-200 dark:border-amber-800 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+          <div className="flex gap-3 p-4 border border-amber-800 bg-amber-900/30 rounded-lg">
             <svg className="w-6 h-6 text-amber-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
             <div>
-              <h4 className="font-medium text-amber-800 dark:text-amber-200">Optimize Social Security</h4>
-              <p className="text-sm text-amber-700 dark:text-amber-300">
+              <h4 className="font-medium text-amber-200">Optimize Social Security</h4>
+              <p className="text-sm text-amber-300">
                 Delaying Social Security to 70 can increase lifetime benefits significantly.
               </p>
             </div>

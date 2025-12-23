@@ -58,15 +58,15 @@ export function SettingsTab() {
                   className={`
                     flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
                     ${state.theme === theme.id
-                      ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/30'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      ? 'border-blue-500 bg-blue-900/30'
+                      : 'border-slate-600 hover:border-slate-500'
                     }
                   `}
                 >
                   <div className={`
                     p-3 rounded-lg
                     ${state.theme === theme.id
-                      ? 'bg-blue-100 text-blue-600 dark:bg-blue-800 dark:text-blue-300'
+                      ? 'bg-blue-800 text-blue-300'
                       : 'bg-slate-600 text-slate-400'
                     }
                   `}>
@@ -75,8 +75,8 @@ export function SettingsTab() {
                   <span className={`
                     text-sm font-medium
                     ${state.theme === theme.id
-                      ? 'text-blue-700 dark:text-blue-300'
-                      : 'text-gray-700 dark:text-gray-300'
+                      ? 'text-blue-300'
+                      : 'text-slate-300'
                     }
                   `}>
                     {theme.label}
@@ -123,16 +123,16 @@ export function SettingsTab() {
       
       {/* Reset */}
       <Card title="Reset" subtitle="Clear all data and start fresh">
-        <div className="p-4 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg">
+        <div className="p-4 bg-red-900/20 border border-red-800 rounded-lg">
           <div className="flex items-start gap-4">
-            <div className="p-2 bg-red-100 dark:bg-red-900/40 rounded-lg">
-              <svg className="w-6 h-6 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <div className="p-2 bg-red-900/40 rounded-lg">
+              <svg className="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
               </svg>
             </div>
             <div className="flex-1">
-              <h4 className="font-medium text-red-800 dark:text-red-200 mb-1">Danger Zone</h4>
-              <p className="text-sm text-red-600 dark:text-red-400 mb-4">
+              <h4 className="font-medium text-red-200 mb-1">Danger Zone</h4>
+              <p className="text-sm text-red-400 mb-4">
                 This action will reset all your data to defaults. This cannot be undone.
               </p>
               <Button 
@@ -143,7 +143,7 @@ export function SettingsTab() {
                     resetAll();
                   }
                 }}
-                className="border-red-300 text-red-700 hover:bg-red-100 dark:border-red-700 dark:text-red-400 dark:hover:bg-red-900/40"
+                className="border-red-700 text-red-400 hover:bg-red-900/40"
               >
                 Reset All Data
               </Button>
@@ -181,8 +181,8 @@ export function SettingsTab() {
                   className={`
                     flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
                     ${tier === planTier
-                      ? 'border-emerald-500 bg-emerald-50 dark:bg-emerald-900/30'
-                      : 'border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600'
+                      ? 'border-emerald-500 bg-emerald-900/30'
+                      : 'border-slate-600 hover:border-slate-500'
                     }
                   `}
                 >
@@ -192,13 +192,13 @@ export function SettingsTab() {
                   <span className={`
                     text-sm font-medium
                     ${tier === planTier
-                      ? 'text-emerald-700 dark:text-emerald-300'
-                      : 'text-gray-700 dark:text-gray-300'
+                      ? 'text-emerald-300'
+                      : 'text-slate-300'
                     }
                   `}>
                     {TIER_INFO[planTier].name}
                   </span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
+                  <span className="text-xs text-slate-400">
                     {TIER_INFO[planTier].price}
                   </span>
                 </button>

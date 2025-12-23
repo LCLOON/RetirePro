@@ -256,12 +256,12 @@ export function TaxTab() {
                     </td>
                     <td className="px-4 py-3 text-right">
                       {isCurrentBracket && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-800 dark:text-blue-200 rounded-full">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-blue-800 text-blue-200 rounded-full">
                           Current Bracket
                         </span>
                       )}
                       {isPastBracket && (
-                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-100 text-green-700 dark:bg-green-800 dark:text-green-200 rounded-full">
+                        <span className="inline-flex items-center px-2 py-1 text-xs font-medium bg-green-800 text-green-200 rounded-full">
                           Fully Taxed
                         </span>
                       )}

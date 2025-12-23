@@ -29,6 +29,7 @@ const navItems: NavItem[] = [
   { id: 'legal', label: 'Legal', icon: '⚖️' },
   { id: 'ai', label: 'AI Advisor', icon: '🤖' },
   { id: 'settings', label: 'Settings', icon: '⚙️' },
+  { id: 'help', label: 'Help', icon: '❓' },
 ];
 
 function TierBadge({ requiredTier, currentTier }: { requiredTier: SubscriptionTier; currentTier: SubscriptionTier }) {
