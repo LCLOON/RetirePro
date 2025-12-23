@@ -549,7 +549,11 @@ export function DetailsTab() {
         <div className="p-4 bg-purple-500/10 border border-purple-500/30 rounded-xl">
           <p className="text-purple-400 text-sm">Total Growth</p>
           <p className="text-2xl font-bold text-white">
-            ${Math.round(yearData[yearData.length - 1]?.cumulativeGrowth || 0).toLocaleString()}
+            ${Math.round(
+              (yearData[yearData.length - 1]?.endBalance || 0) - 
+              (yearData[0]?.startBalance || 0) - 
+              (yearData[yearData.length - 1]?.cumulativeContributions || 0)
+            ).toLocaleString()}
           </p>
         </div>
       </div>
