@@ -1,6 +1,7 @@
-@import "tailwindcss";
-
 @variant dark (&:where(.dark, .dark *));
+@variant medium (&:where(.medium, .medium *));
+
+@import "tailwindcss";
 
 :root {
   /* Light mode as default */
@@ -37,6 +38,25 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --chart-grid: #334155;
+}
+
+.medium {
+  /* Medium mode colors - light blue theme */
+  color-scheme: light;
+  --background: #e0f2fe;
+  --foreground: #0c4a6e;
+  --card-bg: #f0f9ff;
+  --card-border: #bae6fd;
+  --input-bg: #f0f9ff;
+  --input-border: #7dd3fc;
+  --muted: #0369a1;
+  --muted-bg: #f0f9ff;
+  --accent: #0284c7;
+  --accent-hover: #0369a1;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --chart-grid: #bae6fd;
 }
 
 @theme inline {
