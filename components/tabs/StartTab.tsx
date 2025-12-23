@@ -20,7 +20,10 @@ export function StartTab() {
   // Calculate quick stats
   const totalSavings = state.retirementData.currentSavingsPreTax + 
     state.retirementData.currentSavingsRoth + 
-    state.retirementData.currentSavingsAfterTax;
+    state.retirementData.currentSavingsAfterTax +
+    (state.retirementData.hasInheritedIRA ? state.retirementData.inheritedIRA.currentValue : 0) +
+    (state.retirementData.hasDividendPortfolio && state.retirementData.dividendPortfolio.includeInProjections ? state.retirementData.dividendPortfolio.currentValue : 0) +
+    (state.retirementData.hasCryptoHoldings && state.retirementData.cryptoHoldings.includeInProjections ? state.retirementData.cryptoHoldings.currentValue : 0);
 
   const yearsToRetirement = state.retirementData.retirementAge - state.retirementData.currentAge;
   const retirementLength = state.retirementData.lifeExpectancy - state.retirementData.retirementAge;

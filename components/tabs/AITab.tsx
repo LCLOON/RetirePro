@@ -14,7 +14,10 @@ export function AITab() {
   const { state } = useApp();
   const data = state.retirementData;
   
-  const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax;
+  const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax +
+    (data.hasInheritedIRA ? data.inheritedIRA.currentValue : 0) +
+    (data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections ? data.dividendPortfolio.currentValue : 0) +
+    (data.hasCryptoHoldings && data.cryptoHoldings.includeInProjections ? data.cryptoHoldings.currentValue : 0);
   
   const [messages, setMessages] = useState<ChatMessage[]>([
     {
