@@ -781,14 +781,20 @@ export function calculateNetWorthSummary(data: NetWorthData) {
  * Calculate budget summary with detailed expense breakdown
  */
 export function calculateBudgetSummary(data: BudgetData) {
-  const totalIncome = Object.values(data.income).reduce((sum, val) => sum + val, 0);
+  // Safe sum helper that handles undefined/null objects
+  const safeSum = (obj: Record<string, number> | undefined | null): number => {
+    if (!obj || typeof obj !== 'object') return 0;
+    return Object.values(obj).reduce((sum, val) => sum + (val || 0), 0);
+  };
+  
+  const totalIncome = safeSum(data?.income);
   
   // Calculate each expense category total
-  const fixedExpensesTotal = Object.values(data.fixedExpenses).reduce((sum, val) => sum + val, 0);
-  const debtPaymentsTotal = Object.values(data.debtPayments).reduce((sum, val) => sum + val, 0);
-  const subscriptionsTotal = Object.values(data.subscriptions).reduce((sum, val) => sum + val, 0);
-  const variableExpensesTotal = Object.values(data.variableExpenses).reduce((sum, val) => sum + val, 0);
-  const savingsTotal = Object.values(data.savings).reduce((sum, val) => sum + val, 0);
+  const fixedExpensesTotal = safeSum(data?.fixedExpenses);
+  const debtPaymentsTotal = safeSum(data?.debtPayments);
+  const subscriptionsTotal = safeSum(data?.subscriptions);
+  const variableExpensesTotal = safeSum(data?.variableExpenses);
+  const savingsTotal = safeSum(data?.savings);
   
   const totalExpenses = fixedExpensesTotal + debtPaymentsTotal + subscriptionsTotal + variableExpensesTotal;
   const netIncome = totalIncome - totalExpenses - savingsTotal;

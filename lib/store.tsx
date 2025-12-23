@@ -55,14 +55,23 @@ function migrateData(data: Record<string, unknown>): Record<string, unknown> {
   }
   
   // Migrate old BudgetData format if needed
-  if (data.budgetData && typeof data.budgetData === 'object') {
+  if (data.budgetData) {
     const budget = data.budgetData as Record<string, unknown>;
-    // Check if it has all required nested objects
-    if (!budget.income || !budget.fixedExpenses || !budget.debtPayments || 
-        !budget.subscriptions || !budget.variableExpenses || !budget.savings) {
+    // Check if it has all required nested objects with correct structure
+    const hasIncome = budget.income && typeof budget.income === 'object' && 'salary' in (budget.income as object);
+    const hasFixed = budget.fixedExpenses && typeof budget.fixedExpenses === 'object';
+    const hasDebt = budget.debtPayments && typeof budget.debtPayments === 'object';
+    const hasSubs = budget.subscriptions && typeof budget.subscriptions === 'object';
+    const hasVariable = budget.variableExpenses && typeof budget.variableExpenses === 'object';
+    const hasSavings = budget.savings && typeof budget.savings === 'object';
+    
+    if (!hasIncome || !hasFixed || !hasDebt || !hasSubs || !hasVariable || !hasSavings) {
       // Old or incomplete format, use defaults
       migrated.budgetData = DEFAULT_BUDGET;
     }
+  } else {
+    // No budget data at all
+    migrated.budgetData = DEFAULT_BUDGET;
   }
   
   return migrated;
