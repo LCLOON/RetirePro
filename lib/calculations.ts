@@ -363,14 +363,24 @@ function generateYearByYear(
     // Additional withdrawal needed beyond RMDs and passive income
     const incomeWithoutPortfolio = ssIncome + spouseSsIncome + pensionIncome + additionalIncome + dividendIncome + cryptoIncome + totalRMD;
     const additionalWithdrawalNeeded = isRetired ? Math.max(0, expenses - incomeWithoutPortfolio) : 0;
-    const totalWithdrawal = totalRMD + additionalWithdrawalNeeded;
+    
+    // Early retirement extra withdrawals (tax bracket filling strategy)
+    let earlyExtraWithdrawal = 0;
+    if (data.earlyWithdrawalEnabled && 
+        age >= data.earlyWithdrawalStartAge && 
+        age <= data.earlyWithdrawalEndAge &&
+        isRetired) {
+      earlyExtraWithdrawal = data.earlyWithdrawalAmount;
+    }
+    
+    const totalWithdrawal = totalRMD + additionalWithdrawalNeeded + earlyExtraWithdrawal;
     
     // Update account balances
     if (isRetired) {
       let remainingWithdrawal = additionalWithdrawalNeeded;
       
-      // Pre-tax: apply RMD and additional withdrawal
-      preTaxBalance = startPreTax + preTaxGrowth - rmd401k;
+      // Pre-tax: apply RMD, early extra withdrawal, and additional withdrawal
+      preTaxBalance = startPreTax + preTaxGrowth - rmd401k - earlyExtraWithdrawal;
       if (remainingWithdrawal > 0 && preTaxBalance > 0) {
         const fromPreTax = Math.min(remainingWithdrawal, preTaxBalance);
         preTaxBalance -= fromPreTax;

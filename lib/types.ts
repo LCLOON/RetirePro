@@ -180,6 +180,12 @@ export interface RetirementData {
   rothConversionStartAge: number;
   rothConversionEndAge: number;
   
+  // Early Retirement Extra Withdrawals (Tax Bracket Filling Strategy)
+  earlyWithdrawalEnabled: boolean;
+  earlyWithdrawalAmount: number; // Extra annual amount to withdraw from pre-tax
+  earlyWithdrawalStartAge: number; // When to start (typically retirement age)
+  earlyWithdrawalEndAge: number; // When to end (typically before RMDs start)
+  
   // Legacy/Estate Planning
   desiredLegacy: number; // Amount to leave to heirs
   
@@ -309,6 +315,12 @@ export const DEFAULT_RETIREMENT_DATA: RetirementData = {
   rothConversionAmount: 0,
   rothConversionStartAge: 65,
   rothConversionEndAge: 72,
+  
+  // Early withdrawal defaults (Tax Bracket Filling)
+  earlyWithdrawalEnabled: false,
+  earlyWithdrawalAmount: 0,
+  earlyWithdrawalStartAge: 62,
+  earlyWithdrawalEndAge: 72,
   
   // Legacy
   desiredLegacy: 0,

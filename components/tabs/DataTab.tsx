@@ -906,6 +906,75 @@ export function DataTab() {
         </div>
       </Card>
       
+      {/* Early Retirement Extra Withdrawals */}
+      <Card 
+        title="💰 Early Retirement Extra Withdrawals" 
+        subtitle="Tax bracket filling strategy - withdraw more before RMDs start"
+      >
+        <div className="space-y-4">
+          <Checkbox
+            label="Enable Early Retirement Extra Withdrawals"
+            checked={data.earlyWithdrawalEnabled}
+            onChange={(v) => updateRetirementData({ earlyWithdrawalEnabled: v })}
+          />
+          
+          {data.earlyWithdrawalEnabled && (
+            <>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 pt-4 border-t border-slate-700">
+                <CurrencyInput
+                  label="Extra Annual Withdrawal"
+                  value={data.earlyWithdrawalAmount}
+                  onChange={(v) => updateRetirementData({ earlyWithdrawalAmount: v })}
+                  hint="Extra amount to pull from 401k/IRA each year"
+                />
+                <NumberInput
+                  label="Start Age"
+                  value={data.earlyWithdrawalStartAge}
+                  onChange={(v) => updateRetirementData({ earlyWithdrawalStartAge: v })}
+                  min={data.retirementAge}
+                  max={data.rmdStartAge - 1}
+                  hint="When to start extra withdrawals"
+                />
+                <NumberInput
+                  label="End Age"
+                  value={data.earlyWithdrawalEndAge}
+                  onChange={(v) => updateRetirementData({ earlyWithdrawalEndAge: v })}
+                  min={data.earlyWithdrawalStartAge}
+                  max={data.rmdStartAge - 1}
+                  hint="When to stop (before RMDs)"
+                />
+              </div>
+              
+              <div className="p-4 bg-amber-500/10 rounded-lg border border-amber-500/30">
+                <h4 className="text-sm font-medium text-amber-400 mb-2">💡 Tax Bracket Filling Strategy</h4>
+                <p className="text-xs text-slate-400 mb-2">
+                  By taking extra withdrawals in your early retirement years (ages {data.earlyWithdrawalStartAge}-{data.earlyWithdrawalEndAge}), 
+                  you can fill up lower tax brackets before RMDs and Social Security push you into higher brackets.
+                </p>
+                <div className="grid grid-cols-2 gap-4 mt-3">
+                  <div className="bg-slate-800/50 rounded p-2">
+                    <p className="text-xs text-slate-500">Years of extra withdrawals</p>
+                    <p className="text-lg font-bold text-amber-400">{Math.max(0, data.earlyWithdrawalEndAge - data.earlyWithdrawalStartAge + 1)} years</p>
+                  </div>
+                  <div className="bg-slate-800/50 rounded p-2">
+                    <p className="text-xs text-slate-500">Total extra withdrawn</p>
+                    <p className="text-lg font-bold text-amber-400">
+                      ${(data.earlyWithdrawalAmount * Math.max(0, data.earlyWithdrawalEndAge - data.earlyWithdrawalStartAge + 1)).toLocaleString()}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </>
+          )}
+          
+          <p className="text-xs text-slate-400">
+            Taking extra withdrawals in lower-income years (before SS and RMDs) can reduce your lifetime tax burden 
+            by pulling money out at 12-22% instead of 24-32% later. This strategy is especially valuable if you have 
+            a large 401k balance.
+          </p>
+        </div>
+      </Card>
+      
       {/* Simulation Settings */}
       <Card title="🎲 Monte Carlo Settings" subtitle="Parameters for retirement simulations">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

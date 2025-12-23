@@ -293,22 +293,31 @@ export function DetailsTab() {
       const incomeWithoutWithdrawal = totalSsIncome + totalOtherIncome + totalRMD;
       const additionalWithdrawalNeeded = isRetired ? Math.max(0, expenses - incomeWithoutWithdrawal) : 0;
       
-      // Total withdrawal from portfolio (RMDs + any additional needed)
-      const totalWithdrawal = totalRMD + additionalWithdrawalNeeded;
+      // Early retirement extra withdrawals (tax bracket filling strategy)
+      let earlyExtraWithdrawal = 0;
+      if (data.earlyWithdrawalEnabled && 
+          age >= data.earlyWithdrawalStartAge && 
+          age <= data.earlyWithdrawalEndAge &&
+          isRetired) {
+        earlyExtraWithdrawal = data.earlyWithdrawalAmount;
+      }
       
-      // Calculate net cash flow
+      // Total withdrawal from portfolio (RMDs + any additional needed + early extra)
+      const totalWithdrawal = totalRMD + additionalWithdrawalNeeded + earlyExtraWithdrawal;
+      
+      // Calculate net cash flow and surplus
       const netCashFlow = isRetired ? (incomeWithoutWithdrawal - expenses) : 0;
       const surplus = isRetired ? Math.max(0, incomeWithoutWithdrawal - expenses) : 0;
       
       // Update account balances for NEXT year
       if (isRetired) {
-        // Apply RMDs first (mandatory), then additional withdrawals
-        // Withdraw from pre-tax first (for RMDs), then Roth, then after-tax
+        // Apply RMDs first (mandatory), then additional withdrawals, then early extra
+        // Withdraw from pre-tax first (for RMDs and early extra), then after-tax, then Roth
         
-        // Pre-tax: growth - 401k RMD - portion of additional withdrawal
+        // Pre-tax: growth - 401k RMD - early extra withdrawal - portion of additional withdrawal
         let remainingWithdrawal = additionalWithdrawalNeeded;
         
-        preTaxBalance = startPreTax + preTaxGrowth - rmd401k;
+        preTaxBalance = startPreTax + preTaxGrowth - rmd401k - earlyExtraWithdrawal;
         if (remainingWithdrawal > 0 && preTaxBalance > 0) {
           const fromPreTax = Math.min(remainingWithdrawal, preTaxBalance);
           preTaxBalance -= fromPreTax;
@@ -381,6 +390,7 @@ export function DetailsTab() {
         expenses: expenses,
         withdrawal: totalWithdrawal,
         additionalWithdrawal: additionalWithdrawalNeeded,
+        earlyExtraWithdrawal: earlyExtraWithdrawal,
         surplus: surplus,
         netCashFlow: netCashFlow,
         totalSpendable: totalSpendable,
@@ -525,8 +535,12 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10">RMD</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10">Total Income</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-green-500/10">Surplus</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10">Contributions</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">Add&apos;l W/D</th>
+                {data.earlyWithdrawalEnabled && (
+                  <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10">Early Extra</th>
+                )}
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10">Total Spendable</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">W/D Rate</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium">End Balance</th>
@@ -600,6 +614,14 @@ export function DetailsTab() {
                     <td className="py-2 px-2 text-right text-red-400">
                       {row.expenses > 0 ? `-$${Math.round(row.expenses).toLocaleString()}` : '-'}
                     </td>
+                    <td className="py-2 px-2 text-right bg-green-500/5">
+                      {row.phase === 'Retirement' 
+                        ? row.surplus > 0 
+                          ? <span className="text-green-400 font-medium">+${Math.round(row.surplus).toLocaleString()}</span>
+                          : <span className="text-slate-400">$0</span>
+                        : <span className="text-slate-500">-</span>
+                      }
+                    </td>
                     <td className="py-2 px-2 text-right text-blue-400 bg-blue-500/5">
                       {row.contributions > 0 ? `+$${Math.round(row.contributions).toLocaleString()}` : '-'}
                     </td>
@@ -611,6 +633,14 @@ export function DetailsTab() {
                         : <span className="text-slate-500">-</span>
                       }
                     </td>
+                    {data.earlyWithdrawalEnabled && (
+                      <td className="py-2 px-2 text-right bg-amber-500/5">
+                        {row.phase === 'Retirement' && row.earlyExtraWithdrawal > 0
+                          ? <span className="text-amber-400 font-medium">-${Math.round(row.earlyExtraWithdrawal).toLocaleString()}</span>
+                          : <span className="text-slate-500">-</span>
+                        }
+                      </td>
+                    )}
                     <td className="py-2 px-2 text-right bg-cyan-500/5">
                       {row.phase === 'Retirement' 
                         ? <span className="text-cyan-400 font-semibold">${Math.round(row.totalSpendable).toLocaleString()}</span>
