@@ -1,25 +1,7 @@
 @import "tailwindcss";
 
 :root {
-  /* Dark mode as default (DividendPro style) */
-  --background: #0f172a;
-  --foreground: #f1f5f9;
-  --card-bg: #1e293b;
-  --card-border: #334155;
-  --input-bg: #1e293b;
-  --input-border: #475569;
-  --muted: #94a3b8;
-  --muted-bg: #1e293b;
-  --accent: #10b981;
-  --accent-hover: #34d399;
-  --success: #10b981;
-  --warning: #f59e0b;
-  --danger: #ef4444;
-  --chart-grid: #334155;
-}
-
-.light {
-  /* Light mode colors (optional) */
+  /* Light mode as default */
   --background: #f8fafc;
   --foreground: #0f172a;
   --card-bg: #ffffff;
@@ -34,6 +16,24 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --chart-grid: #e2e8f0;
+}
+
+.dark {
+  /* Dark mode colors */
+  --background: #0f172a;
+  --foreground: #f1f5f9;
+  --card-bg: #1e293b;
+  --card-border: #334155;
+  --input-bg: #1e293b;
+  --input-border: #475569;
+  --muted: #94a3b8;
+  --muted-bg: #1e293b;
+  --accent: #10b981;
+  --accent-hover: #34d399;
+  --success: #10b981;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --chart-grid: #334155;
 }
 
 @theme inline {

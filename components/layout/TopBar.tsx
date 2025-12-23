@@ -9,13 +9,13 @@ export function TopBar() {
   const { toggle } = useSidebar();
 
   return (
-    <header className="h-14 bg-slate-800/50 backdrop-blur-sm border-b border-slate-700/50 flex items-center justify-between px-4 md:px-6">
+    <header className="h-14 bg-white/50 dark:bg-slate-800/50 backdrop-blur-sm border-b border-gray-200 dark:border-slate-700/50 flex items-center justify-between px-4 md:px-6">
       {/* Left Side - Hamburger + Page Title */}
       <div className="flex items-center gap-3">
         {/* Hamburger Menu - Mobile Only */}
         <button
           onClick={toggle}
-          className="lg:hidden p-2 -ml-2 text-slate-400 hover:text-white rounded-lg hover:bg-slate-700/50 transition-colors"
+          className="lg:hidden p-2 -ml-2 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white rounded-lg hover:bg-gray-200 dark:hover:bg-slate-700/50 transition-colors"
           aria-label="Open menu"
         >
           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -23,7 +23,7 @@ export function TopBar() {
           </svg>
         </button>
 
-        <h2 className="text-base md:text-lg font-semibold text-white truncate">
+        <h2 className="text-base md:text-lg font-semibold text-gray-900 dark:text-white truncate">
           {state.activeTab === 'start' && '📈 Overview'}
           {state.activeTab === 'data' && '📝 Data Entry'}
           {state.activeTab === 'results' && '📊 Results'}

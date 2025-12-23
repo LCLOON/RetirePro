@@ -98,26 +98,26 @@ export function Sidebar() {
 
   return (
     <aside className={`
-      fixed left-0 top-0 h-full w-64 lg:w-56 bg-gradient-to-b from-slate-900 to-slate-800 
-      border-r border-slate-700/50 flex flex-col z-40
+      fixed left-0 top-0 h-full w-64 lg:w-56 bg-gradient-to-b from-gray-100 to-gray-200 dark:from-slate-900 dark:to-slate-800 
+      border-r border-gray-200 dark:border-slate-700/50 flex flex-col z-40
       transform transition-transform duration-300 ease-in-out
       ${isOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
     `}>
       {/* Logo */}
-      <div className="p-4 border-b border-slate-700/50 flex items-center justify-between">
+      <div className="p-4 border-b border-gray-200 dark:border-slate-700/50 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-emerald-400 to-emerald-600 rounded-xl flex items-center justify-center shadow-lg shadow-emerald-500/25">
             <span className="text-xl">💎</span>
           </div>
           <div>
-            <h1 className="text-lg font-bold text-white">RetirePro</h1>
-            <p className="text-xs text-slate-400">Plan Your Future</p>
+            <h1 className="text-lg font-bold text-gray-900 dark:text-white">RetirePro</h1>
+            <p className="text-xs text-gray-500 dark:text-slate-400">Plan Your Future</p>
           </div>
         </div>
         {/* Close button - mobile only */}
         <button
           onClick={() => setIsOpen(false)}
-          className="lg:hidden p-2 text-slate-400 hover:text-white"
+          className="lg:hidden p-2 text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white"
           aria-label="Close menu"
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -127,7 +127,7 @@ export function Sidebar() {
       </div>
 
       {/* Current Plan Section */}
-      <div className="px-3 py-3 border-b border-slate-700/50 space-y-2">
+      <div className="px-3 py-3 border-b border-gray-200 dark:border-slate-700/50 space-y-2">
         {/* Current Plan Badge */}
         <div className="flex items-center justify-between">
           <span className="text-xs text-slate-500">Current Plan</span>
@@ -198,20 +198,20 @@ export function Sidebar() {
       </div>
 
       {/* Quick Stats - hidden on very small screens */}
-      <div className="px-3 py-3 border-b border-slate-700/50 space-y-2 hidden sm:block">
+      <div className="px-3 py-3 border-b border-gray-200 dark:border-slate-700/50 space-y-2 hidden sm:block">
         <div className="flex items-center gap-2">
           <span className="text-sm">📊</span>
           <div className="flex-1">
-            <p className="text-[10px] text-slate-500">Total Savings</p>
-            <p className="text-sm font-semibold text-white">{formatCurrency(totalSavings)}</p>
+            <p className="text-[10px] text-gray-500 dark:text-slate-500">Total Savings</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{formatCurrency(totalSavings)}</p>
           </div>
         </div>
         
         <div className="flex items-center gap-2">
           <span className="text-sm">⏱️</span>
           <div className="flex-1">
-            <p className="text-[10px] text-slate-500">Years to Retire</p>
-            <p className="text-sm font-semibold text-white">{yearsToRetirement} years</p>
+            <p className="text-[10px] text-gray-500 dark:text-slate-500">Years to Retire</p>
+            <p className="text-sm font-semibold text-gray-900 dark:text-white">{yearsToRetirement} years</p>
           </div>
         </div>
 
@@ -246,10 +246,10 @@ export function Sidebar() {
                 className={`
                   w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-left transition-all duration-200
                   ${isActive 
-                    ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 text-emerald-400 border border-emerald-500/30' 
+                    ? 'bg-gradient-to-r from-emerald-500/20 to-emerald-600/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30' 
                     : hasAccess
-                      ? 'text-slate-300 hover:bg-slate-700/50 hover:text-white border border-transparent'
-                      : 'text-slate-500 hover:bg-slate-800/50 border border-transparent'
+                      ? 'text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700/50 hover:text-gray-900 dark:hover:text-white border border-transparent'
+                      : 'text-gray-400 dark:text-slate-500 hover:bg-gray-100 dark:hover:bg-slate-800/50 border border-transparent'
                   }
                 `}
               >
@@ -263,11 +263,11 @@ export function Sidebar() {
       </nav>
 
       {/* Logout Button */}
-      <div className="p-3 border-t border-slate-700/50">
+      <div className="p-3 border-t border-gray-200 dark:border-slate-700/50">
         <Link 
           href="/landing"
           onClick={() => setIsOpen(false)}
-          className="flex items-center justify-center gap-2 w-full text-slate-400 hover:text-white hover:bg-slate-700/50 text-sm px-3 py-2 rounded-lg transition-colors"
+          className="flex items-center justify-center gap-2 w-full text-gray-500 dark:text-slate-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-200 dark:hover:bg-slate-700/50 text-sm px-3 py-2 rounded-lg transition-colors"
         >
           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />

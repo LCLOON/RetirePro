@@ -3,6 +3,7 @@
 import { ReactNode, useState, createContext, useContext } from 'react';
 import { Sidebar } from './Sidebar';
 import { TopBar } from './TopBar';
+import { useApp } from '@/lib/store';
 
 // Context for mobile sidebar state
 interface SidebarContextType {
@@ -27,6 +28,7 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  const { state } = useApp();
 
   const sidebarContext = {
     isOpen: isSidebarOpen,
@@ -36,7 +38,7 @@ export function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <SidebarContext.Provider value={sidebarContext}>
-      <div className="min-h-screen bg-slate-900 dark">
+      <div className="min-h-screen bg-white dark:bg-slate-900 text-gray-900 dark:text-white transition-colors">
         {/* Mobile Overlay */}
         {isSidebarOpen && (
           <div 
