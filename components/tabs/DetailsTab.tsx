@@ -519,31 +519,28 @@ export function DetailsTab() {
       {/* Year-by-Year Table */}
       <Card title="📅 Annual Projections" icon="📅">
         <div className="overflow-x-auto">
-          <table className="w-full text-sm">
+          <table className="w-full text-sm min-w-[1400px]">
             <thead>
               <tr className="border-b border-slate-700">
-                <th className="text-left py-3 px-2 text-slate-400 font-medium">Age</th>
-                <th className="text-left py-3 px-2 text-slate-400 font-medium">Year</th>
-                <th className="text-left py-3 px-2 text-slate-400 font-medium">Phase</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">Portfolio</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">Growth</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">Your SS</th>
-                {data.hasSpouse && (
-                  <th className="text-right py-3 px-2 text-slate-400 font-medium">Spouse SS</th>
-                )}
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">Other</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10">RMD</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10">Total Income</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">Expenses</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-green-500/10">Surplus</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10">Contributions</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10">Add&apos;l W/D</th>
+                <th className="text-left py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Age</th>
+                <th className="text-left py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Year</th>
+                <th className="text-left py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Phase</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Portfolio</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Growth</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Soc Sec</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Other</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10 whitespace-nowrap">RMD</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10 whitespace-nowrap">Total Income</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Expenses</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-green-500/10 whitespace-nowrap">Surplus</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10 whitespace-nowrap">Contrib</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10 whitespace-nowrap">Add&apos;l W/D</th>
                 {data.earlyWithdrawalEnabled && (
-                  <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10">Early Extra</th>
+                  <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10 whitespace-nowrap">Early Extra</th>
                 )}
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10">Total Spendable</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">W/D Rate</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium">End Balance</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10 whitespace-nowrap">Spendable</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">W/D %</th>
+                <th className="text-right py-3 px-3 text-slate-400 font-medium whitespace-nowrap min-w-[120px]">End Balance</th>
               </tr>
             </thead>
             <tbody>
@@ -592,13 +589,8 @@ export function DetailsTab() {
                       {row.growth >= 0 ? '+' : ''}${Math.round(row.growth).toLocaleString()}
                     </td>
                     <td className="py-2 px-2 text-right text-blue-400">
-                      {row.yourSS > 0 ? `$${Math.round(row.yourSS).toLocaleString()}` : '-'}
+                      {row.ssIncome > 0 ? `$${Math.round(row.ssIncome).toLocaleString()}` : '-'}
                     </td>
-                    {data.hasSpouse && (
-                      <td className="py-2 px-2 text-right text-purple-400">
-                        {row.spouseSS > 0 ? `$${Math.round(row.spouseSS).toLocaleString()}` : '-'}
-                      </td>
-                    )}
                     <td className="py-2 px-2 text-right text-amber-400">
                       {row.otherIncome > 0 ? `$${Math.round(row.otherIncome).toLocaleString()}` : '-'}
                     </td>
@@ -647,7 +639,7 @@ export function DetailsTab() {
                         : <span className="text-slate-500">-</span>
                       }
                     </td>
-                    <td className="py-2 px-2 text-right">
+                    <td className="py-2 px-2 text-right whitespace-nowrap">
                       {row.phase === 'Retirement' 
                         ? <span className={`font-medium ${
                             row.withdrawalRate === 0 ? 'text-emerald-400' :
@@ -661,7 +653,7 @@ export function DetailsTab() {
                         : <span className="text-slate-500">-</span>
                       }
                     </td>
-                    <td className={`py-2 px-2 text-right font-medium ${row.endBalance > 0 ? 'text-white' : 'text-red-400'}`}>
+                    <td className={`py-2 px-3 text-right font-medium whitespace-nowrap min-w-[120px] ${row.endBalance > 0 ? 'text-white' : 'text-red-400'}`}>
                       ${Math.round(row.endBalance).toLocaleString()}
                       {isMoneyOut && <span className="ml-1">⚠️</span>}
                     </td>
