@@ -57,6 +57,7 @@
   --warning: #f59e0b;
   --danger: #ef4444;
   --chart-grid: #475569;
+  background: red !important; /* Test if medium class is applied */
 }
 
 @theme inline {

@@ -318,16 +318,8 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = localStorage.getItem('retirepro-theme-v3');
-                  // Remove all theme classes first
-                  document.documentElement.classList.remove('dark', 'medium');
-                  // Add the appropriate class
-                  if (theme === 'dark' || !theme) {
-                    document.documentElement.classList.add('dark');
-                  } else if (theme === 'medium') {
-                    document.documentElement.classList.add('medium');
-                  }
-                  // For 'light', do nothing (no class added)
+                  // Always start in dark mode
+                  document.documentElement.classList.add('dark');
                 } catch (e) {}
               })();
             `,
