@@ -534,7 +534,6 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-green-500/10 whitespace-nowrap">Surplus</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10 whitespace-nowrap">Contrib</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-orange-500/10 whitespace-nowrap">Add&apos;l W/D</th>
                 {data.earlyWithdrawalEnabled && (
                   <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10 whitespace-nowrap">Early Extra</th>
                 )}
@@ -616,14 +615,6 @@ export function DetailsTab() {
                     </td>
                     <td className="py-2 px-2 text-right text-blue-400 bg-blue-500/5">
                       {row.contributions > 0 ? `+$${Math.round(row.contributions).toLocaleString()}` : '-'}
-                    </td>
-                    <td className="py-2 px-2 text-right bg-orange-500/5">
-                      {row.phase === 'Retirement' 
-                        ? row.additionalWithdrawal > 0 
-                          ? <span className="text-orange-400 font-medium">-${Math.round(row.additionalWithdrawal).toLocaleString()}</span>
-                          : <span className="text-emerald-400">$0 ✓</span>
-                        : <span className="text-slate-500">-</span>
-                      }
                     </td>
                     {data.earlyWithdrawalEnabled && (
                       <td className="py-2 px-2 text-right bg-amber-500/5">
