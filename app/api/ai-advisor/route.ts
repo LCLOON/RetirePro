@@ -75,8 +75,8 @@ interface RetirementContext {
 function buildContextMessage(context: RetirementContext): string {
   const yearsToRetire = context.retirementAge - context.currentAge;
   const totalSavings = context.currentSavingsPreTax + context.currentSavingsRoth + context.currentSavingsAfterTax +
-    (context.inheritedIRA?.currentValue || 0) +
-    (context.dividendPortfolio?.currentValue || 0) +
+    (context.inheritedIRA?.balance || 0) +
+    (context.dividendPortfolio?.totalValue || 0) +
     (context.cryptoHoldings?.totalValue || 0);
   const totalContrib = context.annualContributionPreTax + context.annualContributionRoth + context.annualContributionAfterTax + context.employerMatch;
 

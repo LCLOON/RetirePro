@@ -49,7 +49,7 @@ export function AnalysisTab() {
   const yearsToRetirement = Math.max(0, data.retirementAge - data.currentAge);
   const yearsInRetirement = data.lifeExpectancy - data.retirementAge;
   const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax + data.currentHSA +
-    (data.hasInheritedIRA ? data.inheritedIRA.currentValue : 0) +
+    (data.hasInheritedIRA ? data.inheritedIRA.balance : 0) +
     (data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections ? data.dividendPortfolio.currentValue : 0) +
     (data.hasCryptoHoldings && data.cryptoHoldings.includeInProjections ? data.cryptoHoldings.currentValue : 0);
   const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + data.annualContributionAfterTax + data.employerMatch + data.annualHSAContribution;

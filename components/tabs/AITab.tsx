@@ -15,7 +15,7 @@ export function AITab() {
   const data = state.retirementData;
   
   const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax +
-    (data.hasInheritedIRA ? data.inheritedIRA.currentValue : 0) +
+    (data.hasInheritedIRA ? data.inheritedIRA.balance : 0) +
     (data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections ? data.dividendPortfolio.currentValue : 0) +
     (data.hasCryptoHoldings && data.cryptoHoldings.includeInProjections ? data.cryptoHoldings.currentValue : 0);
   

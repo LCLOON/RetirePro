@@ -38,7 +38,7 @@ export function AdvancedTab() {
   // Calculate projected outcome for a scenario
   const calculateScenarioOutcome = (scenario: CustomScenario) => {
     const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax +
-      (data.hasInheritedIRA ? data.inheritedIRA.currentValue : 0) +
+      (data.hasInheritedIRA ? data.inheritedIRA.balance : 0) +
       (data.hasDividendPortfolio && data.dividendPortfolio.includeInProjections ? data.dividendPortfolio.currentValue : 0) +
       (data.hasCryptoHoldings && data.cryptoHoldings.includeInProjections ? data.cryptoHoldings.currentValue : 0);
     const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + data.annualContributionAfterTax + data.employerMatch;
