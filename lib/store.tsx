@@ -280,6 +280,10 @@ function getInitialState(): AppState {
   if (typeof window !== 'undefined') {
     const savedTheme = localStorage.getItem('retirepro-theme-v3') as Theme | null;
     if (savedTheme && ['light', 'dark', 'system'].includes(savedTheme)) {
+      // Migrate 'system' to 'dark' since we want dark as default
+      if (savedTheme === 'system') {
+        return { ...initialState, theme: 'dark' };
+      }
       return { ...initialState, theme: savedTheme };
     }
   }

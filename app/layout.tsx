@@ -319,18 +319,11 @@ export default function RootLayout({
               (function() {
                 try {
                   var theme = localStorage.getItem('retirepro-theme-v3');
-                  // If no theme is saved, default to dark (do nothing as class="dark" is on html)
                   // If theme is light, remove dark class
                   if (theme === 'light') {
                     document.documentElement.classList.remove('dark');
-                  } 
-                  // If theme is system, check OS preference
-                  else if (theme === 'system') {
-                    if (!window.matchMedia('(prefers-color-scheme: dark)').matches) {
-                      document.documentElement.classList.remove('dark');
-                    }
                   } else {
-                    // Ensure dark mode is present if not explicitly light/system-light
+                    // For 'dark', 'system', or no theme: ensure dark is present
                     document.documentElement.classList.add('dark');
                   }
                 } catch (e) {}
