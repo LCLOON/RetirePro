@@ -167,12 +167,12 @@ function appReducer(state: AppState, action: Action): AppState {
       return {
         ...state,
         budgetData: { 
-          income: { ...state.budgetData.income, ...action.payload.income },
-          fixedExpenses: { ...state.budgetData.fixedExpenses, ...action.payload.fixedExpenses },
-          debtPayments: { ...state.budgetData.debtPayments, ...action.payload.debtPayments },
-          subscriptions: { ...state.budgetData.subscriptions, ...action.payload.subscriptions },
-          variableExpenses: { ...state.budgetData.variableExpenses, ...action.payload.variableExpenses },
-          savings: { ...state.budgetData.savings, ...action.payload.savings },
+          income: action.payload.income ? { ...state.budgetData.income, ...action.payload.income } : state.budgetData.income,
+          fixedExpenses: action.payload.fixedExpenses ? { ...state.budgetData.fixedExpenses, ...action.payload.fixedExpenses } : state.budgetData.fixedExpenses,
+          debtPayments: action.payload.debtPayments ? { ...state.budgetData.debtPayments, ...action.payload.debtPayments } : state.budgetData.debtPayments,
+          subscriptions: action.payload.subscriptions ? { ...state.budgetData.subscriptions, ...action.payload.subscriptions } : state.budgetData.subscriptions,
+          variableExpenses: action.payload.variableExpenses ? { ...state.budgetData.variableExpenses, ...action.payload.variableExpenses } : state.budgetData.variableExpenses,
+          savings: action.payload.savings ? { ...state.budgetData.savings, ...action.payload.savings } : state.budgetData.savings,
         },
         hasUnsavedChanges: true,
       };

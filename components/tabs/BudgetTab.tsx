@@ -82,15 +82,35 @@ function ExpenseSection({
 export function BudgetTab() {
   const { state, updateBudgetData } = useApp();
   
-  // Use DEFAULT_BUDGET as fallback if data is missing or corrupted
-  const rawData = state.budgetData;
+  // Use state.budgetData with fallbacks for display
+  const budgetState = state.budgetData;
   const data = {
-    income: rawData?.income || DEFAULT_BUDGET.income,
-    fixedExpenses: rawData?.fixedExpenses || DEFAULT_BUDGET.fixedExpenses,
-    debtPayments: rawData?.debtPayments || DEFAULT_BUDGET.debtPayments,
-    subscriptions: rawData?.subscriptions || DEFAULT_BUDGET.subscriptions,
-    variableExpenses: rawData?.variableExpenses || DEFAULT_BUDGET.variableExpenses,
-    savings: rawData?.savings || DEFAULT_BUDGET.savings,
+    income: budgetState?.income || DEFAULT_BUDGET.income,
+    fixedExpenses: budgetState?.fixedExpenses || DEFAULT_BUDGET.fixedExpenses,
+    debtPayments: budgetState?.debtPayments || DEFAULT_BUDGET.debtPayments,
+    subscriptions: budgetState?.subscriptions || DEFAULT_BUDGET.subscriptions,
+    variableExpenses: budgetState?.variableExpenses || DEFAULT_BUDGET.variableExpenses,
+    savings: budgetState?.savings || DEFAULT_BUDGET.savings,
+  };
+  
+  // Helper to update budget fields - uses state directly, not fallback data
+  const updateIncome = (field: keyof typeof DEFAULT_BUDGET.income, value: number) => {
+    updateBudgetData({ income: { ...(budgetState?.income || DEFAULT_BUDGET.income), [field]: value } });
+  };
+  const updateFixedExpenses = (field: keyof typeof DEFAULT_BUDGET.fixedExpenses, value: number) => {
+    updateBudgetData({ fixedExpenses: { ...(budgetState?.fixedExpenses || DEFAULT_BUDGET.fixedExpenses), [field]: value } });
+  };
+  const updateDebtPayments = (field: keyof typeof DEFAULT_BUDGET.debtPayments, value: number) => {
+    updateBudgetData({ debtPayments: { ...(budgetState?.debtPayments || DEFAULT_BUDGET.debtPayments), [field]: value } });
+  };
+  const updateSubscriptions = (field: keyof typeof DEFAULT_BUDGET.subscriptions, value: number) => {
+    updateBudgetData({ subscriptions: { ...(budgetState?.subscriptions || DEFAULT_BUDGET.subscriptions), [field]: value } });
+  };
+  const updateVariableExpenses = (field: keyof typeof DEFAULT_BUDGET.variableExpenses, value: number) => {
+    updateBudgetData({ variableExpenses: { ...(budgetState?.variableExpenses || DEFAULT_BUDGET.variableExpenses), [field]: value } });
+  };
+  const updateSavings = (field: keyof typeof DEFAULT_BUDGET.savings, value: number) => {
+    updateBudgetData({ savings: { ...(budgetState?.savings || DEFAULT_BUDGET.savings), [field]: value } });
   };
   
   const summary = calculateBudgetSummary(data);
@@ -237,44 +257,32 @@ export function BudgetTab() {
           <CurrencyInput
             label="Primary Salary (Net)"
             value={data.income.salary}
-            onChange={(v) => updateBudgetData({ 
-              income: { ...data.income, salary: v }
-            })}
+            onChange={(v) => updateIncome('salary', v)}
           />
           <CurrencyInput
             label="Spouse Salary (Net)"
             value={data.income.spouseSalary}
-            onChange={(v) => updateBudgetData({ 
-              income: { ...data.income, spouseSalary: v }
-            })}
+            onChange={(v) => updateIncome('spouseSalary', v)}
           />
           <CurrencyInput
             label="Bonus Income"
             value={data.income.bonusIncome}
-            onChange={(v) => updateBudgetData({ 
-              income: { ...data.income, bonusIncome: v }
-            })}
+            onChange={(v) => updateIncome('bonusIncome', v)}
           />
           <CurrencyInput
             label="Investment Income"
             value={data.income.investmentIncome}
-            onChange={(v) => updateBudgetData({ 
-              income: { ...data.income, investmentIncome: v }
-            })}
+            onChange={(v) => updateIncome('investmentIncome', v)}
           />
           <CurrencyInput
             label="Side Hustle"
             value={data.income.sideHustle}
-            onChange={(v) => updateBudgetData({ 
-              income: { ...data.income, sideHustle: v }
-            })}
+            onChange={(v) => updateIncome('sideHustle', v)}
           />
           <CurrencyInput
             label="Other Income"
             value={data.income.other}
-            onChange={(v) => updateBudgetData({ 
-              income: { ...data.income, other: v }
-            })}
+            onChange={(v) => updateIncome('other', v)}
           />
         </div>
       </Card>
@@ -295,37 +303,27 @@ export function BudgetTab() {
           <CurrencyInput
             label="Mortgage/Rent"
             value={data.fixedExpenses.mortgageRent}
-            onChange={(v) => updateBudgetData({ 
-              fixedExpenses: { ...data.fixedExpenses, mortgageRent: v }
-            })}
+            onChange={(v) => updateFixedExpenses('mortgageRent', v)}
           />
           <CurrencyInput
             label="Property Tax & HOA"
             value={data.fixedExpenses.propertyTaxHoa}
-            onChange={(v) => updateBudgetData({ 
-              fixedExpenses: { ...data.fixedExpenses, propertyTaxHoa: v }
-            })}
+            onChange={(v) => updateFixedExpenses('propertyTaxHoa', v)}
           />
           <CurrencyInput
             label="Home Insurance"
             value={data.fixedExpenses.homeInsurance}
-            onChange={(v) => updateBudgetData({ 
-              fixedExpenses: { ...data.fixedExpenses, homeInsurance: v }
-            })}
+            onChange={(v) => updateFixedExpenses('homeInsurance', v)}
           />
           <CurrencyInput
             label="Utilities (Elec/Gas/Water)"
             value={data.fixedExpenses.utilities}
-            onChange={(v) => updateBudgetData({ 
-              fixedExpenses: { ...data.fixedExpenses, utilities: v }
-            })}
+            onChange={(v) => updateFixedExpenses('utilities', v)}
           />
           <CurrencyInput
             label="Auto Payment"
             value={data.fixedExpenses.autoPayment}
-            onChange={(v) => updateBudgetData({ 
-              fixedExpenses: { ...data.fixedExpenses, autoPayment: v }
-            })}
+            onChange={(v) => updateFixedExpenses('autoPayment', v)}
           />
         </ExpenseSection>
         
@@ -340,86 +338,62 @@ export function BudgetTab() {
           <CurrencyInput
             label="Credit Card #1"
             value={data.debtPayments.creditCard1}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, creditCard1: v }
-            })}
+            onChange={(v) => updateDebtPayments('creditCard1', v)}
           />
           <CurrencyInput
             label="Credit Card #2"
             value={data.debtPayments.creditCard2}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, creditCard2: v }
-            })}
+            onChange={(v) => updateDebtPayments('creditCard2', v)}
           />
           <CurrencyInput
             label="Credit Card #3"
             value={data.debtPayments.creditCard3}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, creditCard3: v }
-            })}
+            onChange={(v) => updateDebtPayments('creditCard3', v)}
           />
           <CurrencyInput
             label="Phone Equipment"
             value={data.debtPayments.phoneEquipment}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, phoneEquipment: v }
-            })}
+            onChange={(v) => updateDebtPayments('phoneEquipment', v)}
           />
           <CurrencyInput
             label="Computer/Laptop"
             value={data.debtPayments.computerLaptop}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, computerLaptop: v }
-            })}
+            onChange={(v) => updateDebtPayments('computerLaptop', v)}
           />
           <CurrencyInput
             label="Furniture Financing"
             value={data.debtPayments.furnitureFinancing}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, furnitureFinancing: v }
-            })}
+            onChange={(v) => updateDebtPayments('furnitureFinancing', v)}
           />
           <CurrencyInput
             label="Appliance Financing"
             value={data.debtPayments.applianceFinancing}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, applianceFinancing: v }
-            })}
+            onChange={(v) => updateDebtPayments('applianceFinancing', v)}
           />
           <CurrencyInput
             label="Other Equipment"
             value={data.debtPayments.otherEquipment}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, otherEquipment: v }
-            })}
+            onChange={(v) => updateDebtPayments('otherEquipment', v)}
           />
           <CurrencyInput
             label="Student Loans"
             value={data.debtPayments.studentLoans}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, studentLoans: v }
-            })}
+            onChange={(v) => updateDebtPayments('studentLoans', v)}
           />
           <CurrencyInput
             label="Personal Loans"
             value={data.debtPayments.personalLoans}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, personalLoans: v }
-            })}
+            onChange={(v) => updateDebtPayments('personalLoans', v)}
           />
           <CurrencyInput
             label="Medical Debt"
             value={data.debtPayments.medicalDebt}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, medicalDebt: v }
-            })}
+            onChange={(v) => updateDebtPayments('medicalDebt', v)}
           />
           <CurrencyInput
             label="Other Debt"
             value={data.debtPayments.otherDebt}
-            onChange={(v) => updateBudgetData({ 
-              debtPayments: { ...data.debtPayments, otherDebt: v }
-            })}
+            onChange={(v) => updateDebtPayments('otherDebt', v)}
           />
         </ExpenseSection>
         
@@ -434,107 +408,77 @@ export function BudgetTab() {
           <CurrencyInput
             label="Home Internet"
             value={data.subscriptions.internet}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, internet: v }
-            })}
+            onChange={(v) => updateSubscriptions('internet', v)}
           />
           <CurrencyInput
             label="Starlink"
             value={data.subscriptions.starlink}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, starlink: v }
-            })}
+            onChange={(v) => updateSubscriptions('starlink', v)}
           />
           <CurrencyInput
             label="Cell Phone Plans"
             value={data.subscriptions.cellPhone}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, cellPhone: v }
-            })}
+            onChange={(v) => updateSubscriptions('cellPhone', v)}
           />
           <CurrencyInput
             label="Cable/Satellite TV"
             value={data.subscriptions.cableTv}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, cableTv: v }
-            })}
+            onChange={(v) => updateSubscriptions('cableTv', v)}
           />
           <CurrencyInput
             label="Netflix"
             value={data.subscriptions.netflix}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, netflix: v }
-            })}
+            onChange={(v) => updateSubscriptions('netflix', v)}
           />
           <CurrencyInput
             label="Other Streaming"
             value={data.subscriptions.otherStreaming}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, otherStreaming: v }
-            })}
+            onChange={(v) => updateSubscriptions('otherStreaming', v)}
           />
           <CurrencyInput
             label="Music Streaming"
             value={data.subscriptions.musicStreaming}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, musicStreaming: v }
-            })}
+            onChange={(v) => updateSubscriptions('musicStreaming', v)}
           />
           <CurrencyInput
             label="X/Twitter Premium"
             value={data.subscriptions.xTwitter}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, xTwitter: v }
-            })}
+            onChange={(v) => updateSubscriptions('xTwitter', v)}
           />
           <CurrencyInput
             label="Social Media Subs"
             value={data.subscriptions.socialMedia}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, socialMedia: v }
-            })}
+            onChange={(v) => updateSubscriptions('socialMedia', v)}
           />
           <CurrencyInput
             label="Software & Apps"
             value={data.subscriptions.softwareApps}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, softwareApps: v }
-            })}
+            onChange={(v) => updateSubscriptions('softwareApps', v)}
           />
           <CurrencyInput
             label="Gym & Fitness"
             value={data.subscriptions.gymFitness}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, gymFitness: v }
-            })}
+            onChange={(v) => updateSubscriptions('gymFitness', v)}
           />
           <CurrencyInput
             label="News & Magazines"
             value={data.subscriptions.newsMagazines}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, newsMagazines: v }
-            })}
+            onChange={(v) => updateSubscriptions('newsMagazines', v)}
           />
           <CurrencyInput
             label="Learning Platforms"
             value={data.subscriptions.learningPlatforms}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, learningPlatforms: v }
-            })}
+            onChange={(v) => updateSubscriptions('learningPlatforms', v)}
           />
           <CurrencyInput
             label="Cloud Storage"
             value={data.subscriptions.cloudStorage}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, cloudStorage: v }
-            })}
+            onChange={(v) => updateSubscriptions('cloudStorage', v)}
           />
           <CurrencyInput
             label="Other Subscriptions"
             value={data.subscriptions.otherSubscriptions}
-            onChange={(v) => updateBudgetData({ 
-              subscriptions: { ...data.subscriptions, otherSubscriptions: v }
-            })}
+            onChange={(v) => updateSubscriptions('otherSubscriptions', v)}
           />
         </ExpenseSection>
         
@@ -549,107 +493,77 @@ export function BudgetTab() {
           <CurrencyInput
             label="Groceries"
             value={data.variableExpenses.groceries}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, groceries: v }
-            })}
+            onChange={(v) => updateVariableExpenses('groceries', v)}
           />
           <CurrencyInput
             label="Dining Out"
             value={data.variableExpenses.diningOut}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, diningOut: v }
-            })}
+            onChange={(v) => updateVariableExpenses('diningOut', v)}
           />
           <CurrencyInput
             label="Gas"
             value={data.variableExpenses.gas}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, gas: v }
-            })}
+            onChange={(v) => updateVariableExpenses('gas', v)}
           />
           <CurrencyInput
             label="Car Maintenance"
             value={data.variableExpenses.carMaintenance}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, carMaintenance: v }
-            })}
+            onChange={(v) => updateVariableExpenses('carMaintenance', v)}
           />
           <CurrencyInput
             label="Car Insurance"
             value={data.variableExpenses.carInsurance}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, carInsurance: v }
-            })}
+            onChange={(v) => updateVariableExpenses('carInsurance', v)}
           />
           <CurrencyInput
             label="Other Transportation"
             value={data.variableExpenses.otherTransportation}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, otherTransportation: v }
-            })}
+            onChange={(v) => updateVariableExpenses('otherTransportation', v)}
           />
           <CurrencyInput
             label="Hair Care"
             value={data.variableExpenses.hairCare}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, hairCare: v }
-            })}
+            onChange={(v) => updateVariableExpenses('hairCare', v)}
           />
           <CurrencyInput
             label="Nail Care"
             value={data.variableExpenses.nailCare}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, nailCare: v }
-            })}
+            onChange={(v) => updateVariableExpenses('nailCare', v)}
           />
           <CurrencyInput
             label="Personal Care"
             value={data.variableExpenses.personalCare}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, personalCare: v }
-            })}
+            onChange={(v) => updateVariableExpenses('personalCare', v)}
           />
           <CurrencyInput
             label="Pet Care"
             value={data.variableExpenses.petCare}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, petCare: v }
-            })}
+            onChange={(v) => updateVariableExpenses('petCare', v)}
           />
           <CurrencyInput
             label="Healthcare"
             value={data.variableExpenses.healthcare}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, healthcare: v }
-            })}
+            onChange={(v) => updateVariableExpenses('healthcare', v)}
           />
           <CurrencyInput
             label="Entertainment"
             value={data.variableExpenses.entertainment}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, entertainment: v }
-            })}
+            onChange={(v) => updateVariableExpenses('entertainment', v)}
           />
           <CurrencyInput
             label="Clothing"
             value={data.variableExpenses.clothing}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, clothing: v }
-            })}
+            onChange={(v) => updateVariableExpenses('clothing', v)}
           />
           <CurrencyInput
             label="Travel"
             value={data.variableExpenses.travel}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, travel: v }
-            })}
+            onChange={(v) => updateVariableExpenses('travel', v)}
           />
           <CurrencyInput
             label="Miscellaneous"
             value={data.variableExpenses.miscellaneous}
-            onChange={(v) => updateBudgetData({ 
-              variableExpenses: { ...data.variableExpenses, miscellaneous: v }
-            })}
+            onChange={(v) => updateVariableExpenses('miscellaneous', v)}
           />
         </ExpenseSection>
         
@@ -665,30 +579,22 @@ export function BudgetTab() {
           <CurrencyInput
             label="401(k) Contribution"
             value={data.savings.contribution401k}
-            onChange={(v) => updateBudgetData({ 
-              savings: { ...data.savings, contribution401k: v }
-            })}
+            onChange={(v) => updateSavings('contribution401k', v)}
           />
           <CurrencyInput
             label="IRA Contribution"
             value={data.savings.iraContribution}
-            onChange={(v) => updateBudgetData({ 
-              savings: { ...data.savings, iraContribution: v }
-            })}
+            onChange={(v) => updateSavings('iraContribution', v)}
           />
           <CurrencyInput
             label="Emergency Fund"
             value={data.savings.emergencyFund}
-            onChange={(v) => updateBudgetData({ 
-              savings: { ...data.savings, emergencyFund: v }
-            })}
+            onChange={(v) => updateSavings('emergencyFund', v)}
           />
           <CurrencyInput
             label="Other Savings"
             value={data.savings.otherSavings}
-            onChange={(v) => updateBudgetData({ 
-              savings: { ...data.savings, otherSavings: v }
-            })}
+            onChange={(v) => updateSavings('otherSavings', v)}
           />
         </ExpenseSection>
       </div>
