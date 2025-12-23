@@ -665,9 +665,9 @@ export function MortgageTab() {
       
       {/* Tips */}
       <Card>
-        <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-          <h4 className="font-semibold text-blue-900 dark:text-blue-300 mb-2">💡 Mortgage Tips</h4>
-          <ul className="text-sm text-blue-800 dark:text-blue-400 space-y-1">
+        <div className="p-4 bg-blue-900/30 rounded-lg">
+          <h4 className="font-semibold text-blue-300 mb-2">💡 Mortgage Tips</h4>
+          <ul className="text-sm text-blue-400 space-y-1">
             <li>• <strong>LTV &gt; 80%:</strong> You may be paying PMI (Private Mortgage Insurance)</li>
             <li>• <strong>Extra payments:</strong> Even $100/month extra can save years of payments and thousands in interest</li>
             <li>• <strong>Equity:</strong> Your equity grows as you pay down the loan and as property values increase</li>
