@@ -241,8 +241,12 @@ function generateYearByYear(
     }
     
     if (data.hasInheritedIRA && startInherited > 0) {
+      // Calculate this year's growth first so year-10 lump sum includes final year growth
+      const inheritedIRAGrowthForRMD = startInherited * (data.inheritedIRA?.expectedGrowthRate ?? yearReturn);
+      const balanceWithGrowth = startInherited + inheritedIRAGrowthForRMD;
+      
       rmdInherited = calculateInheritedIRAWithdrawal(
-        startInherited, 
+        balanceWithGrowth,  // Use balance INCLUDING this year's growth
         year, 
         data.inheritedIRA.inheritedYear,
         data.inheritedIRA.withdrawalStrategy || 'annual_rmd',
