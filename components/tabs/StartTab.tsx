@@ -36,6 +36,41 @@ export function StartTab() {
     Math.round(state.monteCarloResults.successRate) : null;
   
   const projectedAtRetirement = state.scenarioResults?.expected.atRetirement;
+
+  // Calculate Real Estate & Mortgage KPIs
+  const mortgageData = state.mortgageData;
+  const totalPropertyValue = mortgageData.mortgages.reduce((sum, m) => sum + m.currentHomeValue, 0);
+  const totalMortgageBalance = mortgageData.mortgages.reduce((sum, m) => sum + m.currentBalance, 0);
+  const totalHomeEquity = totalPropertyValue - totalMortgageBalance;
+  const totalMonthlyMortgage = mortgageData.mortgages.reduce((sum, m) => {
+    // Calculate monthly payment: P * (r(1+r)^n) / ((1+r)^n - 1)
+    const monthlyRate = m.interestRate / 12;
+    const numPayments = m.loanTermYears * 12;
+    const yearsElapsed = new Date().getFullYear() - m.startYear;
+    const paymentsRemaining = Math.max(0, numPayments - (yearsElapsed * 12));
+    if (paymentsRemaining === 0 || monthlyRate === 0) return sum;
+    const payment = m.currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, paymentsRemaining)) / (Math.pow(1 + monthlyRate, paymentsRemaining) - 1);
+    return sum + (isNaN(payment) ? 0 : payment) + (m.propertyTax / 12) + (m.insurance / 12) + m.hoaFees + m.pmi;
+  }, 0);
+
+  // Calculate Net Worth KPIs
+  const netWorthData = state.netWorthData;
+  const propertyAssets = netWorthData.properties.reduce((sum, p) => sum + p.currentValue, 0);
+  const propertyMortgages = netWorthData.properties.reduce((sum, p) => sum + p.mortgageBalance, 0);
+  const vehicleAssets = netWorthData.vehicles.reduce((sum, v) => sum + v.currentValue, 0);
+  const vehicleLoans = netWorthData.vehicles.reduce((sum, v) => sum + v.loanBalance, 0);
+  const bankAccounts = netWorthData.bankAccounts.reduce((sum, a) => sum + a.balance, 0);
+  const brokerageAccounts = netWorthData.brokerageAccounts.reduce((sum, a) => sum + a.balance, 0);
+  const cryptoAssets = netWorthData.cryptoHoldings.reduce((sum, c) => sum + c.currentValue, 0);
+  const otherDebts = netWorthData.debts.reduce((sum, d) => sum + d.balance, 0);
+  
+  // Use mortgage tab data for real estate if net worth doesn't have it
+  const realEstateValue = propertyAssets > 0 ? propertyAssets : totalPropertyValue;
+  const realEstateMortgage = propertyMortgages > 0 ? propertyMortgages : totalMortgageBalance;
+  
+  const totalAssets = realEstateValue + vehicleAssets + bankAccounts + brokerageAccounts + cryptoAssets + totalSavings;
+  const totalLiabilities = realEstateMortgage + vehicleLoans + otherDebts;
+  const netWorth = totalAssets - totalLiabilities;
   
   return (
     <div className="space-y-6">
@@ -60,30 +95,30 @@ export function StartTab() {
       {/* Stats Grid */}
       <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
         <StatCard
-          icon="📊"
-          label="Total Savings"
-          value={formatCurrency(totalSavings)}
+          icon="�"
+          label="Net Worth"
+          value={formatCurrency(netWorth)}
+          subValue={netWorth > 0 ? 'Total' : ''}
           color="emerald"
         />
         <StatCard
-          icon="💵"
-          label="Annual Savings"
-          value={formatCurrency(annualContribution)}
-          subValue="per year"
+          icon="📊"
+          label="Investments"
+          value={formatCurrency(totalSavings)}
           color="blue"
+        />
+        <StatCard
+          icon="🏠"
+          label="Home Equity"
+          value={formatCurrency(totalHomeEquity)}
+          subValue={totalPropertyValue > 0 ? `of ${formatCurrency(totalPropertyValue)}` : ''}
+          color="purple"
         />
         <StatCard
           icon="⏱️"
           label="Years to Retire"
           value={`${yearsToRetirement}`}
           subValue={`Age ${state.retirementData.retirementAge}`}
-          color="purple"
-        />
-        <StatCard
-          icon="🎯"
-          label="Retirement Length"
-          value={`${retirementLength} yrs`}
-          subValue={`To age ${state.retirementData.lifeExpectancy}`}
           color="amber"
         />
         {successRate !== null && (
@@ -169,12 +204,15 @@ export function StartTab() {
         </Card>
 
         {/* Account Allocation */}
-        <Card icon="💼" title="Account Summary" className="lg:col-span-2">
+        <Card icon="💼" title="Investment Accounts" className="lg:col-span-2">
           <div className="space-y-3">
             {[
               { name: 'Pre-Tax (401k/IRA)', value: state.retirementData.currentSavingsPreTax, color: 'bg-blue-500' },
               { name: 'Roth', value: state.retirementData.currentSavingsRoth, color: 'bg-emerald-500' },
               { name: 'After-Tax / Brokerage', value: state.retirementData.currentSavingsAfterTax, color: 'bg-purple-500' },
+              { name: 'Inherited IRA', value: state.retirementData.hasInheritedIRA ? state.retirementData.inheritedIRA.balance : 0, color: 'bg-amber-500' },
+              { name: 'Dividend Portfolio', value: state.retirementData.hasDividendPortfolio ? state.retirementData.dividendPortfolio.currentValue : 0, color: 'bg-cyan-500' },
+              { name: 'Cryptocurrency', value: state.retirementData.hasCryptoHoldings ? state.retirementData.cryptoHoldings.currentValue : 0, color: 'bg-orange-500' },
             ].filter(acc => acc.value > 0).map((account, idx) => {
               const percentage = totalSavings > 0 ? (account.value / totalSavings) * 100 : 0;
               return (
@@ -208,6 +246,166 @@ export function StartTab() {
               </div>
             )}
           </div>
+        </Card>
+      </div>
+
+      {/* Net Worth & Real Estate Row */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Net Worth Breakdown */}
+        <Card icon="🏆" title="Net Worth Breakdown">
+          <div className="space-y-4">
+            {/* Assets */}
+            <div>
+              <h4 className="text-sm font-medium text-emerald-400 mb-2 flex items-center gap-2">
+                📈 Assets
+                <span className="text-emerald-300 font-bold ml-auto">{formatCurrency(totalAssets)}</span>
+              </h4>
+              <div className="space-y-2 pl-2">
+                {[
+                  { name: 'Investment Accounts', value: totalSavings, color: 'text-blue-400' },
+                  { name: 'Real Estate', value: realEstateValue, color: 'text-purple-400' },
+                  { name: 'Vehicles', value: vehicleAssets, color: 'text-amber-400' },
+                  { name: 'Bank Accounts', value: bankAccounts, color: 'text-cyan-400' },
+                  { name: 'Brokerage', value: brokerageAccounts, color: 'text-green-400' },
+                  { name: 'Crypto', value: cryptoAssets, color: 'text-orange-400' },
+                ].filter(item => item.value > 0).map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="text-slate-400">{item.name}</span>
+                    <span className={item.color}>{formatCurrency(item.value)}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+            
+            {/* Liabilities */}
+            <div>
+              <h4 className="text-sm font-medium text-red-400 mb-2 flex items-center gap-2">
+                📉 Liabilities
+                <span className="text-red-300 font-bold ml-auto">-{formatCurrency(totalLiabilities)}</span>
+              </h4>
+              <div className="space-y-2 pl-2">
+                {[
+                  { name: 'Mortgage', value: realEstateMortgage, color: 'text-red-400' },
+                  { name: 'Vehicle Loans', value: vehicleLoans, color: 'text-red-400' },
+                  { name: 'Other Debts', value: otherDebts, color: 'text-red-400' },
+                ].filter(item => item.value > 0).map((item, idx) => (
+                  <div key={idx} className="flex justify-between text-sm">
+                    <span className="text-slate-400">{item.name}</span>
+                    <span className={item.color}>-{formatCurrency(item.value)}</span>
+                  </div>
+                ))}
+                {totalLiabilities === 0 && (
+                  <div className="text-sm text-slate-500">No debts - nice! 🎉</div>
+                )}
+              </div>
+            </div>
+
+            {/* Net Worth Total */}
+            <div className="pt-3 border-t border-slate-700">
+              <div className="flex justify-between items-center">
+                <span className="text-lg font-medium text-white">Net Worth</span>
+                <span className={`text-xl font-bold ${netWorth >= 0 ? 'text-emerald-400' : 'text-red-400'}`}>
+                  {formatCurrency(netWorth)}
+                </span>
+              </div>
+              {totalLiabilities > 0 && (
+                <div className="text-xs text-slate-500 mt-1">
+                  Debt-to-Asset Ratio: {((totalLiabilities / totalAssets) * 100).toFixed(1)}%
+                </div>
+              )}
+            </div>
+          </div>
+        </Card>
+
+        {/* Real Estate Summary */}
+        <Card icon="🏠" title="Real Estate & Mortgage">
+          {mortgageData.mortgages.length > 0 ? (
+            <div className="space-y-4">
+              {mortgageData.mortgages.map((mortgage, idx) => {
+                const equity = mortgage.currentHomeValue - mortgage.currentBalance;
+                const equityPercent = mortgage.currentHomeValue > 0 ? (equity / mortgage.currentHomeValue) * 100 : 0;
+                return (
+                  <div key={idx} className="p-3 bg-slate-700/50 rounded-lg">
+                    <div className="flex items-center justify-between mb-2">
+                      <span className="font-medium text-white">{mortgage.name}</span>
+                      <span className="text-xs px-2 py-0.5 rounded bg-slate-600 text-slate-300">
+                        {mortgage.propertyType}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-2 gap-3 text-sm">
+                      <div>
+                        <span className="text-slate-400 text-xs">Value</span>
+                        <p className="text-emerald-400 font-medium">{formatCurrency(mortgage.currentHomeValue)}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-xs">Owed</span>
+                        <p className="text-red-400 font-medium">{formatCurrency(mortgage.currentBalance)}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-xs">Equity</span>
+                        <p className="text-blue-400 font-medium">{formatCurrency(equity)}</p>
+                      </div>
+                      <div>
+                        <span className="text-slate-400 text-xs">Equity %</span>
+                        <p className="text-purple-400 font-medium">{equityPercent.toFixed(1)}%</p>
+                      </div>
+                    </div>
+                    {/* Equity Progress Bar */}
+                    <div className="mt-2">
+                      <div className="h-2 bg-red-500/30 rounded-full overflow-hidden">
+                        <div 
+                          className="h-full bg-emerald-500 rounded-full transition-all"
+                          style={{ width: `${equityPercent}%` }}
+                        />
+                      </div>
+                      <div className="flex justify-between text-xs mt-1">
+                        <span className="text-emerald-400">Owned</span>
+                        <span className="text-red-400">Owed</span>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+              
+              {/* Totals */}
+              {mortgageData.mortgages.length > 1 && (
+                <div className="pt-3 border-t border-slate-700 grid grid-cols-3 gap-3 text-center">
+                  <div>
+                    <span className="text-xs text-slate-400">Total Value</span>
+                    <p className="text-emerald-400 font-bold">{formatCurrency(totalPropertyValue)}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-400">Total Owed</span>
+                    <p className="text-red-400 font-bold">{formatCurrency(totalMortgageBalance)}</p>
+                  </div>
+                  <div>
+                    <span className="text-xs text-slate-400">Total Equity</span>
+                    <p className="text-blue-400 font-bold">{formatCurrency(totalHomeEquity)}</p>
+                  </div>
+                </div>
+              )}
+
+              {/* Monthly Payment */}
+              {totalMonthlyMortgage > 0 && (
+                <div className="pt-3 border-t border-slate-700">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm text-slate-400">Est. Monthly Payment (PITI)</span>
+                    <span className="text-lg font-bold text-amber-400">${Math.round(totalMonthlyMortgage).toLocaleString()}/mo</span>
+                  </div>
+                </div>
+              )}
+            </div>
+          ) : (
+            <div className="text-center py-8 text-slate-400">
+              <p className="text-lg mb-2">🏠 No properties configured</p>
+              <button
+                onClick={() => setActiveTab('mortgage')}
+                className="text-emerald-400 hover:text-emerald-300 text-sm"
+              >
+                Add your property →
+              </button>
+            </div>
+          )}
         </Card>
       </div>
 
