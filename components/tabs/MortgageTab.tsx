@@ -542,8 +542,8 @@ export function MortgageTab() {
   const totalDebt = mortgages.reduce((sum, m) => sum + m.currentBalance, 0);
   const totalEquity = totalPropertyValue - totalDebt;
   const totalMonthlyPayments = mortgages.reduce((sum, m) => {
-    const remainingYears = Math.max(0, m.loanTermYears - (new Date().getFullYear() - m.startYear));
-    const payment = calculateMortgagePayment(m.currentBalance, m.interestRate, remainingYears);
+    // Use ORIGINAL loan terms for payment calculation (consistent with individual card display)
+    const payment = calculateMortgagePayment(m.loanAmount, m.interestRate, m.loanTermYears);
     return sum + payment + (m.propertyTax / 12) + (m.insurance / 12) + (m.pmi / 12) + m.hoaFees;
   }, 0);
   const totalRentalIncome = mortgages.reduce((sum, m) => sum + m.monthlyRentalIncome, 0);

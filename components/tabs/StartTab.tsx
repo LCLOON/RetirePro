@@ -17,10 +17,11 @@ export function StartTab() {
     return `$${value.toLocaleString()}`;
   };
 
-  // Calculate quick stats
+  // Calculate quick stats (SYNCED with calculations.ts and DetailsTab)
   const totalSavings = state.retirementData.currentSavingsPreTax + 
     state.retirementData.currentSavingsRoth + 
     state.retirementData.currentSavingsAfterTax +
+    state.retirementData.currentHSA + // HSA included to match calculations.ts
     (state.retirementData.hasInheritedIRA ? state.retirementData.inheritedIRA.balance : 0) +
     (state.retirementData.hasDividendPortfolio && state.retirementData.dividendPortfolio.includeInProjections ? state.retirementData.dividendPortfolio.currentValue : 0) +
     (state.retirementData.hasCryptoHoldings && state.retirementData.cryptoHoldings.includeInProjections ? state.retirementData.cryptoHoldings.currentValue : 0);
@@ -43,13 +44,14 @@ export function StartTab() {
   const totalMortgageBalance = mortgageData.mortgages.reduce((sum, m) => sum + m.currentBalance, 0);
   const totalHomeEquity = totalPropertyValue - totalMortgageBalance;
   const totalMonthlyMortgage = mortgageData.mortgages.reduce((sum, m) => {
-    // Calculate monthly payment: P * (r(1+r)^n) / ((1+r)^n - 1)
+    // Calculate monthly payment using ORIGINAL loan terms (synced with MortgageTab)
     const monthlyRate = m.interestRate / 12;
-    const numPayments = m.loanTermYears * 12;
+    const numPayments = m.loanTermYears * 12; // Original term
     const yearsElapsed = new Date().getFullYear() - m.startYear;
-    const paymentsRemaining = Math.max(0, numPayments - (yearsElapsed * 12));
+    const paymentsRemaining = Math.max(0, m.loanTermYears * 12 - (yearsElapsed * 12));
     if (paymentsRemaining === 0 || monthlyRate === 0) return sum;
-    const payment = m.currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, paymentsRemaining)) / (Math.pow(1 + monthlyRate, paymentsRemaining) - 1);
+    // Use ORIGINAL loan amount and term for payment calculation
+    const payment = m.loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
     return sum + (isNaN(payment) ? 0 : payment) + (m.propertyTax / 12) + (m.insurance / 12) + m.hoaFees + m.pmi;
   }, 0);
 

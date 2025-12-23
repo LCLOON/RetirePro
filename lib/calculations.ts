@@ -26,12 +26,13 @@ export function calculateMortgagePayoffs(mortgageData?: MortgageData): MortgageP
     const yearsRemaining = Math.max(0, m.loanTermYears - yearsElapsed);
     const payoffYear = currentYear + yearsRemaining;
     
-    // Calculate monthly payment
+    // Calculate monthly payment using ORIGINAL loan terms (synced with MortgageTab)
     const monthlyRate = m.interestRate / 12;
-    const numPayments = yearsRemaining * 12;
+    const numPayments = m.loanTermYears * 12; // Original term, not remaining
     let monthlyPayment = 0;
     if (numPayments > 0 && monthlyRate > 0) {
-      monthlyPayment = m.currentBalance * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
+      // Use ORIGINAL loan amount and term for consistent payment calculation
+      monthlyPayment = m.loanAmount * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / 
                        (Math.pow(1 + monthlyRate, numPayments) - 1);
     }
     // Add escrow costs (property tax, insurance, HOA, PMI)
