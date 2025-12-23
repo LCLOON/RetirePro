@@ -5,6 +5,7 @@ import { Card, CardGrid, StatCard } from '@/components/ui';
 import { CurrencyInput } from '@/components/ui';
 import { useApp } from '@/lib/store';
 import { calculateBudgetSummary, formatCurrency } from '@/lib/calculations';
+import { DEFAULT_BUDGET } from '@/lib/types';
 import {
   PieChart,
   Pie,
@@ -80,7 +81,18 @@ function ExpenseSection({
 
 export function BudgetTab() {
   const { state, updateBudgetData } = useApp();
-  const data = state.budgetData;
+  
+  // Use DEFAULT_BUDGET as fallback if data is missing or corrupted
+  const rawData = state.budgetData;
+  const data = {
+    income: rawData?.income || DEFAULT_BUDGET.income,
+    fixedExpenses: rawData?.fixedExpenses || DEFAULT_BUDGET.fixedExpenses,
+    debtPayments: rawData?.debtPayments || DEFAULT_BUDGET.debtPayments,
+    subscriptions: rawData?.subscriptions || DEFAULT_BUDGET.subscriptions,
+    variableExpenses: rawData?.variableExpenses || DEFAULT_BUDGET.variableExpenses,
+    savings: rawData?.savings || DEFAULT_BUDGET.savings,
+  };
+  
   const summary = calculateBudgetSummary(data);
   
   // Expense chart data by category
