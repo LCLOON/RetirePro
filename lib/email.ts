@@ -7,8 +7,8 @@ export const resend = process.env.RESEND_API_KEY
 
 // Verified domain sender - sends from retirepro.io
 export const FROM_EMAIL = 'RetirePro <onboarding@retirepro.io>';
-// Reply-to address where you can actually receive emails
-export const REPLY_TO_EMAIL = 'support@retirepro.io';
+// Reply-to address - forwards to your personal email
+export const REPLY_TO_EMAIL = 'lcloon@roadrunner.com';
 
 // Email sending utility
 export async function sendEmail({
