@@ -5,9 +5,8 @@ export const resend = process.env.RESEND_API_KEY
   ? new Resend(process.env.RESEND_API_KEY)
   : null;
 
-// Use Resend's default sender for testing (works immediately)
-// Once you verify your domain in Resend, change to: 'RetirePro <onboarding@retirepro.io>'
-export const FROM_EMAIL = 'RetirePro <onboarding@resend.dev>';
+// Verified domain sender - sends from retirepro.io
+export const FROM_EMAIL = 'RetirePro <onboarding@retirepro.io>';
 
 // Email sending utility
 export async function sendEmail({
