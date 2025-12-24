@@ -160,10 +160,10 @@ export function AboutTab() {
       {/* Contact */}
       <Card title="📧 Contact & Support" icon="📧">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <a href="mailto:support@retirepro.app" className="p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors text-center group">
+          <a href="mailto:support@retirepro.io" className="p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors text-center group">
             <span className="text-3xl block mb-2">📧</span>
             <p className="text-white font-medium group-hover:text-emerald-400">Email Support</p>
-            <p className="text-slate-400 text-sm">support@retirepro.app</p>
+            <p className="text-slate-400 text-sm">support@retirepro.io</p>
           </a>
           <a href="https://github.com/retirepro" target="_blank" rel="noopener noreferrer" className="p-4 bg-slate-700/50 rounded-lg hover:bg-slate-700 transition-colors text-center group">
             <span className="text-3xl block mb-2">💻</span>

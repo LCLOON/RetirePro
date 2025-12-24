@@ -82,7 +82,7 @@ export function welcomeEmail(userName?: string): string {
           <div style="background: #f0fdf4; border-left: 4px solid #10b981; padding: 16px; margin-top: 32px; border-radius: 4px;">
             <p style="margin: 0; color: #065f46;">
               <strong>Need help?</strong> Reply to this email or contact us at 
-              <a href="mailto:support@retirepro.app" style="color: #10b981;">support@retirepro.app</a>
+              <a href="mailto:support@retirepro.io" style="color: #10b981;">support@retirepro.io</a>
             </p>
           </div>
 
@@ -206,7 +206,7 @@ export function paymentConfirmationEmail(details: {
           <div style="background: #fef3c7; border-left: 4px solid #f59e0b; padding: 16px; margin-top: 32px; border-radius: 4px;">
             <p style="margin: 0; color: #78350f;">
               <strong>Questions about your subscription?</strong> Contact us at 
-              <a href="mailto:support@retirepro.app" style="color: #f59e0b;">support@retirepro.app</a>
+              <a href="mailto:support@retirepro.io" style="color: #f59e0b;">support@retirepro.io</a>
             </p>
           </div>
 
@@ -295,7 +295,7 @@ export function paymentFailedEmail(details: {
           <div style="border-top: 1px solid #e2e8f0; padding-top: 24px; margin-top: 32px;">
             <p style="color: #64748b; font-size: 14px; text-align: center;">
               Need help? Contact us at 
-              <a href="mailto:support@retirepro.app" style="color: #10b981;">support@retirepro.app</a>
+              <a href="mailto:support@retirepro.io" style="color: #10b981;">support@retirepro.io</a>
             </p>
           </div>
 
