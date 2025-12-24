@@ -7,6 +7,8 @@ export const resend = process.env.RESEND_API_KEY
 
 // Verified domain sender - sends from retirepro.io
 export const FROM_EMAIL = 'RetirePro <onboarding@retirepro.io>';
+// Reply-to address where you can actually receive emails
+export const REPLY_TO_EMAIL = 'support@retirepro.io';
 
 // Email sending utility
 export async function sendEmail({
@@ -14,11 +16,13 @@ export async function sendEmail({
   subject,
   html,
   text,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
   text?: string;
+  replyTo?: string;
 }) {
   if (!resend) {
     console.error('Resend is not configured. Set RESEND_API_KEY in environment variables.');
@@ -29,6 +33,7 @@ export async function sendEmail({
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
+      replyTo: replyTo || REPLY_TO_EMAIL,
       subject,
       html,
       text: text || stripHtml(html),
