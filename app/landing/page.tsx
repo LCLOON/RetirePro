@@ -50,11 +50,51 @@ export default function LandingPage() {
   const [email, setEmail] = useState('');
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
 
   // Direct redirect to Stripe Payment Link - no server-side API needed
   const handleCheckout = (plan: 'pro' | 'premium') => {
     const paymentUrl = PAYMENT_LINKS[plan][billingPeriod];
     window.location.href = paymentUrl;
+  };
+
+  // Handle newsletter signup
+  const handleNewsletterSignup = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!email || !email.includes('@')) {
+      setNewsletterStatus('error');
+      return;
+    }
+
+    setNewsletterStatus('sending');
+
+    try {
+      const response = await fetch('/api/send-email', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          type: 'welcome',
+          to: email,
+          data: {},
+        }),
+      });
+
+      if (response.ok) {
+        setNewsletterStatus('success');
+        setEmail('');
+        setTimeout(() => setNewsletterStatus('idle'), 5000);
+      } else {
+        setNewsletterStatus('error');
+        setTimeout(() => setNewsletterStatus('idle'), 3000);
+      }
+    } catch (error) {
+      console.error('Newsletter signup error:', error);
+      setNewsletterStatus('error');
+      setTimeout(() => setNewsletterStatus('idle'), 3000);
+    }
   };
 
   return (
@@ -535,18 +575,33 @@ export default function LandingPage() {
             Weekly market analysis, retirement tips, and exclusive insights delivered to your inbox. 
             Join 5,000+ smart planners.
           </p>
-          <form className="flex flex-col sm:flex-row gap-3" onSubmit={(e) => e.preventDefault()}>
+          <form className="flex flex-col sm:flex-row gap-3" onSubmit={handleNewsletterSignup}>
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="Enter your email"
               className="flex-1 bg-slate-900 border border-slate-800 rounded-lg px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500"
+              disabled={newsletterStatus === 'sending'}
             />
-            <button className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap">
-              Subscribe Free →
+            <button 
+              type="submit"
+              disabled={newsletterStatus === 'sending'}
+              className="bg-emerald-600 hover:bg-emerald-700 text-white px-6 py-3 rounded-lg font-medium transition-colors whitespace-nowrap disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {newsletterStatus === 'sending' ? 'Sending...' : newsletterStatus === 'success' ? '✓ Sent!' : 'Subscribe Free →'}
             </button>
           </form>
+          {newsletterStatus === 'success' && (
+            <div className="mt-4 text-emerald-400 text-sm">
+              ✓ Welcome email sent! Check your inbox.
+            </div>
+          )}
+          {newsletterStatus === 'error' && (
+            <div className="mt-4 text-red-400 text-sm">
+              ✗ Failed to send. Please try again or check your email address.
+            </div>
+          )}
           <div className="flex items-center justify-center gap-4 mt-4 text-sm text-slate-500">
             <span>✓ Free forever</span>
             <span>✓ No spam</span>
