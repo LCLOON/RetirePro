@@ -5,15 +5,15 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { CookieConsent } from '@/components/CookieConsent';
 
-// Stripe Payment Links - RetirePro branded products
-const PAYMENT_LINKS = {
+// Stripe Price IDs from environment variables
+const PRICE_IDS = {
   pro: {
-    monthly: 'https://buy.stripe.com/test_9B64gt8SebPI2P887s1Fe04',
-    yearly: 'https://buy.stripe.com/test_fZu4gt6K61b42P8gDY1Fe05',
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || '',
+    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || '',
   },
   premium: {
-    monthly: 'https://buy.stripe.com/test_eVq9ANfgC7zs4XgfzU1Fe06',
-    yearly: 'https://buy.stripe.com/test_3cIaER0lI7zs4XgbjE1Fe07',
+    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_MONTHLY || '',
+    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY || '',
   },
 };
 
@@ -51,11 +51,29 @@ export default function LandingPage() {
   const [openFaq, setOpenFaq] = useState<number | null>(null);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [newsletterStatus, setNewsletterStatus] = useState<'idle' | 'sending' | 'success' | 'error'>('idle');
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
 
-  // Direct redirect to Stripe Payment Link - no server-side API needed
-  const handleCheckout = (plan: 'pro' | 'premium') => {
-    const paymentUrl = PAYMENT_LINKS[plan][billingPeriod];
-    window.location.href = paymentUrl;
+  // Use API checkout for proper redirect handling
+  const handleCheckout = async (plan: 'pro' | 'premium') => {
+    setCheckoutLoading(true);
+    try {
+      const priceId = PRICE_IDS[plan][billingPeriod];
+      const response = await fetch('/api/checkout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ priceId, billingPeriod, plan }),
+      });
+      const data = await response.json();
+      if (data.url) {
+        window.location.href = data.url;
+      } else {
+        console.error('Checkout failed:', data.error);
+        setCheckoutLoading(false);
+      }
+    } catch (error) {
+      console.error('Checkout error:', error);
+      setCheckoutLoading(false);
+    }
   };
 
   // Handle newsletter signup
@@ -362,7 +380,7 @@ export default function LandingPage() {
                 onClick={() => setBillingPeriod('yearly')}
                 className={`px-6 py-2 rounded-full transition-colors ${billingPeriod === 'yearly' ? 'bg-emerald-600 text-white' : 'text-slate-400'}`}
               >
-                Yearly <span className="text-emerald-400 text-sm">Save 17%</span>
+                Yearly <span className="text-emerald-400 text-sm">Save 22%</span>
               </button>
             </div>
           </div>
@@ -391,7 +409,7 @@ export default function LandingPage() {
               </div>
               <h3 className="text-xl font-bold mb-2">Pro</h3>
               <div className="text-4xl font-bold mb-1">
-                ${billingPeriod === 'monthly' ? '7' : '5'}
+                ${billingPeriod === 'monthly' ? '9' : '7'}
                 <span className="text-lg text-slate-400 font-normal">/month</span>
               </div>
               <p className="text-sm text-slate-400 mb-4">For serious retirement planners</p>
@@ -415,7 +433,7 @@ export default function LandingPage() {
             <div className="bg-slate-900/50 border border-slate-800 rounded-xl p-6">
               <h3 className="text-xl font-bold mb-2">Premium</h3>
               <div className="text-4xl font-bold mb-1">
-                ${billingPeriod === 'monthly' ? '12' : '10'}
+                ${billingPeriod === 'monthly' ? '19' : '15'}
                 <span className="text-lg text-slate-400 font-normal">/month</span>
               </div>
               <p className="text-sm text-slate-400 mb-4">Maximum power & flexibility</p>

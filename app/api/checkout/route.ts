@@ -31,7 +31,8 @@ export async function POST(request: NextRequest) {
 
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
-      payment_method_types: ['card'],
+      // Omitting payment_method_types lets Stripe show all methods enabled in Dashboard
+      // This includes: Card, Link, Amazon Pay, Apple Pay, Cash App, etc.
       line_items: [
         {
           price: priceId,
@@ -43,6 +44,10 @@ export async function POST(request: NextRequest) {
       metadata: {
         plan,
         billingPeriod,
+      },
+      // Enable phone number collection for Link verification
+      phone_number_collection: {
+        enabled: true,
       },
     });
 

@@ -41,15 +41,76 @@ export async function POST(request: NextRequest) {
     case 'checkout.session.completed': {
       const session = event.data.object as Stripe.Checkout.Session;
       console.log('Checkout completed:', session.id);
+      console.log('Customer email:', session.customer_details?.email);
+      console.log('Session metadata:', session.metadata);
+      
+      // Check if we've already sent the confirmation email
+      // Use subscription metadata as the source of truth (persists across serverless instances)
+      if (session.subscription) {
+        try {
+          const subscription = await stripe.subscriptions.retrieve(session.subscription as string);
+          if (subscription.metadata?.confirmation_email_sent === 'true') {
+            console.log('Confirmation email already sent for subscription:', session.subscription);
+            break;
+          }
+          
+          // Mark as sent BEFORE sending to prevent race conditions
+          await stripe.subscriptions.update(session.subscription as string, {
+            metadata: {
+              ...subscription.metadata,
+              confirmation_email_sent: 'true',
+              confirmation_session_id: session.id,
+            },
+          });
+          console.log('Marked subscription as confirmation_email_sent');
+        } catch (subCheckError) {
+          console.error('Error checking/updating subscription for dedup:', subCheckError);
+          // Continue anyway - better to potentially send duplicate than miss email
+        }
+      }
       
       // Send payment confirmation email
       if (session.customer_details?.email) {
-        const plan = session.metadata?.plan || 'Pro';
-        const billingPeriod = session.metadata?.billingPeriod || 'monthly';
+        // Try to determine plan from metadata, or fetch from line items
+        let plan = session.metadata?.plan;
+        let billingPeriod = session.metadata?.billingPeriod || 'monthly';
         const amount = session.amount_total || 0;
         
+        console.log('Raw metadata plan:', plan, 'billingPeriod:', billingPeriod);
+        
+        // If no plan in metadata, try to get it from the subscription/line items
+        if (!plan && session.subscription) {
+          try {
+            const subscription = await stripe.subscriptions.retrieve(session.subscription as string, {
+              expand: ['items.data.price.product'],
+            });
+            const item = subscription.items.data[0];
+            if (item?.price?.product) {
+              const product = item.price.product as Stripe.Product;
+              const productName = product.name?.toLowerCase() || '';
+              plan = productName.includes('premium') ? 'premium' : 'pro';
+              // Detect billing period from interval
+              billingPeriod = item.price.recurring?.interval === 'year' ? 'yearly' : 'monthly';
+            }
+            console.log('Detected plan from subscription:', plan, billingPeriod);
+          } catch (subError) {
+            console.error('Failed to fetch subscription details:', subError);
+            plan = 'pro'; // Default fallback
+          }
+        }
+        
+        // Normalize and capitalize plan name
+        plan = plan || 'pro'; // Final fallback
+        const planLower = plan.toLowerCase();
+        const planDisplay = planLower === 'premium' ? 'Premium' : 'Pro';
+        
+        console.log('Final plan for email:', planDisplay, 'billing:', billingPeriod);
+        
+        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://retirepro.io';
+        console.log('Sending email via:', `${appUrl}/api/send-email`);
+        
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/send-email`, {
+          const emailResponse = await fetch(`${appUrl}/api/send-email`, {
             method: 'POST',
             headers: {
               'Content-Type': 'application/json',
@@ -59,23 +120,29 @@ export async function POST(request: NextRequest) {
               to: session.customer_details.email,
               data: {
                 userName: session.customer_details.name,
-                plan,
+                plan: planDisplay,
                 amount,
                 billingPeriod,
               },
             }),
           });
-          console.log('Payment confirmation email sent to:', session.customer_details.email);
+          const emailResult = await emailResponse.json();
+          console.log('Payment confirmation email result:', emailResult);
         } catch (emailError) {
           console.error('Failed to send payment confirmation email:', emailError);
           // Don't fail the webhook if email fails
         }
+      } else {
+        console.log('No customer email found in session');
       }
       
-      // TODO: Update user subscription in your database
-      // - session.customer (Stripe customer ID)
-      // - session.subscription (Stripe subscription ID)
-      // - session.metadata.plan (pro/premium)
+      // Log subscription info for debugging
+      if (session.subscription) {
+        console.log('Subscription ID:', session.subscription);
+      }
+      if (session.customer) {
+        console.log('Customer ID:', session.customer);
+      }
       break;
     }
     
