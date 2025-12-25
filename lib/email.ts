@@ -17,12 +17,14 @@ export async function sendEmail({
   html,
   text,
   replyTo,
+  idempotencyKey,
 }: {
   to: string;
   subject: string;
   html: string;
   text?: string;
   replyTo?: string;
+  idempotencyKey?: string;
 }) {
   if (!resend) {
     console.error('Resend is not configured. Set RESEND_API_KEY in environment variables.');
@@ -30,6 +32,10 @@ export async function sendEmail({
   }
 
   try {
+    const options: Parameters<typeof resend.emails.send>[1] = idempotencyKey
+      ? { idempotencyKey }
+      : undefined;
+    
     const { data, error } = await resend.emails.send({
       from: FROM_EMAIL,
       to,
@@ -37,7 +43,7 @@ export async function sendEmail({
       subject,
       html,
       text: text || stripHtml(html),
-    });
+    }, options);
 
     if (error) {
       console.error('Failed to send email:', error);

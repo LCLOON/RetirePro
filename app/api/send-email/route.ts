@@ -5,7 +5,7 @@ import { welcomeEmail, paymentConfirmationEmail, paymentFailedEmail } from '@/li
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { type, to, data } = body;
+    const { type, to, data, idempotencyKey } = body;
 
     if (!to || !type) {
       return NextResponse.json(
@@ -55,6 +55,7 @@ export async function POST(request: NextRequest) {
       to,
       subject,
       html,
+      idempotencyKey,
     });
 
     if (!result.success) {

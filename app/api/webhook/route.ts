@@ -110,6 +110,11 @@ export async function POST(request: NextRequest) {
         console.log('Sending email via:', `${appUrl}/api/send-email`);
         
         try {
+          // Use subscription ID as idempotency key to prevent duplicate emails
+          const idempotencyKey = session.subscription 
+            ? `payment-confirmation-${session.subscription}` 
+            : `payment-confirmation-${session.id}`;
+          
           const emailResponse = await fetch(`${appUrl}/api/send-email`, {
             method: 'POST',
             headers: {
@@ -118,6 +123,7 @@ export async function POST(request: NextRequest) {
             body: JSON.stringify({
               type: 'payment-confirmation',
               to: session.customer_details.email,
+              idempotencyKey,
               data: {
                 userName: session.customer_details.name,
                 plan: planDisplay,
