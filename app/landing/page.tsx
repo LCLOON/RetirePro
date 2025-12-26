@@ -257,7 +257,7 @@ export default function LandingPage() {
             </div>
           </div>
           
-          {/* Hero Image */}
+          {/* Hero Image - Optimized with responsive sizes and blur placeholder */}
           <div className="mt-16 relative">
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
             <div className="relative rounded-xl overflow-hidden border border-slate-800 shadow-2xl shadow-emerald-500/10">
@@ -267,7 +267,10 @@ export default function LandingPage() {
                 width={1200}
                 height={675}
                 className="w-full h-auto"
+                sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, (max-width: 1280px) 80vw, 1200px"
                 priority
+                placeholder="blur"
+                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/+F9PQAJpAN4pokyXAAAAABJRU5ErkJggg=="
               />
             </div>
           </div>
