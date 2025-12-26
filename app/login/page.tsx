@@ -52,23 +52,30 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      if (isSignUp) {
-        const { error } = await signUp(email, password);
-        if (error) {
-          setError(error.message);
-        } else {
-          setMessage('Check your email to confirm your account!');
-        }
+      // Use server-side API route to avoid CORS issues
+      const response = await fetch('/api/auth', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email,
+          password,
+          action: isSignUp ? 'signup' : 'signin'
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        setError(data.error || 'Authentication failed');
+      } else if (isSignUp) {
+        setMessage(data.message || 'Check your email to confirm your account!');
       } else {
-        const { error } = await signIn(email, password);
-        if (error) {
-          setError(error.message);
-        } else {
-          router.push('/app');
-        }
+        // Sign in successful
+        router.push('/app');
       }
-    } catch {
-      setError('An unexpected error occurred');
+    } catch (err) {
+      console.error('Auth error:', err);
+      setError(err instanceof Error ? err.message : 'An unexpected error occurred');
     } finally {
       setIsLoading(false);
     }
