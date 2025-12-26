@@ -15,153 +15,367 @@ function ReportGenerator({ state }: { state: ReturnType<typeof useApp>['state'] 
   const data = state.retirementData;
   const results = state.scenarioResults;
   const mcResults = state.monteCarloResults;
+  const netWorth = state.netWorthData;
 
   const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax +
-    (data.hasInheritedIRA ? data.inheritedIRA.balance : 0);
+    (data.hasInheritedIRA ? data.inheritedIRA.balance : 0) +
+    (data.hasDividendPortfolio ? data.dividendPortfolio.currentValue : 0) +
+    (data.hasCryptoHoldings ? data.cryptoHoldings.currentValue : 0);
   const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + 
     data.annualContributionAfterTax + data.employerMatch;
   const yearsToRetirement = data.retirementAge - data.currentAge;
 
+  // Calculate net worth from all categories
+  const propertyValue = netWorth.properties.reduce((sum, p) => sum + p.currentValue, 0);
+  const propertyDebt = netWorth.properties.reduce((sum, p) => sum + (p.mortgageBalance || 0), 0);
+  const vehicleValue = netWorth.vehicles.reduce((sum, v) => sum + v.currentValue, 0);
+  const vehicleDebt = netWorth.vehicles.reduce((sum, v) => sum + (v.loanBalance || 0), 0);
+  const bankValue = netWorth.bankAccounts.reduce((sum, b) => sum + b.balance, 0);
+  const brokerageValue = netWorth.brokerageAccounts.reduce((sum, b) => sum + b.balance, 0);
+  const cryptoValue = netWorth.cryptoHoldings.reduce((sum, c) => sum + c.currentValue, 0);
+  const retirementValue = netWorth.retirementAccounts.reduce((sum, r) => sum + r.balance, 0);
+  const personalValue = netWorth.personalAssets.reduce((sum, p) => sum + p.currentValue, 0);
+  const otherDebts = netWorth.debts.reduce((sum, d) => sum + d.balance, 0);
+
+  const totalAssets = propertyValue + vehicleValue + bankValue + brokerageValue + cryptoValue + retirementValue + personalValue + totalSavings;
+  const totalLiabilities = propertyDebt + vehicleDebt + otherDebts;
+  const netWorthValue = totalAssets - totalLiabilities;
+
   const handlePrint = () => {
     setIsGenerating(true);
     
-    // Wait for preview to render, then print
-    setTimeout(() => {
-      window.print();
+    // Generate the same HTML report content
+    const reportHTML = generateReportHTML();
+    
+    // Open in new window and print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(reportHTML);
+      printWindow.document.close();
+      printWindow.focus();
+      
+      // Wait for content to load, then print
+      setTimeout(() => {
+        printWindow.print();
+        setIsGenerating(false);
+      }, 500);
+    } else {
+      // Fallback: download as HTML if popup blocked
+      generateHTMLReport();
       setIsGenerating(false);
-    }, 500);
+    }
   };
 
-  const generateHTMLReport = () => {
-    const reportHTML = `
+  // Shared HTML generation function
+  const generateReportHTML = () => {
+    return `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>RetirePro Retirement Plan Report</title>
+  <title>RetirePro Retirement Plan Report - ${new Date().toLocaleDateString()}</title>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e293b; }
-    h1 { color: #059669; border-bottom: 3px solid #059669; padding-bottom: 10px; }
-    h2 { color: #334155; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
-    .header { text-align: center; margin-bottom: 40px; }
+    * { box-sizing: border-box; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 900px; margin: 0 auto; padding: 40px; color: #1e293b; line-height: 1.6; }
+    h1 { color: #059669; border-bottom: 3px solid #059669; padding-bottom: 10px; margin-bottom: 0; }
+    h2 { color: #334155; margin-top: 30px; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; }
+    h3 { color: #475569; margin-top: 20px; }
+    .header { text-align: center; margin-bottom: 40px; background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 100%); padding: 30px; border-radius: 12px; }
     .logo { font-size: 48px; margin-bottom: 10px; }
-    .date { color: #64748b; font-size: 14px; }
-    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0; }
-    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
-    .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; }
-    .stat-value { font-size: 24px; font-weight: bold; color: #059669; }
-    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
-    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
-    th { background: #f1f5f9; font-weight: 600; }
-    .success { color: #059669; }
-    .warning { color: #f59e0b; }
-    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px; }
+    .subtitle { color: #059669; font-size: 18px; margin-top: 5px; }
+    .date { color: #64748b; font-size: 14px; margin-top: 10px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; margin: 20px 0; }
+    .summary-grid-4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin: 20px 0; }
+    .stat-card { background: linear-gradient(135deg, #f8fafc 0%, #f1f5f9 100%); border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; text-align: center; }
+    .stat-card.highlight { background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 100%); border-color: #a7f3d0; }
+    .stat-label { font-size: 11px; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
+    .stat-value { font-size: 22px; font-weight: bold; color: #0f172a; margin-top: 4px; }
+    .stat-value.success { color: #059669; }
+    .stat-value.warning { color: #f59e0b; }
+    .stat-value.danger { color: #dc2626; }
+    table { width: 100%; border-collapse: collapse; margin: 16px 0; }
+    th, td { text-align: left; padding: 10px 12px; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+    tr:hover { background: #f8fafc; }
+    .total-row { background: #f0fdf4 !important; font-weight: bold; }
+    .total-row td, .total-row th { border-top: 2px solid #059669; }
+    .section { page-break-inside: avoid; margin-bottom: 30px; }
+    .two-column { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
+    .progress-bar { height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 8px; }
+    .progress-fill { height: 100%; background: linear-gradient(90deg, #059669, #10b981); border-radius: 4px; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 11px; font-weight: 600; }
+    .badge.success { background: #d1fae5; color: #059669; }
+    .badge.warning { background: #fef3c7; color: #b45309; }
+    .badge.danger { background: #fee2e2; color: #dc2626; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px; }
     .disclaimer { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-top: 30px; font-size: 12px; }
-    @media print { body { padding: 20px; } }
+    .disclaimer strong { color: #92400e; }
+    .callout { background: #eff6ff; border-left: 4px solid #3b82f6; padding: 12px 16px; border-radius: 0 8px 8px 0; margin: 16px 0; }
+    .callout.success { background: #f0fdf4; border-color: #059669; }
+    @media print { 
+      body { padding: 20px; } 
+      .section { page-break-inside: avoid; }
+      h2 { page-break-after: avoid; }
+    }
   </style>
 </head>
 <body>
   <div class="header">
     <div class="logo">💎</div>
     <h1>Retirement Plan Report</h1>
+    <p class="subtitle">Comprehensive Financial Analysis</p>
     <p class="date">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
   </div>
 
-  <h2>📊 Executive Summary</h2>
-  <div class="summary-grid">
-    <div class="stat-card">
-      <div class="stat-label">Current Age</div>
-      <div class="stat-value">${data.currentAge}</div>
+  <div class="section">
+    <h2>📊 Executive Summary</h2>
+    <div class="summary-grid-4">
+      <div class="stat-card highlight">
+        <div class="stat-label">Net Worth</div>
+        <div class="stat-value success">${formatCurrency(netWorthValue)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Total Investments</div>
+        <div class="stat-value">${formatCurrency(totalSavings)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Years to Retire</div>
+        <div class="stat-value">${yearsToRetirement}</div>
+      </div>
+      <div class="stat-card ${mcResults ? (mcResults.successRate >= 80 ? 'highlight' : '') : ''}">
+        <div class="stat-label">Success Rate</div>
+        <div class="stat-value ${mcResults ? (mcResults.successRate >= 80 ? 'success' : mcResults.successRate >= 60 ? 'warning' : 'danger') : ''}">${mcResults ? mcResults.successRate.toFixed(0) + '%' : 'N/A'}</div>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Retirement Age</div>
-      <div class="stat-value">${data.retirementAge}</div>
+    
+    <div class="summary-grid">
+      <div class="stat-card">
+        <div class="stat-label">Current Age → Retirement Age</div>
+        <div class="stat-value">${data.currentAge} → ${data.retirementAge}</div>
+        <div class="progress-bar"><div class="progress-fill" style="width: ${Math.min(100, (data.currentAge / data.retirementAge) * 100)}%"></div></div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Projected at Retirement</div>
+        <div class="stat-value success">${results ? formatCurrency(results.expected.atRetirement) : 'Run Analysis'}</div>
+      </div>
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Years to Retirement</div>
-      <div class="stat-value">${yearsToRetirement}</div>
-    </div>
-    <div class="stat-card">
-      <div class="stat-label">Total Current Savings</div>
-      <div class="stat-value">${formatCurrency(totalSavings)}</div>
-    </div>
+  </div>
+
+  <div class="section">
+    <h2>💰 Investment Accounts</h2>
+    <table>
+      <tr><th>Account Type</th><th>Current Balance</th><th>Annual Contribution</th><th>% of Total</th></tr>
+      <tr>
+        <td>Pre-Tax (401k/Traditional IRA)</td>
+        <td>${formatCurrency(data.currentSavingsPreTax)}</td>
+        <td>${formatCurrency(data.annualContributionPreTax)}</td>
+        <td>${totalSavings > 0 ? ((data.currentSavingsPreTax / totalSavings) * 100).toFixed(1) : 0}%</td>
+      </tr>
+      <tr>
+        <td>Roth (401k/IRA)</td>
+        <td>${formatCurrency(data.currentSavingsRoth)}</td>
+        <td>${formatCurrency(data.annualContributionRoth)}</td>
+        <td>${totalSavings > 0 ? ((data.currentSavingsRoth / totalSavings) * 100).toFixed(1) : 0}%</td>
+      </tr>
+      <tr>
+        <td>After-Tax/Brokerage</td>
+        <td>${formatCurrency(data.currentSavingsAfterTax)}</td>
+        <td>${formatCurrency(data.annualContributionAfterTax)}</td>
+        <td>${totalSavings > 0 ? ((data.currentSavingsAfterTax / totalSavings) * 100).toFixed(1) : 0}%</td>
+      </tr>
+      ${data.currentHSA > 0 ? `<tr>
+        <td>Health Savings Account (HSA)</td>
+        <td>${formatCurrency(data.currentHSA)}</td>
+        <td>${formatCurrency(data.annualHSAContribution)}</td>
+        <td>-</td>
+      </tr>` : ''}
+      ${data.hasInheritedIRA ? `<tr>
+        <td>Inherited IRA</td>
+        <td>${formatCurrency(data.inheritedIRA.balance)}</td>
+        <td>-</td>
+        <td>${totalSavings > 0 ? ((data.inheritedIRA.balance / totalSavings) * 100).toFixed(1) : 0}%</td>
+      </tr>` : ''}
+      ${data.hasDividendPortfolio ? `<tr>
+        <td>Dividend Portfolio</td>
+        <td>${formatCurrency(data.dividendPortfolio.currentValue)}</td>
+        <td>Yield: ${(data.dividendPortfolio.yieldOnCost * 100).toFixed(1)}%</td>
+        <td>${totalSavings > 0 ? ((data.dividendPortfolio.currentValue / totalSavings) * 100).toFixed(1) : 0}%</td>
+      </tr>` : ''}
+      ${data.hasCryptoHoldings ? `<tr>
+        <td>Cryptocurrency</td>
+        <td>${formatCurrency(data.cryptoHoldings.currentValue)}</td>
+        <td>-</td>
+        <td>${totalSavings > 0 ? ((data.cryptoHoldings.currentValue / totalSavings) * 100).toFixed(1) : 0}%</td>
+      </tr>` : ''}
+      <tr>
+        <td>Employer Match</td>
+        <td>-</td>
+        <td>${formatCurrency(data.employerMatch)}</td>
+        <td>-</td>
+      </tr>
+      <tr class="total-row">
+        <td><strong>TOTAL</strong></td>
+        <td><strong>${formatCurrency(totalSavings)}</strong></td>
+        <td><strong>${formatCurrency(totalContributions)}</strong></td>
+        <td><strong>100%</strong></td>
+      </tr>
+    </table>
   </div>
 
   ${mcResults ? `
-  <h2>🎲 Monte Carlo Analysis</h2>
-  <div class="summary-grid">
-    <div class="stat-card">
-      <div class="stat-label">Success Rate</div>
-      <div class="stat-value ${mcResults.successRate >= 80 ? 'success' : 'warning'}">${mcResults.successRate.toFixed(1)}%</div>
+  <div class="section">
+    <h2>🎲 Monte Carlo Analysis</h2>
+    <div class="callout ${mcResults.successRate >= 80 ? 'success' : ''}">
+      Based on 1,000 simulations with varying market conditions, your retirement plan has a 
+      <strong>${mcResults.successRate.toFixed(1)}%</strong> probability of success through age ${data.lifeExpectancy}.
     </div>
-    <div class="stat-card">
-      <div class="stat-label">Median Outcome</div>
-      <div class="stat-value">${formatCurrency(mcResults.median)}</div>
+    <div class="summary-grid-4">
+      <div class="stat-card">
+        <div class="stat-label">Success Rate</div>
+        <div class="stat-value ${mcResults.successRate >= 80 ? 'success' : mcResults.successRate >= 60 ? 'warning' : 'danger'}">${mcResults.successRate.toFixed(1)}%</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Median Outcome</div>
+        <div class="stat-value">${formatCurrency(mcResults.median)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">10th Percentile (Worst)</div>
+        <div class="stat-value warning">${formatCurrency(mcResults.percentile10)}</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">90th Percentile (Best)</div>
+        <div class="stat-value success">${formatCurrency(mcResults.percentile90)}</div>
+      </div>
     </div>
   </div>
   ` : ''}
 
-  <h2>💰 Current Savings Breakdown</h2>
-  <table>
-    <tr><th>Account Type</th><th>Balance</th></tr>
-    <tr><td>Pre-Tax (401k/Traditional IRA)</td><td>${formatCurrency(data.currentSavingsPreTax)}</td></tr>
-    <tr><td>Roth</td><td>${formatCurrency(data.currentSavingsRoth)}</td></tr>
-    <tr><td>After-Tax/Brokerage</td><td>${formatCurrency(data.currentSavingsAfterTax)}</td></tr>
-    ${data.hasInheritedIRA ? `<tr><td>Inherited IRA</td><td>${formatCurrency(data.inheritedIRA.balance)}</td></tr>` : ''}
-    <tr><th>Total</th><th>${formatCurrency(totalSavings)}</th></tr>
-  </table>
+  <div class="section">
+    <h2>🏦 Retirement Income Sources</h2>
+    <table>
+      <tr><th>Income Source</th><th>Annual Amount</th><th>Monthly</th><th>Start Age</th></tr>
+      <tr>
+        <td>Your Social Security</td>
+        <td>${formatCurrency(data.socialSecurityBenefit)}</td>
+        <td>${formatCurrency(data.socialSecurityBenefit / 12)}</td>
+        <td>${data.socialSecurityStartAge}</td>
+      </tr>
+      ${data.hasSpouse ? `<tr>
+        <td>Spouse Social Security</td>
+        <td>${formatCurrency(data.spouseSocialSecurityBenefit)}</td>
+        <td>${formatCurrency(data.spouseSocialSecurityBenefit / 12)}</td>
+        <td>${data.spouseSocialSecurityStartAge}</td>
+      </tr>` : ''}
+      ${data.hasPension ? `<tr>
+        <td>Pension</td>
+        <td>${formatCurrency(data.pensionIncome)}</td>
+        <td>${formatCurrency(data.pensionIncome / 12)}</td>
+        <td>${data.pensionStartAge}</td>
+      </tr>` : ''}
+    </table>
+  </div>
 
-  <h2>📥 Annual Contributions</h2>
-  <table>
-    <tr><th>Contribution Type</th><th>Annual Amount</th></tr>
-    <tr><td>Pre-Tax Contributions</td><td>${formatCurrency(data.annualContributionPreTax)}</td></tr>
-    <tr><td>Roth Contributions</td><td>${formatCurrency(data.annualContributionRoth)}</td></tr>
-    <tr><td>After-Tax Contributions</td><td>${formatCurrency(data.annualContributionAfterTax)}</td></tr>
-    <tr><td>Employer Match</td><td>${formatCurrency(data.employerMatch)}</td></tr>
-    <tr><th>Total Annual</th><th>${formatCurrency(totalContributions)}</th></tr>
-  </table>
+  <div class="section">
+    <h2>🏠 Net Worth Statement</h2>
+    <div class="two-column">
+      <div>
+        <h3>Assets</h3>
+        <table>
+          <tr><th>Asset</th><th>Value</th></tr>
+          <tr><td>Investment Accounts</td><td>${formatCurrency(totalSavings)}</td></tr>
+          ${netWorth.properties.filter(p => p.currentValue > 0).map(p => `<tr><td>${p.name || 'Real Estate'}</td><td>${formatCurrency(p.currentValue)}</td></tr>`).join('')}
+          ${netWorth.vehicles.filter(v => v.currentValue > 0).map(v => `<tr><td>${v.name || 'Vehicle'}</td><td>${formatCurrency(v.currentValue)}</td></tr>`).join('')}
+          ${netWorth.bankAccounts.filter(b => b.balance > 0).map(b => `<tr><td>${b.name || 'Bank Account'}</td><td>${formatCurrency(b.balance)}</td></tr>`).join('')}
+          ${netWorth.brokerageAccounts.filter(b => b.balance > 0).map(b => `<tr><td>${b.name || 'Brokerage'}</td><td>${formatCurrency(b.balance)}</td></tr>`).join('')}
+          ${netWorth.personalAssets.filter(p => p.currentValue > 0).map(p => `<tr><td>${p.name || 'Personal Asset'}</td><td>${formatCurrency(p.currentValue)}</td></tr>`).join('')}
+          <tr class="total-row"><td><strong>Total Assets</strong></td><td><strong>${formatCurrency(totalAssets)}</strong></td></tr>
+        </table>
+      </div>
+      <div>
+        <h3>Liabilities</h3>
+        <table>
+          <tr><th>Liability</th><th>Balance</th></tr>
+          ${netWorth.properties.filter(p => (p.mortgageBalance || 0) > 0).map(p => `<tr><td>${p.name || 'Mortgage'}</td><td>${formatCurrency(p.mortgageBalance || 0)}</td></tr>`).join('')}
+          ${netWorth.vehicles.filter(v => (v.loanBalance || 0) > 0).map(v => `<tr><td>${v.name || 'Auto Loan'}</td><td>${formatCurrency(v.loanBalance || 0)}</td></tr>`).join('')}
+          ${netWorth.debts.filter(d => d.balance > 0).map(d => `<tr><td>${d.name || 'Debt'}</td><td>${formatCurrency(d.balance)}</td></tr>`).join('')}
+          ${totalLiabilities === 0 ? '<tr><td colspan="2" style="text-align:center; color:#64748b;">No liabilities recorded</td></tr>' : ''}
+          <tr class="total-row"><td><strong>Total Liabilities</strong></td><td><strong>${formatCurrency(totalLiabilities)}</strong></td></tr>
+        </table>
+      </div>
+    </div>
+    <div class="stat-card highlight" style="margin-top: 16px; text-align: center;">
+      <div class="stat-label">NET WORTH</div>
+      <div class="stat-value success" style="font-size: 32px;">${formatCurrency(netWorthValue)}</div>
+      <div style="color: #64748b; font-size: 12px; margin-top: 4px;">Debt-to-Asset Ratio: ${totalAssets > 0 ? ((totalLiabilities / totalAssets) * 100).toFixed(1) : 0}%</div>
+    </div>
+  </div>
 
-  <h2>🏦 Retirement Income Sources</h2>
-  <table>
-    <tr><th>Income Source</th><th>Annual Amount</th><th>Start Age</th></tr>
-    <tr><td>Social Security</td><td>${formatCurrency(data.socialSecurityBenefit)}</td><td>${data.socialSecurityStartAge}</td></tr>
-    ${data.hasSpouse ? `<tr><td>Spouse Social Security</td><td>${formatCurrency(data.spouseSocialSecurityBenefit)}</td><td>${data.spouseSocialSecurityStartAge}</td></tr>` : ''}
-    ${data.hasPension ? `<tr><td>Pension</td><td>${formatCurrency(data.pensionIncome)}</td><td>${data.pensionStartAge}</td></tr>` : ''}
-  </table>
-
-  <h2>📈 Assumptions</h2>
-  <table>
-    <tr><th>Parameter</th><th>Value</th></tr>
-    <tr><td>Pre-Retirement Return</td><td>${(data.preRetirementReturn * 100).toFixed(1)}%</td></tr>
-    <tr><td>Post-Retirement Return</td><td>${(data.postRetirementReturn * 100).toFixed(1)}%</td></tr>
-    <tr><td>Inflation Rate</td><td>${(data.inflationRate * 100).toFixed(1)}%</td></tr>
-    <tr><td>Safe Withdrawal Rate</td><td>${(data.safeWithdrawalRate * 100).toFixed(1)}%</td></tr>
-    <tr><td>Annual Retirement Expenses</td><td>${formatCurrency(data.retirementExpenses)}</td></tr>
-    <tr><td>Life Expectancy</td><td>${data.lifeExpectancy}</td></tr>
-  </table>
+  <div class="section">
+    <h2>📈 Planning Assumptions</h2>
+    <div class="two-column">
+      <table>
+        <tr><th>Growth & Returns</th><th>Rate</th></tr>
+        <tr><td>Pre-Retirement Return</td><td>${(data.preRetirementReturn * 100).toFixed(1)}%</td></tr>
+        <tr><td>Post-Retirement Return</td><td>${(data.postRetirementReturn * 100).toFixed(1)}%</td></tr>
+        <tr><td>Inflation Rate</td><td>${(data.inflationRate * 100).toFixed(1)}%</td></tr>
+      </table>
+      <table>
+        <tr><th>Spending & Withdrawal</th><th>Amount</th></tr>
+        <tr><td>Annual Retirement Expenses</td><td>${formatCurrency(data.retirementExpenses)}</td></tr>
+        <tr><td>Safe Withdrawal Rate</td><td>${(data.safeWithdrawalRate * 100).toFixed(1)}%</td></tr>
+        <tr><td>Life Expectancy</td><td>${data.lifeExpectancy} years</td></tr>
+        <tr><td>Withdrawal Strategy</td><td>${data.drawdownStrategy === 'traditional' ? 'Traditional' : data.drawdownStrategy === 'proportional' ? 'Proportional' : data.drawdownStrategy === 'roth_first' ? 'Roth First' : data.drawdownStrategy === 'tax_efficient' ? 'Tax Efficient' : 'Custom'}</td></tr>
+      </table>
+    </div>
+  </div>
 
   ${results ? `
-  <h2>📊 Projection Results</h2>
-  <table>
-    <tr><th>Scenario</th><th>At Retirement</th><th>At Age ${data.lifeExpectancy}</th></tr>
-    <tr><td>Expected</td><td>${formatCurrency(results.expected.atRetirement)}</td><td>${formatCurrency(results.expected.atEnd)}</td></tr>
-    <tr><td>Optimistic (+2%)</td><td>${formatCurrency(results.optimistic.atRetirement)}</td><td>${formatCurrency(results.optimistic.atEnd)}</td></tr>
-    <tr><td>Pessimistic (-2%)</td><td>${formatCurrency(results.pessimistic.atRetirement)}</td><td>${formatCurrency(results.pessimistic.atEnd)}</td></tr>
-  </table>
+  <div class="section">
+    <h2>📊 Scenario Projections</h2>
+    <table>
+      <tr><th>Scenario</th><th>At Retirement (Age ${data.retirementAge})</th><th>At Life Expectancy (Age ${data.lifeExpectancy})</th><th>Status</th></tr>
+      <tr>
+        <td><strong>Expected</strong> (base case)</td>
+        <td>${formatCurrency(results.expected.atRetirement)}</td>
+        <td>${formatCurrency(results.expected.atEnd)}</td>
+        <td><span class="badge ${results.expected.atEnd > 0 ? 'success' : 'danger'}">${results.expected.atEnd > 0 ? 'Funded' : 'Shortfall'}</span></td>
+      </tr>
+      <tr>
+        <td><strong>Optimistic</strong> (+2% return)</td>
+        <td>${formatCurrency(results.optimistic.atRetirement)}</td>
+        <td>${formatCurrency(results.optimistic.atEnd)}</td>
+        <td><span class="badge success">Funded</span></td>
+      </tr>
+      <tr>
+        <td><strong>Pessimistic</strong> (-2% return)</td>
+        <td>${formatCurrency(results.pessimistic.atRetirement)}</td>
+        <td>${formatCurrency(results.pessimistic.atEnd)}</td>
+        <td><span class="badge ${results.pessimistic.atEnd > 0 ? 'warning' : 'danger'}">${results.pessimistic.atEnd > 0 ? 'Marginal' : 'Shortfall'}</span></td>
+      </tr>
+    </table>
+  </div>
   ` : ''}
 
   <div class="disclaimer">
-    <strong>⚠️ Disclaimer:</strong> This report is for educational and informational purposes only. It is not financial, investment, tax, or legal advice. 
-    Projections are based on the assumptions provided and may not reflect actual future results. Past performance does not guarantee future results.
-    Please consult with qualified financial, tax, and legal professionals before making any financial decisions.
+    <strong>⚠️ Important Disclaimer:</strong> This report is generated for educational and informational purposes only. It does not constitute financial, investment, tax, or legal advice. 
+    All projections are based on the assumptions you provided and historical data patterns—actual results may vary significantly. Market conditions, tax laws, 
+    inflation, and personal circumstances can change. <strong>Please consult with qualified financial advisors, tax professionals, and legal counsel</strong> before making 
+    any significant financial decisions. Past performance does not guarantee future results. RetirePro is not responsible for any financial decisions made based on this report.
   </div>
 
   <div class="footer">
-    <p>Generated by RetirePro | ${new Date().toLocaleDateString()}</p>
-    <p>© ${new Date().getFullYear()} RetirePro. All rights reserved.</p>
+    <p style="font-size: 24px; margin-bottom: 10px;">💎</p>
+    <p><strong>Generated by RetirePro</strong></p>
+    <p>${new Date().toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })} at ${new Date().toLocaleTimeString()}</p>
+    <p style="margin-top: 10px;">© ${new Date().getFullYear()} RetirePro. All rights reserved.</p>
+    <p style="color: #94a3b8; margin-top: 10px;">https://retirepro.io</p>
   </div>
 </body>
 </html>`;
+  };
 
+  const generateHTMLReport = () => {
+    const reportHTML = generateReportHTML();
+    
     // Create blob and download
     const blob = new Blob([reportHTML], { type: 'text/html' });
     const url = URL.createObjectURL(blob);
@@ -245,16 +459,6 @@ function ReportGenerator({ state }: { state: ReturnType<typeof useApp>['state'] 
           </div>
         )}
       </div>
-
-      {/* Print-only content (hidden on screen) */}
-      <style jsx global>{`
-        @media print {
-          body * { visibility: hidden; }
-          .print-report, .print-report * { visibility: visible; }
-          .print-report { position: absolute; left: 0; top: 0; width: 100%; }
-          .no-print { display: none !important; }
-        }
-      `}</style>
     </Card>
   );
 }
