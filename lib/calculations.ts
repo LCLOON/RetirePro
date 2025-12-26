@@ -945,3 +945,258 @@ export function generateAmortizationSchedule(
   
   return schedule;
 }
+
+// ==========================================
+// DEBT PAYOFF OPTIMIZER CALCULATIONS
+// ==========================================
+
+export interface DebtItem {
+  id: string;
+  name: string;
+  balance: number;
+  interestRate: number;
+  minimumPayment: number;
+}
+
+export interface DebtPayoffResult {
+  debt: DebtItem;
+  payoffMonths: number;
+  totalInterest: number;
+  totalPaid: number;
+  payoffDate: Date;
+}
+
+export interface DebtPayoffStrategy {
+  method: 'avalanche' | 'snowball';
+  results: DebtPayoffResult[];
+  totalMonths: number;
+  totalInterest: number;
+  totalPaid: number;
+  monthlyTimeline: DebtTimelineMonth[];
+}
+
+export interface DebtTimelineMonth {
+  month: number;
+  date: Date;
+  debts: { id: string; balance: number; payment: number; }[];
+  totalBalance: number;
+}
+
+/**
+ * Calculate debt payoff using Avalanche (highest interest first) or Snowball (lowest balance first)
+ */
+export function calculateDebtPayoff(
+  debts: DebtItem[],
+  extraMonthlyPayment: number,
+  method: 'avalanche' | 'snowball'
+): DebtPayoffStrategy {
+  if (debts.length === 0) {
+    return {
+      method,
+      results: [],
+      totalMonths: 0,
+      totalInterest: 0,
+      totalPaid: 0,
+      monthlyTimeline: [],
+    };
+  }
+
+  // Clone debts and sort based on method
+  const sortedDebts = debts.map(d => ({ ...d, currentBalance: d.balance }));
+  
+  if (method === 'avalanche') {
+    // Highest interest rate first
+    sortedDebts.sort((a, b) => b.interestRate - a.interestRate);
+  } else {
+    // Lowest balance first (snowball)
+    sortedDebts.sort((a, b) => a.balance - b.balance);
+  }
+
+  const results: Map<string, DebtPayoffResult> = new Map();
+  const timeline: DebtTimelineMonth[] = [];
+  
+  let month = 0;
+  const startDate = new Date();
+  let totalInterestPaid = 0;
+  let totalAmountPaid = 0;
+  let availableExtra = extraMonthlyPayment;
+
+  // Initialize results
+  debts.forEach(d => {
+    results.set(d.id, {
+      debt: d,
+      payoffMonths: 0,
+      totalInterest: 0,
+      totalPaid: 0,
+      payoffDate: new Date(),
+    });
+  });
+
+  // Simulate month by month
+  while (sortedDebts.some(d => d.currentBalance > 0) && month < 360) {
+    month++;
+    const monthDate = new Date(startDate);
+    monthDate.setMonth(monthDate.getMonth() + month);
+
+    const monthDebts: { id: string; balance: number; payment: number; }[] = [];
+    let extraAvailable = availableExtra;
+
+    // First pass: apply minimum payments and interest
+    for (const debt of sortedDebts) {
+      if (debt.currentBalance <= 0) continue;
+
+      const monthlyRate = debt.interestRate / 12;
+      const interest = debt.currentBalance * monthlyRate;
+      totalInterestPaid += interest;
+      
+      const result = results.get(debt.id)!;
+      result.totalInterest += interest;
+
+      debt.currentBalance += interest;
+    }
+
+    // Second pass: apply payments (minimums first, then extra to priority debt)
+    for (const debt of sortedDebts) {
+      if (debt.currentBalance <= 0) continue;
+
+      let payment = Math.min(debt.minimumPayment, debt.currentBalance);
+      debt.currentBalance -= payment;
+      totalAmountPaid += payment;
+      
+      const result = results.get(debt.id)!;
+      result.totalPaid += payment;
+
+      // Apply extra payment to the first debt with remaining balance (priority based on method)
+      if (extraAvailable > 0 && debt === sortedDebts.find(d => d.currentBalance > 0)) {
+        const extraPayment = Math.min(extraAvailable, debt.currentBalance);
+        debt.currentBalance -= extraPayment;
+        payment += extraPayment;
+        totalAmountPaid += extraPayment;
+        result.totalPaid += extraPayment;
+        extraAvailable -= extraPayment;
+      }
+
+      monthDebts.push({
+        id: debt.id,
+        balance: Math.max(0, debt.currentBalance),
+        payment,
+      });
+
+      // Check if debt is paid off
+      if (debt.currentBalance <= 0) {
+        result.payoffMonths = month;
+        result.payoffDate = monthDate;
+        // Add this debt's minimum payment to available extra (snowball/avalanche effect)
+        availableExtra += debt.minimumPayment;
+      }
+    }
+
+    timeline.push({
+      month,
+      date: monthDate,
+      debts: monthDebts,
+      totalBalance: sortedDebts.reduce((sum, d) => sum + Math.max(0, d.currentBalance), 0),
+    });
+  }
+
+  return {
+    method,
+    results: Array.from(results.values()),
+    totalMonths: month,
+    totalInterest: totalInterestPaid,
+    totalPaid: totalAmountPaid,
+    monthlyTimeline: timeline,
+  };
+}
+
+// ==========================================
+// 72(t) SEPP CALCULATOR
+// ==========================================
+
+export interface SEPPResult {
+  method: 'rmd' | 'amortization' | 'annuitization';
+  annualWithdrawal: number;
+  monthlyWithdrawal: number;
+  totalWithdrawn: number;
+  endAge: number;
+  remainingBalance: number;
+}
+
+// IRS Single Life Expectancy factors for SEPP (simplified table)
+const SEPP_LIFE_EXPECTANCY: Record<number, number> = {
+  40: 43.6, 41: 42.7, 42: 41.7, 43: 40.7, 44: 39.8, 45: 38.8, 46: 37.9, 47: 37.0, 48: 36.0, 49: 35.1,
+  50: 34.2, 51: 33.3, 52: 32.3, 53: 31.4, 54: 30.5, 55: 29.6, 56: 28.7, 57: 27.9, 58: 27.0, 59: 26.1,
+  60: 25.2, 61: 24.4, 62: 23.5, 63: 22.7, 64: 21.8, 65: 21.0, 66: 20.2, 67: 19.4, 68: 18.6, 69: 17.8,
+  70: 17.0, 71: 16.3, 72: 15.5, 73: 14.8, 74: 14.1, 75: 13.4,
+};
+
+/**
+ * Calculate 72(t) SEPP distributions using all three IRS-approved methods
+ * @param balance - IRA/401k balance
+ * @param age - Current age
+ * @param interestRate - IRS 120% mid-term rate (updated monthly by IRS)
+ */
+export function calculate72tSEPP(
+  balance: number,
+  age: number,
+  interestRate: number
+): SEPPResult[] {
+  const lifeExpectancy = SEPP_LIFE_EXPECTANCY[age] || 25;
+  
+  // Calculate end age (later of: 5 years OR age 59.5)
+  const endAge = Math.max(age + 5, 59.5);
+  const years = Math.ceil(endAge - age);
+  
+  // Method 1: Required Minimum Distribution (RMD) - varies each year
+  // We use first year's calculation as the annual amount
+  const rmdAnnual = balance / lifeExpectancy;
+  
+  // Method 2: Fixed Amortization
+  // Payment = Balance * [r(1+r)^n] / [(1+r)^n - 1]
+  const r = interestRate;
+  const n = lifeExpectancy;
+  const amortizationAnnual = balance * (r * Math.pow(1 + r, n)) / (Math.pow(1 + r, n) - 1);
+  
+  // Method 3: Fixed Annuitization
+  // Uses annuity factor from IRS mortality tables
+  // Simplified: Annual = Balance / Annuity Factor
+  // Annuity factor ≈ (1 - (1 + r)^-n) / r
+  const annuityFactor = (1 - Math.pow(1 + r, -n)) / r;
+  const annuitizationAnnual = balance / annuityFactor;
+  
+  // Calculate remaining balance after SEPP period
+  const calcRemainingBalance = (annual: number, rate: number, yrs: number, startBal: number) => {
+    let bal = startBal;
+    for (let i = 0; i < yrs; i++) {
+      bal = bal * (1 + rate) - annual;
+    }
+    return Math.max(0, bal);
+  };
+  
+  return [
+    {
+      method: 'rmd',
+      annualWithdrawal: rmdAnnual,
+      monthlyWithdrawal: rmdAnnual / 12,
+      totalWithdrawn: rmdAnnual * years,
+      endAge,
+      remainingBalance: calcRemainingBalance(rmdAnnual, interestRate, years, balance),
+    },
+    {
+      method: 'amortization',
+      annualWithdrawal: amortizationAnnual,
+      monthlyWithdrawal: amortizationAnnual / 12,
+      totalWithdrawn: amortizationAnnual * years,
+      endAge,
+      remainingBalance: calcRemainingBalance(amortizationAnnual, interestRate, years, balance),
+    },
+    {
+      method: 'annuitization',
+      annualWithdrawal: annuitizationAnnual,
+      monthlyWithdrawal: annuitizationAnnual / 12,
+      totalWithdrawn: annuitizationAnnual * years,
+      endAge,
+      remainingBalance: calcRemainingBalance(annuitizationAnnual, interestRate, years, balance),
+    },
+  ];
+}

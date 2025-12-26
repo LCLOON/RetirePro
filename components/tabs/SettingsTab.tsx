@@ -1,11 +1,263 @@
 'use client';
 
-import { ReactNode } from 'react';
+import { ReactNode, useState } from 'react';
 import { Card, CardGrid } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp, Theme } from '@/lib/store';
 import { useSubscription, TIER_INFO, SubscriptionTier, PRO_FEATURES, PREMIUM_FEATURES } from '@/lib/subscription';
+import { formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
+
+// Report Generator Component
+function ReportGenerator({ state }: { state: ReturnType<typeof useApp>['state'] }) {
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const data = state.retirementData;
+  const results = state.scenarioResults;
+  const mcResults = state.monteCarloResults;
+
+  const totalSavings = data.currentSavingsPreTax + data.currentSavingsRoth + data.currentSavingsAfterTax +
+    (data.hasInheritedIRA ? data.inheritedIRA.balance : 0);
+  const totalContributions = data.annualContributionPreTax + data.annualContributionRoth + 
+    data.annualContributionAfterTax + data.employerMatch;
+  const yearsToRetirement = data.retirementAge - data.currentAge;
+
+  const handlePrint = () => {
+    setIsGenerating(true);
+    
+    // Wait for preview to render, then print
+    setTimeout(() => {
+      window.print();
+      setIsGenerating(false);
+    }, 500);
+  };
+
+  const generateHTMLReport = () => {
+    const reportHTML = `
+<!DOCTYPE html>
+<html>
+<head>
+  <title>RetirePro Retirement Plan Report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 800px; margin: 0 auto; padding: 40px; color: #1e293b; }
+    h1 { color: #059669; border-bottom: 3px solid #059669; padding-bottom: 10px; }
+    h2 { color: #334155; margin-top: 30px; border-bottom: 1px solid #e2e8f0; padding-bottom: 8px; }
+    .header { text-align: center; margin-bottom: 40px; }
+    .logo { font-size: 48px; margin-bottom: 10px; }
+    .date { color: #64748b; font-size: 14px; }
+    .summary-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 20px; margin: 20px 0; }
+    .stat-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px; padding: 16px; }
+    .stat-label { font-size: 12px; color: #64748b; text-transform: uppercase; }
+    .stat-value { font-size: 24px; font-weight: bold; color: #059669; }
+    table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+    th, td { text-align: left; padding: 12px; border-bottom: 1px solid #e2e8f0; }
+    th { background: #f1f5f9; font-weight: 600; }
+    .success { color: #059669; }
+    .warning { color: #f59e0b; }
+    .footer { margin-top: 40px; padding-top: 20px; border-top: 1px solid #e2e8f0; text-align: center; color: #64748b; font-size: 12px; }
+    .disclaimer { background: #fef3c7; border: 1px solid #fcd34d; border-radius: 8px; padding: 16px; margin-top: 30px; font-size: 12px; }
+    @media print { body { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <div class="logo">💎</div>
+    <h1>Retirement Plan Report</h1>
+    <p class="date">Generated on ${new Date().toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+  </div>
+
+  <h2>📊 Executive Summary</h2>
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-label">Current Age</div>
+      <div class="stat-value">${data.currentAge}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Retirement Age</div>
+      <div class="stat-value">${data.retirementAge}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Years to Retirement</div>
+      <div class="stat-value">${yearsToRetirement}</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Total Current Savings</div>
+      <div class="stat-value">${formatCurrency(totalSavings)}</div>
+    </div>
+  </div>
+
+  ${mcResults ? `
+  <h2>🎲 Monte Carlo Analysis</h2>
+  <div class="summary-grid">
+    <div class="stat-card">
+      <div class="stat-label">Success Rate</div>
+      <div class="stat-value ${mcResults.successRate >= 80 ? 'success' : 'warning'}">${mcResults.successRate.toFixed(1)}%</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-label">Median Outcome</div>
+      <div class="stat-value">${formatCurrency(mcResults.median)}</div>
+    </div>
+  </div>
+  ` : ''}
+
+  <h2>💰 Current Savings Breakdown</h2>
+  <table>
+    <tr><th>Account Type</th><th>Balance</th></tr>
+    <tr><td>Pre-Tax (401k/Traditional IRA)</td><td>${formatCurrency(data.currentSavingsPreTax)}</td></tr>
+    <tr><td>Roth</td><td>${formatCurrency(data.currentSavingsRoth)}</td></tr>
+    <tr><td>After-Tax/Brokerage</td><td>${formatCurrency(data.currentSavingsAfterTax)}</td></tr>
+    ${data.hasInheritedIRA ? `<tr><td>Inherited IRA</td><td>${formatCurrency(data.inheritedIRA.balance)}</td></tr>` : ''}
+    <tr><th>Total</th><th>${formatCurrency(totalSavings)}</th></tr>
+  </table>
+
+  <h2>📥 Annual Contributions</h2>
+  <table>
+    <tr><th>Contribution Type</th><th>Annual Amount</th></tr>
+    <tr><td>Pre-Tax Contributions</td><td>${formatCurrency(data.annualContributionPreTax)}</td></tr>
+    <tr><td>Roth Contributions</td><td>${formatCurrency(data.annualContributionRoth)}</td></tr>
+    <tr><td>After-Tax Contributions</td><td>${formatCurrency(data.annualContributionAfterTax)}</td></tr>
+    <tr><td>Employer Match</td><td>${formatCurrency(data.employerMatch)}</td></tr>
+    <tr><th>Total Annual</th><th>${formatCurrency(totalContributions)}</th></tr>
+  </table>
+
+  <h2>🏦 Retirement Income Sources</h2>
+  <table>
+    <tr><th>Income Source</th><th>Annual Amount</th><th>Start Age</th></tr>
+    <tr><td>Social Security</td><td>${formatCurrency(data.socialSecurityBenefit)}</td><td>${data.socialSecurityStartAge}</td></tr>
+    ${data.hasSpouse ? `<tr><td>Spouse Social Security</td><td>${formatCurrency(data.spouseSocialSecurityBenefit)}</td><td>${data.spouseSocialSecurityStartAge}</td></tr>` : ''}
+    ${data.hasPension ? `<tr><td>Pension</td><td>${formatCurrency(data.pensionIncome)}</td><td>${data.pensionStartAge}</td></tr>` : ''}
+  </table>
+
+  <h2>📈 Assumptions</h2>
+  <table>
+    <tr><th>Parameter</th><th>Value</th></tr>
+    <tr><td>Pre-Retirement Return</td><td>${(data.preRetirementReturn * 100).toFixed(1)}%</td></tr>
+    <tr><td>Post-Retirement Return</td><td>${(data.postRetirementReturn * 100).toFixed(1)}%</td></tr>
+    <tr><td>Inflation Rate</td><td>${(data.inflationRate * 100).toFixed(1)}%</td></tr>
+    <tr><td>Safe Withdrawal Rate</td><td>${(data.safeWithdrawalRate * 100).toFixed(1)}%</td></tr>
+    <tr><td>Annual Retirement Expenses</td><td>${formatCurrency(data.retirementExpenses)}</td></tr>
+    <tr><td>Life Expectancy</td><td>${data.lifeExpectancy}</td></tr>
+  </table>
+
+  ${results ? `
+  <h2>📊 Projection Results</h2>
+  <table>
+    <tr><th>Scenario</th><th>At Retirement</th><th>At Age ${data.lifeExpectancy}</th></tr>
+    <tr><td>Expected</td><td>${formatCurrency(results.expected.atRetirement)}</td><td>${formatCurrency(results.expected.atEnd)}</td></tr>
+    <tr><td>Optimistic (+2%)</td><td>${formatCurrency(results.optimistic.atRetirement)}</td><td>${formatCurrency(results.optimistic.atEnd)}</td></tr>
+    <tr><td>Pessimistic (-2%)</td><td>${formatCurrency(results.pessimistic.atRetirement)}</td><td>${formatCurrency(results.pessimistic.atEnd)}</td></tr>
+  </table>
+  ` : ''}
+
+  <div class="disclaimer">
+    <strong>⚠️ Disclaimer:</strong> This report is for educational and informational purposes only. It is not financial, investment, tax, or legal advice. 
+    Projections are based on the assumptions provided and may not reflect actual future results. Past performance does not guarantee future results.
+    Please consult with qualified financial, tax, and legal professionals before making any financial decisions.
+  </div>
+
+  <div class="footer">
+    <p>Generated by RetirePro | ${new Date().toLocaleDateString()}</p>
+    <p>© ${new Date().getFullYear()} RetirePro. All rights reserved.</p>
+  </div>
+</body>
+</html>`;
+
+    // Create blob and download
+    const blob = new Blob([reportHTML], { type: 'text/html' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `RetirePro_Report_${new Date().toISOString().split('T')[0]}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
+  return (
+    <Card title="📄 Report Generator" subtitle="Generate a professional retirement plan report">
+      <div className="space-y-4">
+        <p className="text-sm text-slate-400">
+          Create a comprehensive retirement plan report that you can print or save as PDF.
+        </p>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <button
+            onClick={handlePrint}
+            disabled={isGenerating}
+            className="flex items-center justify-center gap-3 p-4 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 text-white rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            <div className="text-left">
+              <p className="font-semibold">Print / Save as PDF</p>
+              <p className="text-xs text-emerald-200">Use browser print dialog</p>
+            </div>
+          </button>
+          
+          <button
+            onClick={generateHTMLReport}
+            className="flex items-center justify-center gap-3 p-4 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+            </svg>
+            <div className="text-left">
+              <p className="font-semibold">Download HTML Report</p>
+              <p className="text-xs text-blue-200">Open in any browser</p>
+            </div>
+          </button>
+        </div>
+
+        {/* Quick Summary Preview */}
+        <div className="p-4 bg-slate-800/50 rounded-lg">
+          <h4 className="font-medium text-white mb-3">Report Preview</h4>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+            <div>
+              <p className="text-slate-400">Current Savings</p>
+              <p className="text-white font-semibold">{formatCurrency(totalSavings)}</p>
+            </div>
+            <div>
+              <p className="text-slate-400">Annual Contributions</p>
+              <p className="text-white font-semibold">{formatCurrency(totalContributions)}</p>
+            </div>
+            <div>
+              <p className="text-slate-400">At Retirement</p>
+              <p className="text-emerald-400 font-semibold">
+                {results ? formatCurrency(results.expected.atRetirement) : 'Run calculations'}
+              </p>
+            </div>
+            <div>
+              <p className="text-slate-400">Success Rate</p>
+              <p className={`font-semibold ${mcResults && mcResults.successRate >= 80 ? 'text-emerald-400' : 'text-amber-400'}`}>
+                {mcResults ? `${mcResults.successRate.toFixed(0)}%` : 'Run analysis'}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {!results && (
+          <div className="p-3 bg-amber-900/30 border border-amber-600/50 rounded-lg">
+            <p className="text-amber-300 text-sm">
+              💡 Tip: Run calculations first to include projection results in your report.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* Print-only content (hidden on screen) */}
+      <style jsx global>{`
+        @media print {
+          body * { visibility: hidden; }
+          .print-report, .print-report * { visibility: visible; }
+          .print-report { position: absolute; left: 0; top: 0; width: 100%; }
+          .no-print { display: none !important; }
+        }
+      `}</style>
+    </Card>
+  );
+}
 
 export function SettingsTab() {
   const { state, setTheme, saveToLocalStorage, loadFromLocalStorage, resetAll, exportToJSON } = useApp();
@@ -120,6 +372,9 @@ export function SettingsTab() {
           </div>
         </CardGrid>
       </Card>
+
+      {/* Report Generator */}
+      <ReportGenerator state={state} />
       
       {/* Reset */}
       <Card title="Reset" subtitle="Clear all data and start fresh">

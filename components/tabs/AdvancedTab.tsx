@@ -4,7 +4,8 @@ import { useApp } from '@/lib/store';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { Input } from '@/components/ui/Input';
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
+import { calculate72tSEPP, formatCurrency } from '@/lib/calculations';
 
 interface CustomScenario {
   name: string;
@@ -13,6 +14,172 @@ interface CustomScenario {
   withdrawalRate: number;
   retirementAge: number;
   ssStartAge: number;
+}
+
+// 72(t) SEPP Calculator Component
+function SEPPCalculator({ currentAge, preTaxBalance }: { currentAge: number; preTaxBalance: number }) {
+  const [showCalculator, setShowCalculator] = useState(false);
+  const [balance, setBalance] = useState(preTaxBalance);
+  const [age, setAge] = useState(Math.max(currentAge, 40));
+  const [interestRate, setInterestRate] = useState(0.045); // IRS 120% mid-term rate (approx)
+
+  const seppResults = useMemo(() => {
+    if (age < 40 || age >= 59.5 || balance <= 0) return null;
+    return calculate72tSEPP(balance, age, interestRate);
+  }, [balance, age, interestRate]);
+
+  const endAge = Math.max(age + 5, 59.5);
+  const years = Math.ceil(endAge - age);
+
+  return (
+    <Card title="🔓 72(t) SEPP Calculator" subtitle="Penalty-free early retirement withdrawals">
+      <div className="space-y-4">
+        {/* Toggle */}
+        <button
+          onClick={() => setShowCalculator(!showCalculator)}
+          className="w-full flex items-center justify-between p-4 bg-slate-700/50 rounded-lg hover:bg-slate-600/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🔓</span>
+            <div className="text-left">
+              <p className="font-semibold text-white">72(t) Substantially Equal Periodic Payments</p>
+              <p className="text-sm text-slate-400">
+                Withdraw from IRA/401k before 59½ without the 10% early withdrawal penalty
+              </p>
+            </div>
+          </div>
+          <svg 
+            className={`w-5 h-5 text-slate-400 transition-transform ${showCalculator ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showCalculator && (
+          <div className="space-y-6">
+            {/* Inputs */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">IRA/401k Balance</label>
+                <input
+                  type="number"
+                  value={balance}
+                  onChange={(e) => setBalance(parseFloat(e.target.value) || 0)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">Your Age</label>
+                <input
+                  type="number"
+                  value={age}
+                  onChange={(e) => setAge(parseInt(e.target.value) || 40)}
+                  min={40}
+                  max={58}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-slate-300 mb-1">
+                  IRS Interest Rate (120% Mid-term)
+                </label>
+                <input
+                  type="number"
+                  step="0.1"
+                  value={(interestRate * 100).toFixed(1)}
+                  onChange={(e) => setInterestRate((parseFloat(e.target.value) || 4.5) / 100)}
+                  className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white"
+                />
+                <p className="text-xs text-slate-500 mt-1">
+                  <a href="https://www.irs.gov/applicable-federal-rates" target="_blank" rel="noopener noreferrer" className="text-emerald-400 hover:underline">
+                    Check current IRS rates →
+                  </a>
+                </p>
+              </div>
+            </div>
+
+            {/* Age Warning */}
+            {age >= 59 && (
+              <div className="p-3 bg-amber-900/30 border border-amber-600/50 rounded-lg">
+                <p className="text-amber-300 text-sm">
+                  ⚠️ You&apos;re close to 59½! SEPP may not be needed. After 59½, you can withdraw penalty-free anyway.
+                </p>
+              </div>
+            )}
+
+            {/* Results */}
+            {seppResults && (
+              <>
+                {/* Method Comparison */}
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  {seppResults.map((result) => (
+                    <div 
+                      key={result.method}
+                      className={`p-4 rounded-lg border-2 ${
+                        result.method === 'amortization' 
+                          ? 'border-emerald-500 bg-emerald-900/30' 
+                          : 'border-slate-600 bg-slate-800/50'
+                      }`}
+                    >
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-xl">
+                          {result.method === 'rmd' ? '📊' : result.method === 'amortization' ? '📈' : '💰'}
+                        </span>
+                        <h4 className="font-semibold text-white capitalize">{result.method}</h4>
+                      </div>
+                      <p className="text-xs text-slate-400 mb-3">
+                        {result.method === 'rmd' && 'Lowest amount, recalculated yearly'}
+                        {result.method === 'amortization' && 'Fixed amount, most popular'}
+                        {result.method === 'annuitization' && 'Fixed amount, uses annuity factors'}
+                      </p>
+                      <div className="space-y-2">
+                        <div className="text-center p-3 bg-slate-800/50 rounded">
+                          <p className="text-xs text-slate-400">Annual Withdrawal</p>
+                          <p className="text-xl font-bold text-emerald-400">
+                            {formatCurrency(result.annualWithdrawal)}
+                          </p>
+                          <p className="text-xs text-slate-500">
+                            {formatCurrency(result.monthlyWithdrawal)}/month
+                          </p>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Total over {years}yr:</span>
+                          <span className="text-white">{formatCurrency(result.totalWithdrawn)}</span>
+                        </div>
+                        <div className="flex justify-between text-sm">
+                          <span className="text-slate-400">Balance at {result.endAge.toFixed(1)}:</span>
+                          <span className="text-white">{formatCurrency(result.remainingBalance)}</span>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Important Rules */}
+                <div className="p-4 bg-blue-900/30 border border-blue-600/50 rounded-lg">
+                  <h4 className="font-semibold text-blue-300 mb-2">⚠️ Important 72(t) Rules</h4>
+                  <ul className="text-sm text-slate-300 space-y-1 list-disc list-inside">
+                    <li>Must continue for <strong>5 years OR until age 59½</strong> (whichever is LATER)</li>
+                    <li>Your SEPP ends at age: <strong>{endAge.toFixed(1)}</strong> ({years} years)</li>
+                    <li>Modifying payments triggers 10% penalty on ALL prior withdrawals + interest</li>
+                    <li>Consider using a separate IRA to fund only what you need</li>
+                    <li>Consult a tax professional before starting a 72(t) plan</li>
+                  </ul>
+                </div>
+              </>
+            )}
+
+            {!seppResults && balance > 0 && (
+              <div className="p-4 bg-slate-800/50 rounded-lg text-center text-slate-400">
+                Enter your age (40-58) to calculate SEPP options
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </Card>
+  );
 }
 
 export function AdvancedTab() {
@@ -97,6 +264,9 @@ export function AdvancedTab() {
           <p className="text-slate-400 mt-1">Custom scenarios and advanced simulation parameters</p>
         </div>
       </div>
+
+      {/* 72(t) SEPP Calculator */}
+      <SEPPCalculator currentAge={data.currentAge} preTaxBalance={data.currentSavingsPreTax} />
 
       {/* Scenario Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">

@@ -1,10 +1,11 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { Card, CardGrid, StatCard } from '@/components/ui';
 import { CurrencyInput } from '@/components/ui';
+import { Button } from '@/components/ui';
 import { useApp } from '@/lib/store';
-import { calculateBudgetSummary, formatCurrency } from '@/lib/calculations';
+import { calculateBudgetSummary, formatCurrency, calculateDebtPayoff, DebtItem } from '@/lib/calculations';
 import { DEFAULT_BUDGET } from '@/lib/types';
 import {
   PieChart,
@@ -13,6 +14,8 @@ import {
   BarChart,
   Bar,
   XAxis,
+  LineChart,
+  Line,
   YAxis,
   CartesianGrid,
   Tooltip,
@@ -76,6 +79,336 @@ function ExpenseSection({
         </div>
       )}
     </div>
+  );
+}
+
+// Debt Payoff Optimizer Component
+function DebtPayoffOptimizer() {
+  const [debts, setDebts] = useState<DebtItem[]>([
+    { id: '1', name: 'Credit Card', balance: 5000, interestRate: 0.219, minimumPayment: 150 },
+    { id: '2', name: 'Car Loan', balance: 15000, interestRate: 0.065, minimumPayment: 350 },
+    { id: '3', name: 'Student Loan', balance: 25000, interestRate: 0.055, minimumPayment: 280 },
+  ]);
+  const [extraPayment, setExtraPayment] = useState(200);
+  const [selectedMethod, setSelectedMethod] = useState<'avalanche' | 'snowball'>('avalanche');
+  const [showOptimizer, setShowOptimizer] = useState(false);
+
+  const avalancheResult = useMemo(() => calculateDebtPayoff(debts, extraPayment, 'avalanche'), [debts, extraPayment]);
+  const snowballResult = useMemo(() => calculateDebtPayoff(debts, extraPayment, 'snowball'), [debts, extraPayment]);
+  
+  const activeResult = selectedMethod === 'avalanche' ? avalancheResult : snowballResult;
+  const savings = snowballResult.totalInterest - avalancheResult.totalInterest;
+
+  const addDebt = () => {
+    setDebts([...debts, {
+      id: Date.now().toString(),
+      name: 'New Debt',
+      balance: 0,
+      interestRate: 0.10,
+      minimumPayment: 0,
+    }]);
+  };
+
+  const updateDebt = (id: string, field: keyof DebtItem, value: string | number) => {
+    setDebts(debts.map(d => d.id === id ? { ...d, [field]: value } : d));
+  };
+
+  const removeDebt = (id: string) => {
+    setDebts(debts.filter(d => d.id !== id));
+  };
+
+  const totalDebt = debts.reduce((sum, d) => sum + d.balance, 0);
+  const totalMinPayment = debts.reduce((sum, d) => sum + d.minimumPayment, 0);
+
+  return (
+    <Card title="💳 Debt Payoff Optimizer" subtitle="Compare Avalanche vs Snowball strategies">
+      <div className="space-y-6">
+        {/* Toggle to show/hide */}
+        <button
+          onClick={() => setShowOptimizer(!showOptimizer)}
+          className="w-full flex items-center justify-between p-4 bg-slate-700/50 rounded-lg hover:bg-slate-600/50 transition-colors"
+        >
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">🎯</span>
+            <div className="text-left">
+              <p className="font-semibold text-white">Debt Payoff Calculator</p>
+              <p className="text-sm text-slate-400">
+                {totalDebt > 0 ? `${debts.length} debts totaling ${formatCurrency(totalDebt)}` : 'Add your debts to get started'}
+              </p>
+            </div>
+          </div>
+          <svg 
+            className={`w-5 h-5 text-slate-400 transition-transform ${showOptimizer ? 'rotate-180' : ''}`}
+            fill="none" stroke="currentColor" viewBox="0 0 24 24"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+          </svg>
+        </button>
+
+        {showOptimizer && (
+          <div className="space-y-6">
+            {/* Debt List */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h4 className="text-white font-medium">Your Debts</h4>
+                <Button variant="secondary" size="sm" onClick={addDebt}>
+                  + Add Debt
+                </Button>
+              </div>
+              
+              {debts.map((debt) => (
+                <div key={debt.id} className="grid grid-cols-12 gap-2 items-end p-3 bg-slate-800/50 rounded-lg">
+                  <div className="col-span-12 sm:col-span-3">
+                    <label className="block text-xs text-slate-400 mb-1">Name</label>
+                    <input
+                      type="text"
+                      value={debt.name}
+                      onChange={(e) => updateDebt(debt.id, 'name', e.target.value)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                    />
+                  </div>
+                  <div className="col-span-6 sm:col-span-2">
+                    <label className="block text-xs text-slate-400 mb-1">Balance</label>
+                    <input
+                      type="number"
+                      value={debt.balance}
+                      onChange={(e) => updateDebt(debt.id, 'balance', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                    />
+                  </div>
+                  <div className="col-span-6 sm:col-span-2">
+                    <label className="block text-xs text-slate-400 mb-1">APR %</label>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={(debt.interestRate * 100).toFixed(1)}
+                      onChange={(e) => updateDebt(debt.id, 'interestRate', (parseFloat(e.target.value) || 0) / 100)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                    />
+                  </div>
+                  <div className="col-span-6 sm:col-span-2">
+                    <label className="block text-xs text-slate-400 mb-1">Min Payment</label>
+                    <input
+                      type="number"
+                      value={debt.minimumPayment}
+                      onChange={(e) => updateDebt(debt.id, 'minimumPayment', parseFloat(e.target.value) || 0)}
+                      className="w-full px-3 py-2 bg-slate-700 border border-slate-600 rounded text-white text-sm"
+                    />
+                  </div>
+                  <div className="col-span-6 sm:col-span-2">
+                    <label className="block text-xs text-slate-400 mb-1">Payoff Order</label>
+                    <div className="px-3 py-2 bg-slate-600/50 rounded text-sm">
+                      <span className={selectedMethod === 'avalanche' ? 'text-emerald-400' : 'text-blue-400'}>
+                        #{selectedMethod === 'avalanche' 
+                          ? [...debts].sort((a, b) => b.interestRate - a.interestRate).findIndex(d => d.id === debt.id) + 1
+                          : [...debts].sort((a, b) => a.balance - b.balance).findIndex(d => d.id === debt.id) + 1
+                        }
+                      </span>
+                    </div>
+                  </div>
+                  <div className="col-span-12 sm:col-span-1 flex justify-end">
+                    <button
+                      onClick={() => removeDebt(debt.id)}
+                      title="Remove debt"
+                      aria-label="Remove debt"
+                      className="p-2 text-red-400 hover:text-red-300 hover:bg-red-900/30 rounded"
+                    >
+                      <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                      </svg>
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            {/* Extra Payment */}
+            <div className="p-4 bg-emerald-900/30 border border-emerald-700/50 rounded-lg">
+              <div className="flex items-center gap-4">
+                <div className="flex-1">
+                  <label className="block text-sm font-medium text-emerald-300 mb-1">
+                    Extra Monthly Payment
+                  </label>
+                  <p className="text-xs text-emerald-400/70">
+                    Amount above minimum payments to accelerate payoff
+                  </p>
+                </div>
+                <div className="w-32">
+                  <input
+                    type="number"
+                    value={extraPayment}
+                    onChange={(e) => setExtraPayment(parseFloat(e.target.value) || 0)}
+                    className="w-full px-3 py-2 bg-slate-700 border border-emerald-600 rounded text-white text-right"
+                  />
+                </div>
+              </div>
+              <p className="text-xs text-slate-400 mt-2">
+                Total monthly payment: {formatCurrency(totalMinPayment + extraPayment)}
+              </p>
+            </div>
+
+            {/* Strategy Comparison */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Avalanche */}
+              <button
+                onClick={() => setSelectedMethod('avalanche')}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  selectedMethod === 'avalanche' 
+                    ? 'border-emerald-500 bg-emerald-900/30' 
+                    : 'border-slate-600 bg-slate-800/50 hover:border-slate-500'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">🏔️</span>
+                  <h4 className="font-bold text-white">Avalanche</h4>
+                  {selectedMethod === 'avalanche' && (
+                    <span className="text-xs bg-emerald-500 text-white px-2 py-0.5 rounded">Selected</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mb-3">Highest interest rate first - saves the most money</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Debt-free in:</span>
+                    <span className="text-white font-medium">
+                      {Math.floor(avalancheResult.totalMonths / 12)}y {avalancheResult.totalMonths % 12}m
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total interest:</span>
+                    <span className="text-red-400">{formatCurrency(avalancheResult.totalInterest)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total paid:</span>
+                    <span className="text-white">{formatCurrency(avalancheResult.totalPaid)}</span>
+                  </div>
+                </div>
+              </button>
+
+              {/* Snowball */}
+              <button
+                onClick={() => setSelectedMethod('snowball')}
+                className={`p-4 rounded-lg border-2 text-left transition-all ${
+                  selectedMethod === 'snowball' 
+                    ? 'border-blue-500 bg-blue-900/30' 
+                    : 'border-slate-600 bg-slate-800/50 hover:border-slate-500'
+                }`}
+              >
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="text-2xl">⛄</span>
+                  <h4 className="font-bold text-white">Snowball</h4>
+                  {selectedMethod === 'snowball' && (
+                    <span className="text-xs bg-blue-500 text-white px-2 py-0.5 rounded">Selected</span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-400 mb-3">Smallest balance first - quick wins for motivation</p>
+                <div className="space-y-1 text-sm">
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Debt-free in:</span>
+                    <span className="text-white font-medium">
+                      {Math.floor(snowballResult.totalMonths / 12)}y {snowballResult.totalMonths % 12}m
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total interest:</span>
+                    <span className="text-red-400">{formatCurrency(snowballResult.totalInterest)}</span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-slate-400">Total paid:</span>
+                    <span className="text-white">{formatCurrency(snowballResult.totalPaid)}</span>
+                  </div>
+                </div>
+              </button>
+            </div>
+
+            {/* Savings callout */}
+            {savings > 0 && (
+              <div className="p-4 bg-gradient-to-r from-emerald-900/50 to-blue-900/50 border border-emerald-600/50 rounded-lg">
+                <div className="flex items-center gap-3">
+                  <span className="text-3xl">💰</span>
+                  <div>
+                    <p className="text-emerald-300 font-semibold">
+                      Avalanche saves {formatCurrency(savings)} in interest!
+                    </p>
+                    <p className="text-sm text-slate-400">
+                      But Snowball gives faster wins if you need motivation
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Payoff Timeline */}
+            {activeResult.monthlyTimeline.length > 0 && (
+              <div>
+                <h4 className="text-white font-medium mb-3">📊 Payoff Timeline</h4>
+                <div className="h-48 bg-slate-800/50 rounded-lg p-4">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <LineChart data={activeResult.monthlyTimeline.filter((_, i) => i % 3 === 0)}>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                      <XAxis 
+                        dataKey="month" 
+                        stroke="#6B7280" 
+                        fontSize={10}
+                        tickFormatter={(v) => `${Math.floor(v/12)}y`}
+                      />
+                      <YAxis 
+                        stroke="#6B7280" 
+                        fontSize={10}
+                        tickFormatter={(v) => `$${(v/1000).toFixed(0)}k`}
+                      />
+                      <Tooltip 
+                        formatter={(value) => formatCurrency(value as number)}
+                        labelFormatter={(label) => `Month ${label}`}
+                        contentStyle={{ backgroundColor: '#1e293b', border: '1px solid #475569' }}
+                      />
+                      <Line 
+                        type="monotone" 
+                        dataKey="totalBalance" 
+                        stroke={selectedMethod === 'avalanche' ? '#10B981' : '#3B82F6'} 
+                        strokeWidth={2}
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            )}
+
+            {/* Payoff Order */}
+            <div>
+              <h4 className="text-white font-medium mb-3">📋 Payoff Order ({selectedMethod === 'avalanche' ? 'Avalanche' : 'Snowball'})</h4>
+              <div className="space-y-2">
+                {activeResult.results
+                  .sort((a, b) => a.payoffMonths - b.payoffMonths)
+                  .map((result, index) => (
+                    <div key={result.debt.id} className="flex items-center gap-3 p-3 bg-slate-800/50 rounded-lg">
+                      <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+                        index === 0 ? 'bg-emerald-500 text-white' : 'bg-slate-600 text-slate-300'
+                      }`}>
+                        {index + 1}
+                      </div>
+                      <div className="flex-1">
+                        <p className="text-white font-medium">{result.debt.name}</p>
+                        <p className="text-xs text-slate-400">
+                          {formatCurrency(result.debt.balance)} at {(result.debt.interestRate * 100).toFixed(1)}% APR
+                        </p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-emerald-400 font-medium">
+                          {result.payoffDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}
+                        </p>
+                        <p className="text-xs text-slate-400">
+                          {result.payoffMonths} months • {formatCurrency(result.totalInterest)} interest
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </Card>
   );
 }
 
@@ -598,6 +931,9 @@ export function BudgetTab() {
           />
         </ExpenseSection>
       </div>
+      
+      {/* Debt Payoff Optimizer */}
+      <DebtPayoffOptimizer />
       
       {/* Budget Analysis Chart */}
       <Card title="Income vs Expenses Comparison">

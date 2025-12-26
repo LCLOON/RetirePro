@@ -322,7 +322,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="dark" suppressHydrationWarning>
-      <head>
+      <head suppressHydrationWarning>
         {/* Theme initialization - runs before React hydrates to prevent flash */}
         <script
           dangerouslySetInnerHTML={{
@@ -363,6 +363,7 @@ export default function RootLayout({
       </head>
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        suppressHydrationWarning
       >
         {children}
       </body>
