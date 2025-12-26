@@ -12,28 +12,39 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, hint, prefix, suffix, icon, className = '', ...props }, ref) => {
+  ({ label, error, hint, prefix, suffix, icon, className = '', id, ...props }, ref) => {
+    // Generate a unique ID for label association if not provided
+    const inputId = id || (label ? `input-${label.toLowerCase().replace(/\s+/g, '-')}` : undefined);
+    const errorId = error ? `${inputId}-error` : undefined;
+    const hintId = hint && !error ? `${inputId}-hint` : undefined;
+    
     return (
       <div className="w-full">
         {label && (
-          <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
+          <label 
+            htmlFor={inputId}
+            className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1"
+          >
             {label}
-            {props.required && <span className="text-red-400 ml-1">*</span>}
+            {props.required && <span className="text-red-400 ml-1" aria-hidden="true">*</span>}
           </label>
         )}
         <div className="relative">
           {icon && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-500">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-500" aria-hidden="true">
               {icon}
             </div>
           )}
           {prefix && (
-            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 text-sm">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 text-sm" aria-hidden="true">
               {prefix}
             </div>
           )}
           <input
             ref={ref}
+            id={inputId}
+            aria-invalid={error ? 'true' : undefined}
+            aria-describedby={errorId || hintId}
             className={`
               w-full px-4 py-2.5 rounded-lg border transition-colors duration-200
               bg-white dark:bg-slate-800 text-gray-900 dark:text-white
@@ -51,13 +62,13 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             {...props}
           />
           {suffix && (
-            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 text-sm">
+            <div className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 dark:text-slate-400 text-sm" aria-hidden="true">
               {suffix}
             </div>
           )}
         </div>
-        {error && <p className="mt-1 text-sm text-red-400">{error}</p>}
-        {hint && !error && <p className="mt-1 text-sm text-gray-500 dark:text-slate-400">{hint}</p>}
+        {error && <p id={errorId} className="mt-1 text-sm text-red-400" role="alert">{error}</p>}
+        {hint && !error && <p id={hintId} className="mt-1 text-sm text-gray-500 dark:text-slate-400">{hint}</p>}
       </div>
     );
   }

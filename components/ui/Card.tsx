@@ -33,11 +33,14 @@ export function Card({
 }: CardProps) {
   const { state } = useApp();
   const theme = cardThemes[state.theme];
+  const titleId = title ? `card-${title.toLowerCase().replace(/[^a-z0-9]+/g, '-')}` : undefined;
 
   return (
     <div 
       className={`backdrop-blur-sm rounded-xl shadow-lg ${className}`}
       style={{ backgroundColor: theme.bg, borderWidth: 1, borderStyle: 'solid', borderColor: theme.border }}
+      role="region"
+      aria-labelledby={titleId}
     >
       {(title || action) && (
         <div 
@@ -45,9 +48,9 @@ export function Card({
           style={{ borderBottomWidth: 1, borderBottomStyle: 'solid', borderBottomColor: theme.border }}
         >
           <div className="flex items-center gap-2">
-            {icon && <span className="text-xl">{icon}</span>}
+            {icon && <span className="text-xl" aria-hidden="true">{icon}</span>}
             <div>
-              {title && <h3 className="text-base font-semibold" style={{ color: theme.text }}>{title}</h3>}
+              {title && <h3 id={titleId} className="text-base font-semibold" style={{ color: theme.text }}>{title}</h3>}
               {subtitle && <p className="text-xs mt-0.5" style={{ color: theme.muted }}>{subtitle}</p>}
             </div>
           </div>
@@ -136,10 +139,14 @@ export function StatCard({
   };
   
   return (
-    <div className={`bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 border-l-4 ${borderColors[color]} p-4 ${className}`}>
+    <div 
+      className={`bg-slate-800/50 backdrop-blur-sm rounded-xl border border-slate-700/50 border-l-4 ${borderColors[color]} p-4 ${className}`}
+      role="group"
+      aria-label={`${label}: ${value}`}
+    >
       <div className="flex items-start justify-between gap-3">
         {icon && (
-          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${iconBgColors[color]}`}>
+          <div className={`w-10 h-10 rounded-lg flex items-center justify-center text-lg ${iconBgColors[color]}`} aria-hidden="true">
             {icon}
           </div>
         )}
@@ -150,8 +157,8 @@ export function StatCard({
           {subValue && <p className="text-xs text-slate-400 mt-0.5">{subValue}</p>}
           {trend && trendValue && (
             <p className={`text-xs font-medium mt-1 ${trendColors[trend]}`}>
-              {trend === 'up' && '↑ '}
-              {trend === 'down' && '↓ '}
+              <span aria-hidden="true">{trend === 'up' && '↑ '}{trend === 'down' && '↓ '}</span>
+              <span className="sr-only">{trend === 'up' ? 'Trending up: ' : trend === 'down' ? 'Trending down: ' : ''}</span>
               {trendValue}
             </p>
           )}

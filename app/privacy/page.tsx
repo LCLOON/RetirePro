@@ -94,6 +94,7 @@ export default function PrivacyPage() {
               </p>
               <ul className="list-disc list-inside text-slate-300 space-y-2 mb-4">
                 <li><strong className="text-white">Payment processors:</strong> Stripe, for subscription billing</li>
+                <li><strong className="text-white">AI Services:</strong> When you use the AI Retirement Advisor feature, your financial planning data (age, savings, income, expenses, and retirement goals) is sent to xAI (Grok) to generate personalized advice. This data is not stored by xAI beyond the conversation session.</li>
                 <li><strong className="text-white">Analytics providers:</strong> To understand service usage</li>
                 <li><strong className="text-white">Legal requirements:</strong> When required by law or legal process</li>
               </ul>
@@ -116,7 +117,7 @@ export default function PrivacyPage() {
               </p>
             </section>
 
-            <section className="mb-8">
+            <section id="ccpa" className="mb-8">
               <h2 className="text-2xl font-semibold mb-4 text-white">7. Your Rights (GDPR/CCPA)</h2>
               <p className="text-slate-300 mb-4">
                 Depending on your location, you may have the following rights:
@@ -128,17 +129,44 @@ export default function PrivacyPage() {
                 <li><strong className="text-white">Portability:</strong> Export your data in a machine-readable format</li>
                 <li><strong className="text-white">Opt-out:</strong> Unsubscribe from marketing communications</li>
               </ul>
+              
+              <h3 className="text-xl font-semibold mb-3 text-white">California Residents (CCPA)</h3>
               <p className="text-slate-300 mb-4">
-                To exercise these rights, contact us at privacy@retirepro.io
+                If you are a California resident, you have additional rights under the California Consumer Privacy Act (CCPA):
+              </p>
+              <ul className="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                <li><strong className="text-white">Right to Know:</strong> Request disclosure of personal information collected, used, and shared</li>
+                <li><strong className="text-white">Right to Delete:</strong> Request deletion of your personal information</li>
+                <li><strong className="text-white">Right to Opt-Out:</strong> Opt out of the &quot;sale&quot; of personal information</li>
+                <li><strong className="text-white">Right to Non-Discrimination:</strong> We will not discriminate against you for exercising your rights</li>
+              </ul>
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/30 rounded-lg mb-4">
+                <p className="text-emerald-300">
+                  <strong>We do NOT sell your personal information.</strong> RetirePro has never sold personal information 
+                  and has no plans to do so. If this changes, we will update this policy and provide opt-out mechanisms.
+                </p>
+              </div>
+              <p className="text-slate-300 mb-4">
+                To exercise any of these rights, contact us at privacy@retirepro.io. We will respond within 45 days 
+                as required by law. You may also designate an authorized agent to make a request on your behalf.
               </p>
             </section>
 
             <section className="mb-8">
               <h2 className="text-2xl font-semibold mb-4 text-white">8. Data Retention</h2>
               <p className="text-slate-300 mb-4">
-                We retain your personal data for as long as your account is active or as needed to provide services. 
-                If you delete your account, we will delete your data within 30 days, except where retention is 
-                required by law.
+                We retain your personal data for as long as your account is active or as needed to provide services:
+              </p>
+              <ul className="list-disc list-inside text-slate-300 space-y-2 mb-4">
+                <li><strong className="text-white">Account data:</strong> Retained while account is active, deleted within 30 days of account closure</li>
+                <li><strong className="text-white">Financial planning data:</strong> Stored locally in your browser; we do not retain this on our servers</li>
+                <li><strong className="text-white">Payment records:</strong> Retained for 7 years as required for tax and legal compliance</li>
+                <li><strong className="text-white">Support communications:</strong> Retained for 3 years after resolution</li>
+                <li><strong className="text-white">Analytics data:</strong> Aggregated and anonymized; retained indefinitely</li>
+              </ul>
+              <p className="text-slate-300 mb-4">
+                You may request deletion of your data at any time by contacting privacy@retirepro.io. Certain data may 
+                be retained longer if required by law or for legitimate business purposes.
               </p>
             </section>
 

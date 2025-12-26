@@ -10,6 +10,10 @@ const nextConfig: NextConfig = {
         source: '/(.*)',
         headers: [
           {
+            key: 'Content-Security-Policy',
+            value: "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://js.stripe.com; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; font-src 'self' data:; connect-src 'self' https://api.stripe.com https://api.x.ai https://*.resend.com; frame-src https://js.stripe.com https://hooks.stripe.com; object-src 'none'; base-uri 'self';",
+          },
+          {
             key: 'X-Frame-Options',
             value: 'DENY',
           },

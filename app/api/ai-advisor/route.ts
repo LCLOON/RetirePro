@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 const XAI_API_KEY = process.env.XAI_API_KEY;
 const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
@@ -151,6 +152,25 @@ Cryptocurrency Holdings:
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting - use IP or forwarded IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    const rateLimitResult = rateLimit(`ai:${ip}`, RATE_LIMITS.ai);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many requests. Please wait a moment and try again.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimitResult.resetIn / 1000)),
+            'X-RateLimit-Remaining': String(rateLimitResult.remaining),
+          }
+        }
+      );
+    }
+
     if (!XAI_API_KEY) {
       return NextResponse.json(
         { error: 'AI service not configured' },

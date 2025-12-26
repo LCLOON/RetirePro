@@ -1,8 +1,27 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limiting - use IP or forwarded IP
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0] || 
+               request.headers.get('x-real-ip') || 
+               'unknown';
+    const rateLimitResult = rateLimit(`checkout:${ip}`, RATE_LIMITS.checkout);
+    
+    if (!rateLimitResult.success) {
+      return NextResponse.json(
+        { error: 'Too many checkout attempts. Please wait a moment and try again.' },
+        { 
+          status: 429,
+          headers: {
+            'Retry-After': String(Math.ceil(rateLimitResult.resetIn / 1000)),
+          }
+        }
+      );
+    }
+
     if (!stripe) {
       return NextResponse.json(
         { error: 'Stripe is not configured. Missing STRIPE_SECRET_KEY.' },

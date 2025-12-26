@@ -119,7 +119,30 @@ export default function TermsPage() {
             </section>
 
             <section className="mb-8">
-              <h2 className="text-2xl font-semibold mb-4 text-white">9. Contact Information</h2>
+              <h2 className="text-2xl font-semibold mb-4 text-white">9. Governing Law</h2>
+              <p className="text-slate-300 mb-4">
+                These Terms shall be governed by and construed in accordance with the laws of the State of Delaware, 
+                United States, without regard to its conflict of law provisions. You agree to submit to the personal 
+                and exclusive jurisdiction of the courts located in Delaware.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4 text-white">10. Dispute Resolution</h2>
+              <p className="text-slate-300 mb-4">
+                Any dispute arising from these Terms or your use of the Service shall first be attempted to be resolved 
+                through informal negotiation. If the dispute cannot be resolved informally within 30 days, either party 
+                may initiate binding arbitration in accordance with the American Arbitration Association rules. 
+                The arbitration shall be conducted in Delaware, and the arbitrator&apos;s decision shall be final and binding.
+              </p>
+              <p className="text-slate-300 mb-4">
+                <strong className="text-white">Class Action Waiver:</strong> You agree that any dispute resolution proceedings 
+                will be conducted only on an individual basis and not in a class, consolidated, or representative action.
+              </p>
+            </section>
+
+            <section className="mb-8">
+              <h2 className="text-2xl font-semibold mb-4 text-white">11. Contact Information</h2>
               <p className="text-slate-300 mb-4">
                 If you have questions about these Terms of Service, please contact us at:
               </p>
