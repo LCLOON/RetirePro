@@ -78,7 +78,16 @@ interface FeatureGateProps {
 }
 
 export function FeatureGate({ featureId, children }: FeatureGateProps) {
-  const { canAccess, getRequiredTierForFeature, tier } = useSubscription();
+  const { canAccess, getRequiredTierForFeature, tier, isLoading } = useSubscription();
+
+  // Show loading state while checking subscription
+  if (isLoading) {
+    return (
+      <div className="min-h-[60vh] flex items-center justify-center">
+        <div className="text-slate-400">Loading...</div>
+      </div>
+    );
+  }
 
   if (canAccess(featureId)) {
     return <>{children}</>;

@@ -2,7 +2,7 @@
 
 import { Card, CardGrid, StatCard } from '@/components/ui';
 import { NumberInput, CurrencyInput } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { Button, Select } from '@/components/ui';
 import { useApp } from '@/lib/store';
 import { formatCurrency } from '@/lib/calculations';
 import { SS_BEND_POINTS, SS_BENEFIT_MULTIPLIERS } from '@/lib/types';
@@ -269,20 +269,30 @@ export function SocialSecurityTab() {
               onChange={(v) => updateSocialSecurityData({ averageEarnings: v })}
               helpText="Average of your highest 35 years of indexed earnings"
             />
-            <NumberInput
+            <Select
               label="Your Birth Year"
-              value={ssData.birthYear}
-              onChange={(v) => updateSocialSecurityData({ birthYear: v })}
-              min={1940}
-              max={2000}
+              value={ssData.birthYear.toString()}
+              onChange={(v) => updateSocialSecurityData({ birthYear: parseInt(v) })}
+              options={Array.from({ length: 61 }, (_, i) => {
+                const year = 1940 + i;
+                return { value: year.toString(), label: year.toString() };
+              })}
             />
-            <NumberInput
+            <Select
               label="Your Planned Claiming Age"
-              value={ssData.claimingAge}
-              onChange={(v) => updateSocialSecurityData({ claimingAge: v })}
-              min={62}
-              max={70}
-              helpText="When do you plan to start benefits? (62-70)"
+              value={ssData.claimingAge.toString()}
+              onChange={(v) => updateSocialSecurityData({ claimingAge: parseInt(v) })}
+              options={[
+                { value: '62', label: '62 - Early (reduced benefits)' },
+                { value: '63', label: '63' },
+                { value: '64', label: '64' },
+                { value: '65', label: '65' },
+                { value: '66', label: '66' },
+                { value: '67', label: '67 - Full Retirement Age' },
+                { value: '68', label: '68' },
+                { value: '69', label: '69' },
+                { value: '70', label: '70 - Maximum (delayed credits)' },
+              ]}
             />
             
             {/* Your PIA breakdown */}
@@ -346,20 +356,30 @@ export function SocialSecurityTab() {
                 onChange={(v) => updateSocialSecurityData({ spouseAverageEarnings: v })}
                 helpText="Average of spouse's highest 35 years"
               />
-              <NumberInput
+              <Select
                 label="Spouse Birth Year"
-                value={ssData.spouseBirthYear || 1965}
-                onChange={(v) => updateSocialSecurityData({ spouseBirthYear: v })}
-                min={1940}
-                max={2000}
+                value={(ssData.spouseBirthYear || 1965).toString()}
+                onChange={(v) => updateSocialSecurityData({ spouseBirthYear: parseInt(v) })}
+                options={Array.from({ length: 61 }, (_, i) => {
+                  const year = 1940 + i;
+                  return { value: year.toString(), label: year.toString() };
+                })}
               />
-              <NumberInput
+              <Select
                 label="Spouse Planned Claiming Age"
-                value={ssData.spouseClaimingAge || 67}
-                onChange={(v) => updateSocialSecurityData({ spouseClaimingAge: v })}
-                min={62}
-                max={70}
-                helpText="When will spouse start benefits? (62-70)"
+                value={(ssData.spouseClaimingAge || 67).toString()}
+                onChange={(v) => updateSocialSecurityData({ spouseClaimingAge: parseInt(v) })}
+                options={[
+                  { value: '62', label: '62 - Early (reduced benefits)' },
+                  { value: '63', label: '63' },
+                  { value: '64', label: '64' },
+                  { value: '65', label: '65' },
+                  { value: '66', label: '66' },
+                  { value: '67', label: '67 - Full Retirement Age' },
+                  { value: '68', label: '68' },
+                  { value: '69', label: '69' },
+                  { value: '70', label: '70 - Maximum (delayed credits)' },
+                ]}
               />
               
               {/* Spouse PIA breakdown */}

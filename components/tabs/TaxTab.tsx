@@ -1,7 +1,7 @@
 'use client';
 
 import { Card, CardGrid, StatCard } from '@/components/ui';
-import { CurrencyInput, PercentInput } from '@/components/ui';
+import { CurrencyInput, PercentSelect } from '@/components/ui';
 import { useApp } from '@/lib/store';
 import { formatCurrency, formatPercent } from '@/lib/calculations';
 
@@ -135,11 +135,12 @@ export function TaxTab() {
               helpText="Your total annual income before taxes"
             />
             
-            <PercentInput
+            <PercentSelect
               label="State Tax Rate"
               value={tax.stateTaxRate}
               onChange={(v) => updateTaxSettings({ stateTaxRate: v })}
-              helpText="Your state's income tax rate"
+              min={0} max={15} step={0.5}
+              hint="Your state's income tax rate"
             />
             
             <div className="pt-4 border-t border-slate-700/50">

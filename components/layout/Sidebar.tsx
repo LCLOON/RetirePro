@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { TabId } from '@/lib/types';
 import { useApp } from '@/lib/store';
 import { useSubscription, FEATURE_TIERS, TIER_INFO, SubscriptionTier } from '@/lib/subscription';
@@ -61,9 +60,8 @@ function TierBadge({ requiredTier, currentTier }: { requiredTier: SubscriptionTi
 
 export function Sidebar() {
   const { state, setActiveTab } = useApp();
-  const { tier, setTier, canAccess } = useSubscription();
+  const { tier, canAccess } = useSubscription();
   const { isOpen, setIsOpen } = useSidebar();
-  const [showTierDropdown, setShowTierDropdown] = useState(false);
 
   // Calculate stats
   const totalSavings = state.retirementData.currentSavingsPreTax + 
@@ -162,52 +160,6 @@ export function Sidebar() {
             Upgrade Plan
           </Link>
         )}
-
-        {/* Plan Tier Selector */}
-        <div className="relative">
-          <button
-            onClick={() => setShowTierDropdown(!showTierDropdown)}
-            className="flex items-center gap-2 w-full px-3 py-2 bg-gray-200 dark:bg-slate-700/50 border border-gray-300 dark:border-slate-600 rounded-lg text-xs text-gray-700 dark:text-slate-300 hover:bg-gray-300 dark:hover:bg-slate-600/50 transition-colors"
-          >
-            <span className="text-emerald-400">⚡</span>
-            <span className="flex-1 text-left">Switch Plan Tier</span>
-            <svg className="w-3 h-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-            </svg>
-          </button>
-
-          {showTierDropdown && (
-            <>
-              <div 
-                className="fixed inset-0 z-10" 
-                onClick={() => setShowTierDropdown(false)} 
-              />
-              <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-gray-200 dark:border-slate-600 rounded-lg shadow-xl z-20 py-1">
-                {(['free', 'pro', 'premium'] as SubscriptionTier[]).map((t) => (
-                  <button
-                    key={t}
-                    onClick={() => {
-                      setTier(t);
-                      setShowTierDropdown(false);
-                    }}
-                    className={`w-full px-3 py-2 text-left text-xs text-gray-700 dark:text-slate-300 hover:bg-gray-100 dark:hover:bg-slate-700 flex items-center gap-2 ${
-                      tier === t ? 'bg-gray-100 dark:bg-slate-700' : ''
-                    }`}
-                  >
-                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${tierColors[t]}`}>
-                      {t.toUpperCase()}
-                    </span>
-                    {tier === t && (
-                      <svg className="w-3 h-3 text-emerald-400 ml-auto" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                    )}
-                  </button>
-                ))}
-              </div>
-            </>
-          )}
-        </div>
       </div>
 
       {/* Quick Stats - hidden on very small screens */}

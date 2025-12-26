@@ -1,6 +1,6 @@
 'use client';
 
-import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect } from 'react';
+import { createContext, useContext, useReducer, ReactNode, useCallback, useEffect, useRef } from 'react';
 import type { 
   RetirementData, 
   NetWorthData, 
@@ -39,6 +39,8 @@ import {
   createDefaultDebt,
 } from './types';
 import { calculateScenarioResults, performMonteCarloProjection } from './calculations';
+import { useAuth } from './auth';
+import { saveToCloud, loadFromCloud } from './cloud-sync';
 
 // Migration helper to handle old data formats
 function migrateData(data: Record<string, unknown>): Record<string, unknown> {
@@ -104,6 +106,10 @@ interface AppState {
   isCalculating: boolean;
   hasUnsavedChanges: boolean;
   lastCalculated: Date | null;
+  
+  // Cloud sync state
+  cloudSyncStatus: 'idle' | 'syncing' | 'synced' | 'error';
+  lastCloudSync: Date | null;
 }
 
 // Action types
@@ -119,6 +125,8 @@ type Action =
   | { type: 'SET_SCENARIO_RESULTS'; payload: ScenarioResults }
   | { type: 'SET_MONTE_CARLO_RESULTS'; payload: MonteCarloResults }
   | { type: 'SET_IS_CALCULATING'; payload: boolean }
+  | { type: 'SET_CLOUD_SYNC_STATUS'; payload: 'idle' | 'syncing' | 'synced' | 'error' }
+  | { type: 'SET_LAST_CLOUD_SYNC'; payload: Date }
   | { type: 'MARK_SAVED' }
   | { type: 'RESET_ALL' }
   | { type: 'LOAD_DATA'; payload: Partial<AppState> };
@@ -138,6 +146,8 @@ const initialState: AppState = {
   isCalculating: false,
   hasUnsavedChanges: false,
   lastCalculated: null,
+  cloudSyncStatus: 'idle',
+  lastCloudSync: null,
 };
 
 // Reducer
@@ -214,6 +224,12 @@ function appReducer(state: AppState, action: Action): AppState {
       
     case 'SET_IS_CALCULATING':
       return { ...state, isCalculating: action.payload };
+    
+    case 'SET_CLOUD_SYNC_STATUS':
+      return { ...state, cloudSyncStatus: action.payload };
+    
+    case 'SET_LAST_CLOUD_SYNC':
+      return { ...state, lastCloudSync: action.payload, cloudSyncStatus: 'synced' };
       
     case 'MARK_SAVED':
       return { ...state, hasUnsavedChanges: false };
@@ -277,6 +293,8 @@ interface AppContextType {
   runCalculations: () => Promise<void>;
   saveToLocalStorage: () => void;
   loadFromLocalStorage: () => void;
+  syncToCloud: () => Promise<void>;
+  loadFromCloudStorage: () => Promise<void>;
   exportToJSON: () => void | Promise<void>;
   resetAll: () => void;
 }
@@ -292,6 +310,9 @@ function getInitialState(): AppState {
 // Provider
 export function AppProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(appReducer, initialState, getInitialState);
+  const { user } = useAuth();
+  const cloudSyncTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isInitialLoadRef = useRef(true);
   
   // Apply theme to document IMMEDIATELY on mount and when theme changes
   useEffect(() => {
@@ -370,6 +391,75 @@ export function AppProvider({ children }: { children: ReactNode }) {
       localStorage.setItem('retirepro-data', JSON.stringify(dataToSave));
     }
   }, [state.retirementData, state.netWorthData, state.budgetData, state.taxSettings, state.mortgageData, state.socialSecurityData, state.hasUnsavedChanges]);
+  
+  // AUTO-SYNC to cloud when user is logged in and data changes (debounced)
+  useEffect(() => {
+    if (!user || isInitialLoadRef.current || !state.hasUnsavedChanges) return;
+    
+    // Clear existing timeout
+    if (cloudSyncTimeoutRef.current) {
+      clearTimeout(cloudSyncTimeoutRef.current);
+    }
+    
+    // Debounce cloud sync by 2 seconds to avoid too many API calls
+    cloudSyncTimeoutRef.current = setTimeout(async () => {
+      dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'syncing' });
+      
+      const result = await saveToCloud(user.id, {
+        retirement_data: state.retirementData,
+        social_security_data: state.socialSecurityData,
+        net_worth_data: state.netWorthData,
+        budget_data: state.budgetData,
+        mortgages: state.mortgageData.mortgages,
+      });
+      
+      if (result.success) {
+        dispatch({ type: 'SET_LAST_CLOUD_SYNC', payload: new Date() });
+      } else {
+        dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'error' });
+      }
+    }, 2000);
+    
+    return () => {
+      if (cloudSyncTimeoutRef.current) {
+        clearTimeout(cloudSyncTimeoutRef.current);
+      }
+    };
+  }, [user, state.hasUnsavedChanges, state.retirementData, state.netWorthData, state.budgetData, state.socialSecurityData, state.mortgageData]);
+  
+  // Load from cloud when user logs in
+  useEffect(() => {
+    if (!user) {
+      isInitialLoadRef.current = true;
+      return;
+    }
+    
+    const loadCloudData = async () => {
+      dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'syncing' });
+      
+      const result = await loadFromCloud(user.id);
+      
+      if (result.success && result.data) {
+        dispatch({ type: 'LOAD_DATA', payload: {
+          retirementData: { ...DEFAULT_RETIREMENT_DATA, ...result.data.retirement_data },
+          netWorthData: { ...DEFAULT_NET_WORTH, ...result.data.net_worth_data },
+          budgetData: { ...DEFAULT_BUDGET, ...result.data.budget_data },
+          socialSecurityData: { ...DEFAULT_SOCIAL_SECURITY, ...result.data.social_security_data },
+          mortgageData: { ...DEFAULT_MORTGAGE, mortgages: result.data.mortgages || DEFAULT_MORTGAGE.mortgages },
+        }});
+        dispatch({ type: 'SET_LAST_CLOUD_SYNC', payload: new Date() });
+      } else if (result.success) {
+        // New user with no cloud data - sync current local data to cloud
+        dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'idle' });
+      } else {
+        dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'error' });
+      }
+      
+      isInitialLoadRef.current = false;
+    };
+    
+    loadCloudData();
+  }, [user]);
   
   const setActiveTab = useCallback((tab: TabId) => {
     dispatch({ type: 'SET_ACTIVE_TAB', payload: tab });
@@ -680,6 +770,49 @@ export function AppProvider({ children }: { children: ReactNode }) {
     }
   }, []);
   
+  // Manual cloud sync function
+  const syncToCloud = useCallback(async () => {
+    if (!user) return;
+    
+    dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'syncing' });
+    
+    const result = await saveToCloud(user.id, {
+      retirement_data: state.retirementData,
+      social_security_data: state.socialSecurityData,
+      net_worth_data: state.netWorthData,
+      budget_data: state.budgetData,
+      mortgages: state.mortgageData.mortgages,
+    });
+    
+    if (result.success) {
+      dispatch({ type: 'SET_LAST_CLOUD_SYNC', payload: new Date() });
+    } else {
+      dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'error' });
+    }
+  }, [user, state.retirementData, state.socialSecurityData, state.netWorthData, state.budgetData, state.mortgageData]);
+  
+  // Manual cloud load function
+  const loadFromCloudStorage = useCallback(async () => {
+    if (!user) return;
+    
+    dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: 'syncing' });
+    
+    const result = await loadFromCloud(user.id);
+    
+    if (result.success && result.data) {
+      dispatch({ type: 'LOAD_DATA', payload: {
+        retirementData: { ...DEFAULT_RETIREMENT_DATA, ...result.data.retirement_data },
+        netWorthData: { ...DEFAULT_NET_WORTH, ...result.data.net_worth_data },
+        budgetData: { ...DEFAULT_BUDGET, ...result.data.budget_data },
+        socialSecurityData: { ...DEFAULT_SOCIAL_SECURITY, ...result.data.social_security_data },
+        mortgageData: { ...DEFAULT_MORTGAGE, mortgages: result.data.mortgages || DEFAULT_MORTGAGE.mortgages },
+      }});
+      dispatch({ type: 'SET_LAST_CLOUD_SYNC', payload: new Date() });
+    } else {
+      dispatch({ type: 'SET_CLOUD_SYNC_STATUS', payload: result.success ? 'idle' : 'error' });
+    }
+  }, [user]);
+  
   const exportToJSON = useCallback(async () => {
     const dataToExport = {
       version: '3.0',
@@ -777,6 +910,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       runCalculations,
       saveToLocalStorage,
       loadFromLocalStorage,
+      syncToCloud,
+      loadFromCloudStorage,
       exportToJSON,
       resetAll,
     }}>

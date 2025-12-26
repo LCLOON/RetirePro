@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { stripe } from '@/lib/stripe';
+import { sendEmail } from '@/lib/email';
+import { paymentConfirmationEmail, paymentFailedEmail } from '@/lib/email-templates';
 import Stripe from 'stripe';
 
 export async function POST(request: NextRequest) {
@@ -106,33 +108,28 @@ export async function POST(request: NextRequest) {
         
         console.log('Final plan for email:', planDisplay, 'billing:', billingPeriod);
         
-        const appUrl = process.env.NEXT_PUBLIC_APP_URL || 'https://retirepro.io';
-        console.log('Sending email via:', `${appUrl}/api/send-email`);
-        
         try {
           // Use subscription ID as idempotency key to prevent duplicate emails
           const idempotencyKey = session.subscription 
             ? `payment-confirmation-${session.subscription}` 
             : `payment-confirmation-${session.id}`;
           
-          const emailResponse = await fetch(`${appUrl}/api/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'payment-confirmation',
-              to: session.customer_details.email,
-              idempotencyKey,
-              data: {
-                userName: session.customer_details.name,
-                plan: planDisplay,
-                amount,
-                billingPeriod,
-              },
-            }),
+          // Generate email HTML directly
+          const emailHtml = paymentConfirmationEmail({
+            userName: session.customer_details.name || undefined,
+            plan: planDisplay,
+            amount,
+            billingPeriod,
           });
-          const emailResult = await emailResponse.json();
+          
+          // Send email directly via Resend (not via HTTP fetch)
+          const emailResult = await sendEmail({
+            to: session.customer_details.email,
+            subject: '✓ Payment Confirmed - RetirePro',
+            html: emailHtml,
+            idempotencyKey,
+          });
+          
           console.log('Payment confirmation email result:', emailResult);
         } catch (emailError) {
           console.error('Failed to send payment confirmation email:', emailError);
@@ -173,23 +170,19 @@ export async function POST(request: NextRequest) {
       // Send payment failure email
       if (invoice.customer_email) {
         try {
-          await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/api/send-email`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              type: 'payment-failed',
-              to: invoice.customer_email,
-              data: {
-                userName: invoice.customer_name,
-                plan: invoice.lines.data[0]?.description || 'Pro',
-                amount: invoice.amount_due || 0,
-                retryDate: invoice.next_payment_attempt 
-                  ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString()
-                  : undefined,
-              },
-            }),
+          const emailHtml = paymentFailedEmail({
+            userName: invoice.customer_name || undefined,
+            plan: invoice.lines.data[0]?.description || 'Pro',
+            amount: invoice.amount_due || 0,
+            retryDate: invoice.next_payment_attempt 
+              ? new Date(invoice.next_payment_attempt * 1000).toLocaleDateString()
+              : undefined,
+          });
+          
+          await sendEmail({
+            to: invoice.customer_email,
+            subject: '⚠️ Payment Update Required - RetirePro',
+            html: emailHtml,
           });
           console.log('Payment failed email sent to:', invoice.customer_email);
         } catch (emailError) {

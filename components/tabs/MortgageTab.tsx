@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import { Card, CardGrid, StatCard } from '@/components/ui';
-import { CurrencyInput, NumberInput, PercentInput, SelectInput, TextInput } from '@/components/ui';
-import { Button } from '@/components/ui';
+import { CurrencyInput, NumberInput, PercentSelect, SelectInput, TextInput } from '@/components/ui';
+import { Button, Select } from '@/components/ui';
 import { useApp } from '@/lib/store';
 import { calculateMortgagePayment, generateAmortizationSchedule, formatCurrency } from '@/lib/calculations';
 import type { MortgageEntry } from '@/lib/types';
@@ -222,12 +222,14 @@ function MortgageCard({
                 value={mortgage.purchasePrice}
                 onChange={(v) => onUpdate({ purchasePrice: v })}
               />
-              <NumberInput
+              <Select
                 label="Purchase Year"
-                value={mortgage.purchaseYear}
-                onChange={(v) => onUpdate({ purchaseYear: v })}
-                min={1950}
-                max={new Date().getFullYear()}
+                value={mortgage.purchaseYear.toString()}
+                onChange={(v) => onUpdate({ purchaseYear: parseInt(v) })}
+                options={Array.from({ length: 76 }, (_, i) => {
+                  const year = 1950 + i;
+                  return { value: year.toString(), label: year.toString() };
+                })}
               />
               {(mortgage.propertyType === 'rental' || mortgage.propertyType === 'investment') && (
                 <CurrencyInput
@@ -258,25 +260,33 @@ function MortgageCard({
                 value={mortgage.currentBalance}
                 onChange={(v) => onUpdate({ currentBalance: v })}
               />
-              <PercentInput
+              <PercentSelect
                 label="Interest Rate"
                 value={mortgage.interestRate}
                 onChange={(v) => onUpdate({ interestRate: v })}
+                min={2} max={12} step={0.125}
               />
-              <NumberInput
+              <Select
                 label="Loan Term"
-                value={mortgage.loanTermYears}
-                onChange={(v) => onUpdate({ loanTermYears: v })}
-                min={1}
-                max={40}
-                suffix="years"
+                value={mortgage.loanTermYears.toString()}
+                onChange={(v) => onUpdate({ loanTermYears: parseInt(v) })}
+                options={[
+                  { value: '10', label: '10 years' },
+                  { value: '15', label: '15 years' },
+                  { value: '20', label: '20 years' },
+                  { value: '25', label: '25 years' },
+                  { value: '30', label: '30 years' },
+                  { value: '40', label: '40 years' },
+                ]}
               />
-              <NumberInput
+              <Select
                 label="Start Year"
-                value={mortgage.startYear}
-                onChange={(v) => onUpdate({ startYear: v })}
-                min={1980}
-                max={new Date().getFullYear()}
+                value={mortgage.startYear.toString()}
+                onChange={(v) => onUpdate({ startYear: parseInt(v) })}
+                options={Array.from({ length: 46 }, (_, i) => {
+                  const year = 1980 + i;
+                  return { value: year.toString(), label: year.toString() };
+                })}
               />
               <CurrencyInput
                 label="Extra Monthly Payment"

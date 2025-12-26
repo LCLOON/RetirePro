@@ -36,6 +36,18 @@ export function HelpTab() {
       question: 'What is the 4% rule?',
       answer: 'The 4% rule suggests withdrawing 4% of your portfolio in the first year of retirement, then adjusting for inflation each year. It\'s a starting point, but Monte Carlo gives more nuanced results.',
     },
+    {
+      question: 'How do I restore my subscription on a new device or browser?',
+      answer: 'Your subscription is tied to the email you used when purchasing. Go to Settings → Subscription → "Restore Purchase" section. Enter your purchase email and click "Restore" to activate your Pro or Premium features on any device.',
+    },
+    {
+      question: 'How does upgrading from Pro to Premium work?',
+      answer: 'When you upgrade, Stripe automatically calculates a prorated credit for your unused Pro subscription time. You only pay the difference! For example, if you\'re halfway through a Pro month and upgrade to Premium, you\'ll pay about $5 instead of the full $19. Go to Settings → Subscription to upgrade.',
+    },
+    {
+      question: 'Can I downgrade from Premium to Pro?',
+      answer: 'To downgrade, you\'ll need to cancel your current Premium subscription (it stays active until the billing period ends), then subscribe to Pro at the lower rate. Contact support if you need help.',
+    },
   ];
   
   const keyTerms = [

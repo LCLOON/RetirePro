@@ -4,7 +4,8 @@ import { ReactNode, useState } from 'react';
 import { Card, CardGrid } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp, Theme } from '@/lib/store';
-import { useSubscription, TIER_INFO, SubscriptionTier, PRO_FEATURES, PREMIUM_FEATURES } from '@/lib/subscription';
+import { useAuth } from '@/lib/auth';
+import { useSubscription, TIER_INFO, PRO_FEATURES, PREMIUM_FEATURES } from '@/lib/subscription';
 import { formatCurrency } from '@/lib/calculations';
 import Link from 'next/link';
 
@@ -464,8 +465,89 @@ function ReportGenerator({ state }: { state: ReturnType<typeof useApp>['state'] 
 }
 
 export function SettingsTab() {
-  const { state, setTheme, saveToLocalStorage, loadFromLocalStorage, resetAll, exportToJSON } = useApp();
+  const { state, setTheme, saveToLocalStorage, loadFromLocalStorage, syncToCloud, loadFromCloudStorage, resetAll, exportToJSON } = useApp();
+  const { user, signOut, isLoading: authLoading } = useAuth();
   const { tier, setTier } = useSubscription();
+  const [restoreEmail, setRestoreEmail] = useState('');
+  const [restoreStatus, setRestoreStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [restoreMessage, setRestoreMessage] = useState('');
+  
+  // Upgrade state
+  const [upgradeEmail, setUpgradeEmail] = useState('');
+  const [upgradeStatus, setUpgradeStatus] = useState<'idle' | 'loading' | 'success' | 'error'>('idle');
+  const [upgradeMessage, setUpgradeMessage] = useState('');
+
+  const handleRestorePurchase = async () => {
+    if (!restoreEmail || !restoreEmail.includes('@')) {
+      setRestoreStatus('error');
+      setRestoreMessage('Please enter a valid email address');
+      return;
+    }
+
+    setRestoreStatus('loading');
+    setRestoreMessage('');
+
+    try {
+      const response = await fetch('/api/check-subscription', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: restoreEmail }),
+      });
+
+      const data = await response.json();
+
+      if (data.found && data.tier !== 'free') {
+        setTier(data.tier);
+        setRestoreStatus('success');
+        setRestoreMessage(`✅ ${data.tier.charAt(0).toUpperCase() + data.tier.slice(1)} subscription restored!`);
+      } else {
+        setRestoreStatus('error');
+        setRestoreMessage(data.message || 'No active subscription found for this email');
+      }
+    } catch {
+      setRestoreStatus('error');
+      setRestoreMessage('Failed to check subscription. Please try again.');
+    }
+  };
+
+  const handleUpgradeToPremium = async () => {
+    if (!upgradeEmail || !upgradeEmail.includes('@')) {
+      setUpgradeStatus('error');
+      setUpgradeMessage('Please enter the email you used to purchase Pro');
+      return;
+    }
+
+    setUpgradeStatus('loading');
+    setUpgradeMessage('');
+
+    try {
+      // Premium Monthly price ID
+      const premiumMonthlyPriceId = 'price_1Siczj8WMeXEKMhb1AEnTWNt';
+      
+      const response = await fetch('/api/upgrade', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ 
+          email: upgradeEmail,
+          newPriceId: premiumMonthlyPriceId,
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.success) {
+        setTier('premium');
+        setUpgradeStatus('success');
+        setUpgradeMessage(`✅ Upgraded to Premium! Prorated charge: $${data.prorationAmount.toFixed(2)}`);
+      } else {
+        setUpgradeStatus('error');
+        setUpgradeMessage(data.error || 'Upgrade failed. Please try again.');
+      }
+    } catch {
+      setUpgradeStatus('error');
+      setUpgradeMessage('Failed to process upgrade. Please try again.');
+    }
+  };
   
   const themes: { id: Theme; label: string; icon: ReactNode }[] = [
     {
@@ -611,6 +693,105 @@ export function SettingsTab() {
         </div>
       </Card>
 
+      {/* Cloud Sync & Account */}
+      <Card title="Cloud Sync" subtitle="Sync your data across all devices">
+        <div className="space-y-6">
+          {/* Account Status */}
+          <div className="flex items-center justify-between p-4 bg-gray-100 dark:bg-slate-700/50 rounded-lg">
+            <div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
+              {authLoading ? (
+                <p className="text-lg font-medium text-gray-600 dark:text-gray-300">Loading...</p>
+              ) : user ? (
+                <div>
+                  <p className="text-lg font-medium text-emerald-600 dark:text-emerald-400">Signed In</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{user.email}</p>
+                </div>
+              ) : (
+                <p className="text-lg font-medium text-amber-600 dark:text-amber-400">Not Signed In</p>
+              )}
+            </div>
+            {user ? (
+              <Button
+                variant="outline"
+                onClick={() => signOut()}
+                className="border-red-500/50 text-red-500 hover:bg-red-500/10"
+              >
+                Sign Out
+              </Button>
+            ) : (
+              <Link href="/login">
+                <Button variant="primary">
+                  Sign In / Sign Up
+                </Button>
+              </Link>
+            )}
+          </div>
+
+          {/* Cloud Sync Status */}
+          {user && (
+            <div className="space-y-4">
+              <div className="flex items-center justify-between p-4 bg-gray-100 dark:bg-slate-700/50 rounded-lg">
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">Sync Status</p>
+                  <p className={`text-lg font-medium ${
+                    state.cloudSyncStatus === 'synced' ? 'text-emerald-600 dark:text-emerald-400' :
+                    state.cloudSyncStatus === 'syncing' ? 'text-blue-600 dark:text-blue-400' :
+                    state.cloudSyncStatus === 'error' ? 'text-red-600 dark:text-red-400' :
+                    'text-gray-600 dark:text-gray-300'
+                  }`}>
+                    {state.cloudSyncStatus === 'synced' ? '✓ Synced' :
+                     state.cloudSyncStatus === 'syncing' ? '⟳ Syncing...' :
+                     state.cloudSyncStatus === 'error' ? '✕ Sync Error' :
+                     'Not synced'}
+                  </p>
+                  {state.lastCloudSync && (
+                    <p className="text-xs text-gray-400">
+                      Last sync: {state.lastCloudSync.toLocaleString()}
+                    </p>
+                  )}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => loadFromCloudStorage()}
+                    disabled={state.cloudSyncStatus === 'syncing'}
+                    className="text-sm"
+                  >
+                    ↓ Pull from Cloud
+                  </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => syncToCloud()}
+                    disabled={state.cloudSyncStatus === 'syncing'}
+                    className="text-sm"
+                  >
+                    ↑ Push to Cloud
+                  </Button>
+                </div>
+              </div>
+
+              <div className="p-4 bg-emerald-500/10 border border-emerald-500/20 rounded-lg">
+                <p className="text-sm text-emerald-700 dark:text-emerald-300">
+                  <strong>Cloud Sync Benefits:</strong> Your data automatically syncs to the cloud when you're signed in.
+                  Access your retirement plan from any device - web, phone, or tablet!
+                </p>
+              </div>
+            </div>
+          )}
+
+          {/* Sign In Prompt for non-logged-in users */}
+          {!user && !authLoading && (
+            <div className="p-4 bg-amber-500/10 border border-amber-500/20 rounded-lg">
+              <p className="text-sm text-amber-700 dark:text-amber-300">
+                <strong>Want to access your data on multiple devices?</strong> Sign in to enable cloud sync.
+                Your data will automatically sync between your phone, tablet, and computer.
+              </p>
+            </div>
+          )}
+        </div>
+      </Card>
+
       {/* Subscription Management */}
       <Card title="Subscription" subtitle="Manage your RetirePro subscription">
         <div className="space-y-6">
@@ -627,55 +808,14 @@ export function SettingsTab() {
             </div>
           </div>
 
-          {/* Plan Selector */}
-          <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
-              Change Plan
-            </label>
-            <div className="grid grid-cols-3 gap-4">
-              {(['free', 'pro', 'premium'] as SubscriptionTier[]).map((planTier) => (
-                <button
-                  key={planTier}
-                  onClick={() => setTier(planTier)}
-                  className={`
-                    flex flex-col items-center gap-2 p-4 rounded-xl border-2 transition-all
-                    ${tier === planTier
-                      ? 'border-emerald-500 bg-emerald-100 dark:bg-emerald-900/30'
-                      : 'border-gray-300 dark:border-slate-600 hover:border-gray-400 dark:hover:border-slate-500 bg-gray-50 dark:bg-transparent'
-                    }
-                  `}
-                >
-                  <span className="text-2xl">
-                    {planTier === 'free' ? '🆓' : planTier === 'pro' ? '⭐' : '💎'}
-                  </span>
-                  <span className={`
-                    text-sm font-medium
-                    ${tier === planTier
-                      ? 'text-emerald-600 dark:text-emerald-300'
-                      : 'text-gray-600 dark:text-slate-300'
-                    }
-                  `}>
-                    {TIER_INFO[planTier].name}
-                  </span>
-                  <span className="text-xs text-gray-500 dark:text-slate-400">
-                    {TIER_INFO[planTier].price}
-                  </span>
-                </button>
-              ))}
-            </div>
-            <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
-              * For testing purposes. In production, this will sync with Stripe.
-            </p>
-          </div>
-
-          {/* Feature List */}
-          {tier !== 'premium' && (
+          {/* Feature List - For Free users */}
+          {tier === 'free' && (
             <div className="p-4 bg-gradient-to-r from-emerald-500/10 to-purple-500/10 border border-emerald-500/20 rounded-lg">
               <h4 className="font-medium text-gray-900 dark:text-white mb-3">
-                Upgrade to {tier === 'free' ? 'Pro' : 'Premium'} for:
+                Upgrade to Pro for:
               </h4>
               <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300">
-                {(tier === 'free' ? PRO_FEATURES : PREMIUM_FEATURES).slice(0, 4).map((feature, i) => (
+                {PRO_FEATURES.slice(0, 4).map((feature, i) => (
                   <li key={i} className="flex items-center gap-2">
                     <span className="text-emerald-400">✓</span>
                     {feature}
@@ -690,6 +830,78 @@ export function SettingsTab() {
               </Link>
             </div>
           )}
+
+          {/* Upgrade to Premium - For Pro users only */}
+          {tier === 'pro' && (
+            <div className="p-4 bg-gradient-to-r from-purple-500/10 to-pink-500/10 border border-purple-500/20 rounded-lg">
+              <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+                🚀 Upgrade to Premium
+              </h4>
+              <ul className="space-y-2 text-sm text-gray-600 dark:text-gray-300 mb-4">
+                {PREMIUM_FEATURES.slice(0, 4).map((feature, i) => (
+                  <li key={i} className="flex items-center gap-2">
+                    <span className="text-purple-400">✓</span>
+                    {feature}
+                  </li>
+                ))}
+              </ul>
+              <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
+                You&apos;ll only pay the prorated difference for the remaining time on your current plan.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={upgradeEmail}
+                  onChange={(e) => setUpgradeEmail(e.target.value)}
+                  placeholder="Email used for Pro purchase"
+                  className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400"
+                />
+                <button
+                  onClick={handleUpgradeToPremium}
+                  disabled={upgradeStatus === 'loading'}
+                  className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-purple-800 text-white rounded-lg text-sm font-medium transition-colors"
+                >
+                  {upgradeStatus === 'loading' ? 'Processing...' : 'Upgrade Now'}
+                </button>
+              </div>
+              {upgradeMessage && (
+                <p className={`text-sm mt-2 ${upgradeStatus === 'success' ? 'text-purple-400' : 'text-red-400'}`}>
+                  {upgradeMessage}
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Restore Purchase */}
+          <div className="p-4 bg-gray-100 dark:bg-slate-700/50 rounded-lg">
+            <h4 className="font-medium text-gray-900 dark:text-white mb-3">
+              Restore Purchase
+            </h4>
+            <p className="text-sm text-gray-500 dark:text-gray-400 mb-4">
+              Already purchased? Enter the email you used to restore your subscription on this device.
+            </p>
+            <div className="flex gap-2">
+              <input
+                type="email"
+                value={restoreEmail}
+                onChange={(e) => setRestoreEmail(e.target.value)}
+                placeholder="Enter your email"
+                className="flex-1 px-3 py-2 bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-600 rounded-lg text-sm text-gray-900 dark:text-white placeholder-gray-400"
+              />
+              <button
+                onClick={handleRestorePurchase}
+                disabled={restoreStatus === 'loading'}
+                className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 disabled:bg-emerald-800 text-white rounded-lg text-sm font-medium transition-colors"
+              >
+                {restoreStatus === 'loading' ? 'Checking...' : 'Restore'}
+              </button>
+            </div>
+            {restoreMessage && (
+              <p className={`text-sm mt-2 ${restoreStatus === 'success' ? 'text-emerald-400' : 'text-red-400'}`}>
+                {restoreMessage}
+              </p>
+            )}
+          </div>
         </div>
       </Card>
       

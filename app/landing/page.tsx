@@ -5,15 +5,15 @@ import Image from 'next/image';
 import { useState } from 'react';
 import { CookieConsent } from '@/components/CookieConsent';
 
-// Stripe Price IDs from environment variables
+// Stripe Price IDs - Live Mode
 const PRICE_IDS = {
   pro: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_MONTHLY || '',
-    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PRO_YEARLY || '',
+    monthly: 'price_1ShAIv8WMeXEKMhbq7JZAvCJ',
+    yearly: 'price_1SiczK8WMeXEKMhbr7KcYJDZ',
   },
   premium: {
-    monthly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_MONTHLY || '',
-    yearly: process.env.NEXT_PUBLIC_STRIPE_PRICE_PREMIUM_YEARLY || '',
+    monthly: 'price_1Siczj8WMeXEKMhb1AEnTWNt',
+    yearly: 'price_1Siczr8WMeXEKMhb8pkuN1KH',
   },
 };
 

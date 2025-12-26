@@ -1,10 +1,40 @@
 'use client';
 import { Card } from '@/components/ui';
-import { CurrencyInput, PercentInput, NumberInput } from '@/components/ui';
+import { CurrencyInput, PercentSelect, NumberInput } from '@/components/ui';
 import { Select, Checkbox } from '@/components/ui';
 import { Button } from '@/components/ui';
 import { useApp } from '@/lib/store';
 import { US_STATES, IncomeSource, DEFAULT_INHERITED_IRA, DEFAULT_DIVIDEND_PORTFOLIO, DEFAULT_CRYPTO_HOLDINGS } from '@/lib/types';
+
+// Helper to generate age options for dropdowns
+const generateAgeOptions = (min: number, max: number) => 
+  Array.from({ length: max - min + 1 }, (_, i) => {
+    const age = min + i;
+    return { value: age.toString(), label: age.toString() };
+  });
+
+// Common age ranges
+const AGE_OPTIONS = generateAgeOptions(18, 100);
+const RETIREMENT_AGE_OPTIONS = generateAgeOptions(50, 100);
+const LIFE_EXPECTANCY_OPTIONS = generateAgeOptions(70, 120);
+const SS_CLAIMING_OPTIONS = [
+  { value: '62', label: '62 - Early' },
+  { value: '63', label: '63' },
+  { value: '64', label: '64' },
+  { value: '65', label: '65' },
+  { value: '66', label: '66' },
+  { value: '67', label: '67 - FRA' },
+  { value: '68', label: '68' },
+  { value: '69', label: '69' },
+  { value: '70', label: '70 - Max' },
+];
+const MEDICARE_AGE_OPTIONS = generateAgeOptions(65, 100);
+const RMD_AGE_OPTIONS = [
+  { value: '72', label: '72' },
+  { value: '73', label: '73 (Born 1951-1959)' },
+  { value: '74', label: '74' },
+  { value: '75', label: '75 (Born 1960+)' },
+];
 
 export function DataTab() {
   const { state, updateRetirementData, runCalculations } = useApp();
@@ -92,29 +122,23 @@ export function DataTab() {
       {/* Personal Information */}
       <Card title="Personal Information" subtitle="Enter your basic information and retirement timeline">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-6">
-          <NumberInput
+          <Select
             label="Current Age"
-            value={data.currentAge}
-            onChange={(v) => updateRetirementData({ currentAge: v })}
-            min={18}
-            max={100}
-            suffix="years"
+            value={data.currentAge.toString()}
+            onChange={(v) => updateRetirementData({ currentAge: parseInt(v) })}
+            options={AGE_OPTIONS}
           />
-          <NumberInput
+          <Select
             label="Retirement Age"
-            value={data.retirementAge}
-            onChange={(v) => updateRetirementData({ retirementAge: v })}
-            min={data.currentAge + 1}
-            max={100}
-            suffix="years"
+            value={data.retirementAge.toString()}
+            onChange={(v) => updateRetirementData({ retirementAge: parseInt(v) })}
+            options={RETIREMENT_AGE_OPTIONS}
           />
-          <NumberInput
+          <Select
             label="Life Expectancy"
-            value={data.lifeExpectancy}
-            onChange={(v) => updateRetirementData({ lifeExpectancy: v })}
-            min={data.retirementAge + 1}
-            max={120}
-            suffix="years"
+            value={data.lifeExpectancy.toString()}
+            onChange={(v) => updateRetirementData({ lifeExpectancy: parseInt(v) })}
+            options={LIFE_EXPECTANCY_OPTIONS}
           />
           <Select
             label="Filing Status"
@@ -148,41 +172,34 @@ export function DataTab() {
           subtitle="Enter your spouse's retirement details"
         >
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            <NumberInput
+            <Select
               label="Spouse Current Age"
-              value={data.spouseCurrentAge}
-              onChange={(v) => updateRetirementData({ spouseCurrentAge: v })}
-              min={18}
-              max={100}
-              suffix="years"
+              value={data.spouseCurrentAge.toString()}
+              onChange={(v) => updateRetirementData({ spouseCurrentAge: parseInt(v) })}
+              options={AGE_OPTIONS}
             />
-            <NumberInput
+            <Select
               label="Spouse Retirement Age"
-              value={data.spouseRetirementAge}
-              onChange={(v) => updateRetirementData({ spouseRetirementAge: v })}
-              min={data.spouseCurrentAge + 1}
-              max={100}
-              suffix="years"
+              value={data.spouseRetirementAge.toString()}
+              onChange={(v) => updateRetirementData({ spouseRetirementAge: parseInt(v) })}
+              options={RETIREMENT_AGE_OPTIONS}
             />
-            <NumberInput
+            <Select
               label="Spouse Life Expectancy"
-              value={data.spouseLifeExpectancy}
-              onChange={(v) => updateRetirementData({ spouseLifeExpectancy: v })}
-              min={data.spouseRetirementAge + 1}
-              max={120}
-              suffix="years"
+              value={data.spouseLifeExpectancy.toString()}
+              onChange={(v) => updateRetirementData({ spouseLifeExpectancy: parseInt(v) })}
+              options={LIFE_EXPECTANCY_OPTIONS}
             />
             <CurrencyInput
               label="Spouse Social Security (Annual)"
               value={data.spouseSocialSecurityBenefit}
               onChange={(v) => updateRetirementData({ spouseSocialSecurityBenefit: v })}
             />
-            <NumberInput
+            <Select
               label="Spouse SS Start Age"
-              value={data.spouseSocialSecurityStartAge}
-              onChange={(v) => updateRetirementData({ spouseSocialSecurityStartAge: v })}
-              min={62}
-              max={70}
+              value={data.spouseSocialSecurityStartAge.toString()}
+              onChange={(v) => updateRetirementData({ spouseSocialSecurityStartAge: parseInt(v) })}
+              options={SS_CLAIMING_OPTIONS}
             />
           </div>
         </Card>
@@ -273,20 +290,22 @@ export function DataTab() {
                 })}
                 hint="Expected annual dividend payments"
               />
-              <PercentInput
+              <PercentSelect
                 label="Dividend Yield"
                 value={data.dividendPortfolio.yieldOnCost}
                 onChange={(v) => updateRetirementData({ 
                   dividendPortfolio: { ...data.dividendPortfolio, yieldOnCost: v }
                 })}
+                min={0} max={15} step={0.5}
                 hint="Current yield on cost"
               />
-              <PercentInput
+              <PercentSelect
                 label="Dividend Growth Rate"
                 value={data.dividendPortfolio.dividendGrowthRate}
                 onChange={(v) => updateRetirementData({ 
                   dividendPortfolio: { ...data.dividendPortfolio, dividendGrowthRate: v }
                 })}
+                min={0} max={15} step={0.5}
                 hint="Expected annual dividend increase"
               />
               <Checkbox
@@ -340,38 +359,39 @@ export function DataTab() {
                 })}
                 hint="Total crypto portfolio value"
               />
-              <PercentInput
+              <PercentSelect
                 label="Expected Annual Growth"
                 value={data.cryptoHoldings.expectedGrowthRate}
                 onChange={(v) => updateRetirementData({ 
                   cryptoHoldings: { ...data.cryptoHoldings, expectedGrowthRate: v }
                 })}
+                min={-10} max={30} step={1}
                 hint="Long-term expected return"
               />
-              <PercentInput
+              <PercentSelect
                 label="Volatility (Std Dev)"
                 value={data.cryptoHoldings.volatility}
                 onChange={(v) => updateRetirementData({ 
                   cryptoHoldings: { ...data.cryptoHoldings, volatility: v }
                 })}
+                min={10} max={100} step={5}
                 hint="For Monte Carlo simulations"
               />
-              <NumberInput
+              <Select
                 label="Withdrawal Start Age"
-                value={data.cryptoHoldings.withdrawalStartAge}
+                value={data.cryptoHoldings.withdrawalStartAge.toString()}
                 onChange={(v) => updateRetirementData({ 
-                  cryptoHoldings: { ...data.cryptoHoldings, withdrawalStartAge: v }
+                  cryptoHoldings: { ...data.cryptoHoldings, withdrawalStartAge: parseInt(v) }
                 })}
-                min={data.currentAge}
-                max={100}
-                suffix="years"
+                options={RETIREMENT_AGE_OPTIONS}
               />
-              <PercentInput
+              <PercentSelect
                 label="Annual Withdrawal Rate"
                 value={data.cryptoHoldings.withdrawalPercent}
                 onChange={(v) => updateRetirementData({ 
                   cryptoHoldings: { ...data.cryptoHoldings, withdrawalPercent: v }
                 })}
+                min={0} max={20} step={1}
                 hint="% of crypto to withdraw annually"
               />
               <Checkbox
@@ -419,31 +439,36 @@ export function DataTab() {
                   inheritedIRA: { ...data.inheritedIRA, balance: v }
                 })}
               />
-              <PercentInput
+              <PercentSelect
                 label="Expected Growth Rate"
                 value={data.inheritedIRA.expectedGrowthRate ?? 0.05}
                 onChange={(v) => updateRetirementData({ 
                   inheritedIRA: { ...data.inheritedIRA, expectedGrowthRate: v }
                 })}
+                min={0} max={15} step={0.5}
                 hint="Annual return while holding"
               />
-              <NumberInput
+              <Select
                 label="Year Inherited"
-                value={data.inheritedIRA.inheritedYear}
+                value={data.inheritedIRA.inheritedYear.toString()}
                 onChange={(v) => updateRetirementData({ 
-                  inheritedIRA: { ...data.inheritedIRA, inheritedYear: v }
+                  inheritedIRA: { ...data.inheritedIRA, inheritedYear: parseInt(v) }
                 })}
-                min={1990}
-                max={new Date().getFullYear()}
+                options={Array.from({ length: 36 }, (_, i) => {
+                  const year = 1990 + i;
+                  return { value: year.toString(), label: year.toString() };
+                })}
               />
-              <NumberInput
+              <Select
                 label="Original Owner Birth Year"
-                value={data.inheritedIRA.originalOwnerBirthYear}
+                value={data.inheritedIRA.originalOwnerBirthYear.toString()}
                 onChange={(v) => updateRetirementData({ 
-                  inheritedIRA: { ...data.inheritedIRA, originalOwnerBirthYear: v }
+                  inheritedIRA: { ...data.inheritedIRA, originalOwnerBirthYear: parseInt(v) }
                 })}
-                min={1900}
-                max={new Date().getFullYear()}
+                options={Array.from({ length: 101 }, (_, i) => {
+                  const year = 1920 + i;
+                  return { value: year.toString(), label: year.toString() };
+                })}
               />
               <Select
                 label="Beneficiary Type"
@@ -543,10 +568,11 @@ export function DataTab() {
             onChange={(v) => updateRetirementData({ employerMatch: v })}
             hint="Annual employer matching contribution"
           />
-          <PercentInput
+          <PercentSelect
             label="Contribution Growth Rate"
             value={data.contributionGrowthRate}
             onChange={(v) => updateRetirementData({ contributionGrowthRate: v })}
+            min={0} max={10} step={0.5}
             hint="Annual increase in contributions"
           />
           <Checkbox
@@ -560,27 +586,31 @@ export function DataTab() {
       {/* Investment Returns */}
       <Card title="📊 Investment Returns" subtitle="Expected returns and inflation assumptions">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <PercentInput
+          <PercentSelect
             label="Pre-Retirement Return"
             value={data.preRetirementReturn}
             onChange={(v) => updateRetirementData({ preRetirementReturn: v })}
+            min={0} max={15} step={0.5}
             hint="Expected annual return before retirement"
           />
-          <PercentInput
+          <PercentSelect
             label="Post-Retirement Return"
             value={data.postRetirementReturn}
             onChange={(v) => updateRetirementData({ postRetirementReturn: v })}
+            min={0} max={15} step={0.5}
             hint="Expected annual return after retirement"
           />
-          <PercentInput
+          <PercentSelect
             label="Inflation Rate"
             value={data.inflationRate}
             onChange={(v) => updateRetirementData({ inflationRate: v })}
+            min={0} max={10} step={0.5}
           />
-          <PercentInput
+          <PercentSelect
             label="Standard Deviation"
             value={data.standardDeviation}
             onChange={(v) => updateRetirementData({ standardDeviation: v })}
+            min={5} max={30} step={1}
             hint="Volatility for Monte Carlo simulation"
           />
         </div>
@@ -595,16 +625,18 @@ export function DataTab() {
             onChange={(v) => updateRetirementData({ retirementExpenses: v })}
             hint="Expected annual spending in retirement"
           />
-          <PercentInput
+          <PercentSelect
             label="Expense Growth Rate"
             value={data.expenseGrowthRate}
             onChange={(v) => updateRetirementData({ expenseGrowthRate: v })}
+            min={0} max={10} step={0.5}
             hint="Annual increase in expenses"
           />
-          <PercentInput
+          <PercentSelect
             label="Safe Withdrawal Rate"
             value={data.safeWithdrawalRate}
             onChange={(v) => updateRetirementData({ safeWithdrawalRate: v })}
+            min={2} max={8} step={0.5}
             hint="Typically 3-4% of portfolio"
           />
           <CurrencyInput
@@ -628,19 +660,18 @@ export function DataTab() {
             onChange={(v) => updateRetirementData({ annualHealthcareCost: v })}
             hint="Insurance premiums + out-of-pocket"
           />
-          <PercentInput
+          <PercentSelect
             label="Healthcare Inflation Rate"
             value={data.healthcareInflationRate}
             onChange={(v) => updateRetirementData({ healthcareInflationRate: v })}
+            min={3} max={12} step={0.5}
             hint="Typically 5-7% per year"
           />
-          <NumberInput
+          <Select
             label="Medicare Start Age"
-            value={data.medicareStartAge}
-            onChange={(v) => updateRetirementData({ medicareStartAge: v })}
-            min={65}
-            max={100}
-            suffix="years"
+            value={data.medicareStartAge.toString()}
+            onChange={(v) => updateRetirementData({ medicareStartAge: parseInt(v) })}
+            options={MEDICARE_AGE_OPTIONS}
           />
           <CurrencyInput
             label="Medicare Part B Premium (Monthly)"
@@ -665,12 +696,11 @@ export function DataTab() {
             value={data.socialSecurityBenefit}
             onChange={(v) => updateRetirementData({ socialSecurityBenefit: v })}
           />
-          <NumberInput
+          <Select
             label="Your SS Start Age"
-            value={data.socialSecurityStartAge}
-            onChange={(v) => updateRetirementData({ socialSecurityStartAge: v })}
-            min={62}
-            max={70}
+            value={data.socialSecurityStartAge.toString()}
+            onChange={(v) => updateRetirementData({ socialSecurityStartAge: parseInt(v) })}
+            options={SS_CLAIMING_OPTIONS}
           />
           <Checkbox
             label="Include Social Security in Projections"
@@ -703,24 +733,25 @@ export function DataTab() {
                 value={data.pensionIncome}
                 onChange={(v) => updateRetirementData({ pensionIncome: v })}
               />
-              <NumberInput
+              <Select
                 label="Pension Start Age"
-                value={data.pensionStartAge}
-                onChange={(v) => updateRetirementData({ pensionStartAge: v })}
-                min={data.currentAge}
-                max={100}
+                value={data.pensionStartAge.toString()}
+                onChange={(v) => updateRetirementData({ pensionStartAge: parseInt(v) })}
+                options={RETIREMENT_AGE_OPTIONS}
               />
-              <PercentInput
+              <PercentSelect
                 label="Cost of Living Adjustment (COLA)"
                 value={data.pensionCOLA}
                 onChange={(v) => updateRetirementData({ pensionCOLA: v })}
+                min={0} max={5} step={0.5}
                 hint="Annual pension increase %"
               />
               {data.filingStatus === 'married' && (
-                <PercentInput
+                <PercentSelect
                   label="Survivor Benefit"
                   value={data.pensionSurvivorBenefit}
                   onChange={(v) => updateRetirementData({ pensionSurvivorBenefit: v })}
+                  min={0} max={100} step={5}
                   hint="% of pension for surviving spouse"
                 />
               )}
@@ -776,19 +807,17 @@ export function DataTab() {
                   value={source.amount}
                   onChange={(v) => updateIncomeSource(source.id, { amount: v })}
                 />
-                <NumberInput
+                <Select
                   label="Start Age"
-                  value={source.startAge}
-                  onChange={(v) => updateIncomeSource(source.id, { startAge: v })}
-                  min={data.currentAge}
-                  max={120}
+                  value={source.startAge.toString()}
+                  onChange={(v) => updateIncomeSource(source.id, { startAge: parseInt(v) })}
+                  options={generateAgeOptions(18, 100)}
                 />
-                <NumberInput
+                <Select
                   label="End Age"
-                  value={source.endAge}
-                  onChange={(v) => updateIncomeSource(source.id, { endAge: v })}
-                  min={source.startAge}
-                  max={120}
+                  value={source.endAge.toString()}
+                  onChange={(v) => updateIncomeSource(source.id, { endAge: parseInt(v) })}
+                  options={generateAgeOptions(18, 120)}
                 />
                 <Checkbox
                   label="Adjust for Inflation"
@@ -850,13 +879,11 @@ export function DataTab() {
               checked={data.includeRMD}
               onChange={(v) => updateRetirementData({ includeRMD: v })}
             />
-            <NumberInput
+            <Select
               label="RMD Start Age"
-              value={data.rmdStartAge}
-              onChange={(v) => updateRetirementData({ rmdStartAge: v })}
-              min={72}
-              max={75}
-              hint="73 (born 1951-1959) or 75 (born 1960+)"
+              value={data.rmdStartAge.toString()}
+              onChange={(v) => updateRetirementData({ rmdStartAge: parseInt(v) })}
+              options={RMD_AGE_OPTIONS}
             />
           </div>
         </div>
@@ -882,19 +909,17 @@ export function DataTab() {
                 onChange={(v) => updateRetirementData({ rothConversionAmount: v })}
                 hint="Amount to convert from Traditional to Roth each year"
               />
-              <NumberInput
+              <Select
                 label="Conversion Start Age"
-                value={data.rothConversionStartAge}
-                onChange={(v) => updateRetirementData({ rothConversionStartAge: v })}
-                min={data.currentAge}
-                max={data.rmdStartAge}
+                value={data.rothConversionStartAge.toString()}
+                onChange={(v) => updateRetirementData({ rothConversionStartAge: parseInt(v) })}
+                options={RETIREMENT_AGE_OPTIONS}
               />
-              <NumberInput
+              <Select
                 label="Conversion End Age"
-                value={data.rothConversionEndAge}
-                onChange={(v) => updateRetirementData({ rothConversionEndAge: v })}
-                min={data.rothConversionStartAge}
-                max={data.rmdStartAge}
+                value={data.rothConversionEndAge.toString()}
+                onChange={(v) => updateRetirementData({ rothConversionEndAge: parseInt(v) })}
+                options={RETIREMENT_AGE_OPTIONS}
               />
             </div>
           )}
@@ -927,21 +952,17 @@ export function DataTab() {
                   onChange={(v) => updateRetirementData({ earlyWithdrawalAmount: v })}
                   hint="Extra amount to pull from 401k/IRA each year"
                 />
-                <NumberInput
+                <Select
                   label="Start Age"
-                  value={data.earlyWithdrawalStartAge}
-                  onChange={(v) => updateRetirementData({ earlyWithdrawalStartAge: v })}
-                  min={data.retirementAge}
-                  max={data.rmdStartAge - 1}
-                  hint="When to start extra withdrawals"
+                  value={data.earlyWithdrawalStartAge.toString()}
+                  onChange={(v) => updateRetirementData({ earlyWithdrawalStartAge: parseInt(v) })}
+                  options={RETIREMENT_AGE_OPTIONS}
                 />
-                <NumberInput
+                <Select
                   label="End Age"
-                  value={data.earlyWithdrawalEndAge}
-                  onChange={(v) => updateRetirementData({ earlyWithdrawalEndAge: v })}
-                  min={data.earlyWithdrawalStartAge}
-                  max={data.rmdStartAge - 1}
-                  hint="When to stop (before RMDs)"
+                  value={data.earlyWithdrawalEndAge.toString()}
+                  onChange={(v) => updateRetirementData({ earlyWithdrawalEndAge: parseInt(v) })}
+                  options={RETIREMENT_AGE_OPTIONS}
                 />
               </div>
               
@@ -978,19 +999,25 @@ export function DataTab() {
       {/* Simulation Settings */}
       <Card title="🎲 Monte Carlo Settings" subtitle="Parameters for retirement simulations">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-          <NumberInput
+          <Select
             label="Number of Simulations"
-            value={data.monteCarloRuns}
-            onChange={(v) => updateRetirementData({ monteCarloRuns: v })}
-            min={100}
-            max={10000}
-            step={100}
+            value={data.monteCarloRuns.toString()}
+            onChange={(v) => updateRetirementData({ monteCarloRuns: parseInt(v) })}
+            options={[
+              { value: '100', label: '100 (Fast)' },
+              { value: '500', label: '500' },
+              { value: '1000', label: '1,000 (Recommended)' },
+              { value: '2500', label: '2,500' },
+              { value: '5000', label: '5,000 (Accurate)' },
+              { value: '10000', label: '10,000 (Slow)' },
+            ]}
           />
-          <PercentInput
+          <PercentSelect
             label="Success Probability Target"
             value={data.successProbability / 100}
             onChange={(v) => updateRetirementData({ successProbability: v * 100 })}
             asDecimal={false}
+            min={70} max={99} step={1}
           />
           <Checkbox
             label="Inflation-Adjusted Returns"
