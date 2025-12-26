@@ -48,6 +48,14 @@ export function HelpTab() {
       question: 'Can I downgrade from Premium to Pro?',
       answer: 'To downgrade, you\'ll need to cancel your current Premium subscription (it stays active until the billing period ends), then subscribe to Pro at the lower rate. Contact support if you need help.',
     },
+    {
+      question: 'How does Cloud Sync work?',
+      answer: 'Cloud Sync lets you access your retirement data from any device. Create an account at the Login page, and your data will automatically sync between your desktop, laptop, phone, and tablet. All data is securely stored and encrypted.',
+    },
+    {
+      question: 'How do I sync my data across devices?',
+      answer: 'First, create an account by clicking Login in the top menu. After signing up and verifying your email, sign in on each device you want to sync. Your retirement data will automatically stay in sync across all devices.',
+    },
   ];
   
   const keyTerms = [
@@ -188,6 +196,18 @@ export function HelpTab() {
               <h4 className="font-medium text-amber-200">Optimize Social Security</h4>
               <p className="text-sm text-amber-300">
                 Delaying Social Security to 70 can increase lifetime benefits significantly.
+              </p>
+            </div>
+          </div>
+          
+          <div className="flex gap-3 p-4 border border-cyan-800 bg-cyan-900/30 rounded-lg">
+            <svg className="w-6 h-6 text-cyan-500 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 15a4 4 0 004 4h9a5 5 0 10-.1-9.999 5.002 5.002 0 10-9.78 2.096A4.001 4.001 0 003 15z" />
+            </svg>
+            <div>
+              <h4 className="font-medium text-cyan-200">Enable Cloud Sync</h4>
+              <p className="text-sm text-cyan-300">
+                Create an account to sync your data across all your devices - desktop, laptop, phone, and tablet.
               </p>
             </div>
           </div>
