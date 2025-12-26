@@ -57,9 +57,9 @@
   ],
   "screenshots": [
     {
-      "src": "/hero-image.png",
+      "src": "/hero-image.webp",
       "sizes": "1200x675",
-      "type": "image/png",
+      "type": "image/webp",
       "label": "RetirePro Dashboard"
     }
   ],

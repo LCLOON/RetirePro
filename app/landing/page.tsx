@@ -207,15 +207,15 @@ export default function LandingPage() {
             <span className="text-emerald-400 text-sm font-medium">🚀 Now with AI-Powered Insights</span>
           </div>
           <h1 className="text-5xl md:text-7xl font-bold mb-6">
-            Plan Your
+            Free Retirement
             <br />
             <span className="text-transparent bg-clip-text bg-gradient-to-r from-emerald-400 to-teal-400">
-              Dream Retirement
+              Planning Calculator
             </span>
           </h1>
           <p className="text-xl text-slate-400 max-w-2xl mx-auto mb-8">
             Calculate, analyze, and forecast your retirement income. Make smarter financial 
-            decisions with AI-powered insights and professional analytics.
+            decisions with AI-powered insights and Monte Carlo simulations.
           </p>
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4 mb-6">
             <Link 
