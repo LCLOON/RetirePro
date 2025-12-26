@@ -1,15 +1,17 @@
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
+// Supabase configuration - these are public values (anon key is safe to expose)
+const SUPABASE_URL = 'https://litbmjdtaofepkgquqgp.supabase.co';
+const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImxpdGJtamR0YW9mZXBrZ3F1cWdwIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjY3ODM2MTcsImV4cCI6MjA4MjM1OTYxN30.ZJiF_I5vzQOJu6x_GiAPFsokVtXtwOL7RDRB40LTF_A';
 
-// Client-side Supabase client - only create if env vars are present
-export const supabase: SupabaseClient = supabaseUrl && supabaseAnonKey
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : createClient('https://placeholder.supabase.co', 'placeholder-key');
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || SUPABASE_URL;
+const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || SUPABASE_ANON_KEY;
 
-// Check if Supabase is properly configured
-export const isSupabaseConfigured = Boolean(supabaseUrl && supabaseAnonKey);
+// Client-side Supabase client
+export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
+
+// Supabase is always configured now with hardcoded fallback
+export const isSupabaseConfigured = true;
 
 // Type for user profile data stored in Supabase
 export interface UserProfile {
