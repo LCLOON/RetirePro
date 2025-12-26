@@ -257,12 +257,12 @@ export default function LandingPage() {
             </div>
           </div>
           
-          {/* Hero Image - Optimized with responsive sizes and blur placeholder */}
+          {/* Hero Image - Optimized WebP with responsive sizes and blur placeholder */}
           <div className="mt-16 relative">
             <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent z-10 pointer-events-none" />
             <div className="relative rounded-xl overflow-hidden border border-slate-800 shadow-2xl shadow-emerald-500/10">
               <Image
-                src="/hero-image.png"
+                src="/hero-image.webp"
                 alt="RetirePro Dashboard - Plan your retirement with confidence"
                 width={1200}
                 height={675}
@@ -270,7 +270,7 @@ export default function LandingPage() {
                 sizes="(max-width: 640px) 100vw, (max-width: 1024px) 90vw, (max-width: 1280px) 80vw, 1200px"
                 priority
                 placeholder="blur"
-                blurDataURL="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mN8/+F9PQAJpAN4pokyXAAAAABJRU5ErkJggg=="
+                blurDataURL="data:image/webp;base64,UklGRlYAAABXRUJQVlA4IEoAAADQAQCdASoQAAkAAkA4JZQCdAEO/hOMAAD++O3u3vz87MrFxfxD/x/5f/F/4f+j/1P/l/8L/G/7n/Wf97/uf9t/2v+5/3v/e/8D/df9SAAA"
               />
             </div>
           </div>
