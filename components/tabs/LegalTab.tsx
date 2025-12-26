@@ -76,8 +76,8 @@ function getInitialLegalData(): LegalData {
       const parsed = JSON.parse(saved);
       return { ...DEFAULT_LEGAL_DATA, ...parsed };
     }
-  } catch (e) {
-    console.error('Failed to load legal data:', e);
+  } catch {
+    // Silently ignore corrupted saved data
   }
   return DEFAULT_LEGAL_DATA;
 }
@@ -93,7 +93,6 @@ export function LegalTab() {
       const timer = setTimeout(() => {
         localStorage.setItem('retirepro-legal-data', JSON.stringify(legalData));
         setIsSaved(true);
-        console.log('Legal data auto-saved');
       }, 500);
       return () => clearTimeout(timer);
     }

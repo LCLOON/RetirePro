@@ -348,9 +348,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
           mortgageData: { ...DEFAULT_MORTGAGE, ...parsed.mortgageData },
           socialSecurityData: { ...DEFAULT_SOCIAL_SECURITY, ...parsed.socialSecurityData },
         }});
-        console.log('RetirePro: Data loaded from browser storage');
-      } catch (e) {
-        console.error('Failed to load saved data:', e);
+      } catch {
+        // Silently ignore corrupted saved data
       }
     }
   }, []);
@@ -369,7 +368,6 @@ export function AppProvider({ children }: { children: ReactNode }) {
         savedAt: new Date().toISOString(),
       };
       localStorage.setItem('retirepro-data', JSON.stringify(dataToSave));
-      console.log('RetirePro: Data auto-saved');
     }
   }, [state.retirementData, state.netWorthData, state.budgetData, state.taxSettings, state.mortgageData, state.socialSecurityData, state.hasUnsavedChanges]);
   
@@ -676,8 +674,8 @@ export function AppProvider({ children }: { children: ReactNode }) {
       try {
         const parsed = JSON.parse(saved);
         dispatch({ type: 'LOAD_DATA', payload: parsed });
-      } catch (e) {
-        console.error('Failed to load saved data:', e);
+      } catch {
+        // Silently ignore corrupted saved data
       }
     }
   }, []);
@@ -719,7 +717,7 @@ export function AppProvider({ children }: { children: ReactNode }) {
       if ((err as Error).name === 'AbortError') {
         return; // User cancelled
       }
-      console.error('Error saving file:', err);
+      // Fall back to download approach
     }
     
     const blob = new Blob([jsonString], { type: 'application/json' });

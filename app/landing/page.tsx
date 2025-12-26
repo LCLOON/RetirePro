@@ -67,11 +67,9 @@ export default function LandingPage() {
       if (data.url) {
         window.location.href = data.url;
       } else {
-        console.error('Checkout failed:', data.error);
         setCheckoutLoading(false);
       }
-    } catch (error) {
-      console.error('Checkout error:', error);
+    } catch {
       setCheckoutLoading(false);
     }
   };
@@ -108,8 +106,7 @@ export default function LandingPage() {
         setNewsletterStatus('error');
         setTimeout(() => setNewsletterStatus('idle'), 3000);
       }
-    } catch (error) {
-      console.error('Newsletter signup error:', error);
+    } catch {
       setNewsletterStatus('error');
       setTimeout(() => setNewsletterStatus('idle'), 3000);
     }

@@ -112,7 +112,7 @@ export function calculateYearsLast(
 }
 
 // IRS Uniform Lifetime Table (2024) for RMD calculations
-const RMD_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
+export const RMD_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
   72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2,
   81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4, 88: 13.7, 89: 12.9,
   90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8,
@@ -122,14 +122,14 @@ const RMD_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
 };
 
 // Calculate RMD for a given age and pre-tax balance
-function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: number): number {
+export function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: number): number {
   if (age < rmdStartAge || preTaxBalance <= 0) return 0;
   const lifeExpectancy = RMD_LIFE_EXPECTANCY_TABLE[age] || 2.0;
   return preTaxBalance / lifeExpectancy;
 }
 
 // IRS Single Life Expectancy Table for Inherited IRAs (2024)
-const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
+export const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
   0: 84.6, 1: 83.7, 2: 82.7, 3: 81.7, 4: 80.7, 5: 79.8, 6: 78.8, 7: 77.8, 8: 76.8, 9: 75.8,
   10: 74.8, 11: 73.8, 12: 72.8, 13: 71.9, 14: 70.9, 15: 69.9, 16: 68.9, 17: 67.9, 18: 66.9, 19: 66.0,
   20: 65.0, 21: 64.0, 22: 63.0, 23: 62.1, 24: 61.1, 25: 60.1, 26: 59.2, 27: 58.2, 28: 57.2, 29: 56.2,
@@ -147,7 +147,7 @@ const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
 // Calculate Inherited IRA withdrawal (10-year rule with multiple strategies)
 // Supports: spread_evenly, year_10_lump_sum, back_loaded, annual_rmd
 // IMPORTANT: If original owner died AFTER starting RMDs, annual_rmd is REQUIRED by IRS
-function calculateInheritedIRAWithdrawal(
+export function calculateInheritedIRAWithdrawal(
   inheritedBalance: number,
   currentYear: number,
   inheritedYear: number,

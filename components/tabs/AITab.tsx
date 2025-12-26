@@ -102,7 +102,6 @@ export function AITab() {
         content: responseData.response 
       }]);
     } catch (err) {
-      console.error('AI Advisor error:', err);
       setError(err instanceof Error ? err.message : 'Something went wrong');
       setMessages(prev => [...prev, { 
         role: 'assistant', 

@@ -4,6 +4,37 @@ import { rateLimit, RATE_LIMITS } from '@/lib/rate-limit';
 const XAI_API_KEY = process.env.XAI_API_KEY;
 const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
 
+// Maximum allowed message length (characters)
+const MAX_MESSAGE_LENGTH = 2000;
+
+// Sanitize user input to prevent prompt injection attacks
+function sanitizeUserMessage(message: string): string {
+  // Trim and limit length
+  let sanitized = message.trim().slice(0, MAX_MESSAGE_LENGTH);
+  
+  // Remove potential prompt injection patterns (case-insensitive)
+  const injectionPatterns = [
+    /ignore\s+(previous|all|above|prior)\s+(instructions?|prompts?)/gi,
+    /disregard\s+(previous|all|above|prior)\s+(instructions?|prompts?)/gi,
+    /forget\s+(previous|all|above|prior)\s+(instructions?|prompts?)/gi,
+    /system\s*prompt\s*:/gi,
+    /\[SYSTEM\]/gi,
+    /\[INST\]/gi,
+    /<\/?system>/gi,
+    /you\s+are\s+now\s+/gi,
+    /act\s+as\s+a?\s*different/gi,
+    /pretend\s+(you\s+are|to\s+be)/gi,
+    /new\s+instructions?\s*:/gi,
+    /override\s+(instructions?|prompt)/gi,
+  ];
+  
+  for (const pattern of injectionPatterns) {
+    sanitized = sanitized.replace(pattern, '[filtered]');
+  }
+  
+  return sanitized;
+}
+
 const SYSTEM_PROMPT = `You are RetirePro AI Advisor, an expert retirement planning assistant. You provide personalized, actionable financial guidance based on the user's specific retirement data.
 
 Your personality:
@@ -181,12 +212,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { message, context, conversationHistory = [] } = body;
 
-    if (!message) {
+    if (!message || typeof message !== 'string') {
       return NextResponse.json(
         { error: 'Message is required' },
         { status: 400 }
       );
     }
+
+    // Sanitize user input to prevent prompt injection
+    const sanitizedMessage = sanitizeUserMessage(message);
 
     // Build the context message from retirement data
     const contextMessage = context ? buildContextMessage(context) : '';
@@ -208,16 +242,16 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    // Add conversation history
+    // Add conversation history (sanitize each message)
     for (const msg of conversationHistory) {
       messages.push({
         role: msg.role,
-        content: msg.content
+        content: msg.role === 'user' ? sanitizeUserMessage(String(msg.content)) : String(msg.content)
       });
     }
 
     // Add current message
-    messages.push({ role: 'user', content: message });
+    messages.push({ role: 'user', content: sanitizedMessage });
 
     // Call xAI API
     const response = await fetch(XAI_API_URL, {

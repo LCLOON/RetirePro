@@ -4,101 +4,15 @@ import { useApp } from '@/lib/store';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { useState } from 'react';
+import { 
+  RMD_LIFE_EXPECTANCY_TABLE,
+  SINGLE_LIFE_EXPECTANCY_TABLE,
+  calculateRMD,
+  calculateInheritedIRAWithdrawal,
+} from '@/lib/calculations';
 
-// IRS Uniform Lifetime Table (2024) for RMD calculations
-const RMD_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
-  72: 27.4, 73: 26.5, 74: 25.5, 75: 24.6, 76: 23.7, 77: 22.9, 78: 22.0, 79: 21.1, 80: 20.2,
-  81: 19.4, 82: 18.5, 83: 17.7, 84: 16.8, 85: 16.0, 86: 15.2, 87: 14.4, 88: 13.7, 89: 12.9,
-  90: 12.2, 91: 11.5, 92: 10.8, 93: 10.1, 94: 9.5, 95: 8.9, 96: 8.4, 97: 7.8, 98: 7.3, 99: 6.8,
-  100: 6.4, 101: 6.0, 102: 5.6, 103: 5.2, 104: 4.9, 105: 4.6, 106: 4.3, 107: 4.1, 108: 3.9,
-  109: 3.7, 110: 3.5, 111: 3.4, 112: 3.3, 113: 3.1, 114: 3.0, 115: 2.9, 116: 2.8, 117: 2.7,
-  118: 2.5, 119: 2.3, 120: 2.0
-};
-
-// Calculate RMD for a given age and pre-tax balance
-function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: number): number {
-  if (age < rmdStartAge || preTaxBalance <= 0) return 0;
-  const lifeExpectancy = RMD_LIFE_EXPECTANCY_TABLE[age] || 2.0;
-  return preTaxBalance / lifeExpectancy;
-}
-
-// IRS Single Life Expectancy Table for Inherited IRAs (2024)
-const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
-  0: 84.6, 1: 83.7, 2: 82.7, 3: 81.7, 4: 80.7, 5: 79.8, 6: 78.8, 7: 77.8, 8: 76.8, 9: 75.8,
-  10: 74.8, 11: 73.8, 12: 72.8, 13: 71.9, 14: 70.9, 15: 69.9, 16: 68.9, 17: 67.9, 18: 66.9, 19: 66.0,
-  20: 65.0, 21: 64.0, 22: 63.0, 23: 62.1, 24: 61.1, 25: 60.1, 26: 59.2, 27: 58.2, 28: 57.2, 29: 56.2,
-  30: 55.3, 31: 54.3, 32: 53.4, 33: 52.4, 34: 51.4, 35: 50.5, 36: 49.5, 37: 48.5, 38: 47.6, 39: 46.6,
-  40: 45.7, 41: 44.7, 42: 43.7, 43: 42.8, 44: 41.8, 45: 40.9, 46: 39.9, 47: 39.0, 48: 38.0, 49: 37.1,
-  50: 36.2, 51: 35.2, 52: 34.3, 53: 33.4, 54: 32.5, 55: 31.6, 56: 30.6, 57: 29.8, 58: 28.9, 59: 28.0,
-  60: 27.1, 61: 26.2, 62: 25.4, 63: 24.5, 64: 23.7, 65: 22.9, 66: 22.0, 67: 21.2, 68: 20.4, 69: 19.6,
-  70: 18.8, 71: 18.0, 72: 17.2, 73: 16.4, 74: 15.6, 75: 14.8, 76: 14.1, 77: 13.3, 78: 12.6, 79: 11.9,
-  80: 11.2, 81: 10.5, 82: 9.9, 83: 9.3, 84: 8.6, 85: 8.1, 86: 7.5, 87: 7.0, 88: 6.5, 89: 6.0,
-  90: 5.6, 91: 5.2, 92: 4.8, 93: 4.4, 94: 4.1, 95: 3.8, 96: 3.5, 97: 3.2, 98: 3.0, 99: 2.8,
-  100: 2.5
-};
-
-// Calculate Inherited IRA RMD (10-year rule for non-spouse)
-// Supports different strategies: spread_evenly, year_10_lump_sum, back_loaded, annual_rmd
-// IMPORTANT: If original owner died AFTER starting RMDs, annual_rmd is REQUIRED by IRS
-function calculateInheritedIRAWithdrawal(
-  inheritedBalance: number,
-  currentYear: number,
-  inheritedYear: number,
-  withdrawalStrategy: 'spread_evenly' | 'year_10_lump_sum' | 'back_loaded' | 'annual_rmd' = 'annual_rmd',
-  beneficiaryAge?: number,
-  originalOwnerStartedRMD: boolean = false
-): number {
-  if (inheritedBalance <= 0) return 0;
-  
-  const yearsSinceInheritance = currentYear - inheritedYear;
-  const yearsRemaining = 10 - yearsSinceInheritance;
-  
-  // Account must be emptied by year 10
-  if (yearsRemaining <= 0) return inheritedBalance;
-  
-  // IRS RULE: If original owner died AFTER RBD, annual RMDs are REQUIRED
-  // Override user's strategy choice if they selected something invalid
-  const effectiveStrategy = originalOwnerStartedRMD ? 'annual_rmd' : withdrawalStrategy;
-  
-  switch (effectiveStrategy) {
-    case 'annual_rmd':
-      // Annual RMDs based on Single Life Expectancy Table
-      // This applies when original owner died AFTER their RBD (already taking RMDs)
-      if (beneficiaryAge !== undefined) {
-        const lifeExpectancy = SINGLE_LIFE_EXPECTANCY_TABLE[beneficiaryAge] || 10;
-        // Reduce by 1 each year after first year
-        const adjustedLifeExpectancy = Math.max(1, lifeExpectancy - yearsSinceInheritance);
-        
-        // In year 10, take whatever remains
-        if (yearsRemaining === 1) {
-          return inheritedBalance;
-        }
-        
-        return inheritedBalance / adjustedLifeExpectancy;
-      }
-      // Fall back to spread evenly if no age provided
-      return inheritedBalance / yearsRemaining;
-      
-    case 'year_10_lump_sum':
-      // Minimum RMDs: No withdrawal until year 10, then take everything
-      if (yearsRemaining === 1) {
-        return inheritedBalance;
-      }
-      return 0;
-      
-    case 'back_loaded':
-      // Years 1-7: no withdrawal, Years 8-10: spread the rest
-      if (yearsRemaining > 3) {
-        return 0;
-      }
-      return inheritedBalance / yearsRemaining;
-      
-    case 'spread_evenly':
-    default:
-      // Spread evenly over remaining years
-      return inheritedBalance / yearsRemaining;
-  }
-}
+// Re-export for backward compatibility if needed
+export { RMD_LIFE_EXPECTANCY_TABLE, SINGLE_LIFE_EXPECTANCY_TABLE, calculateRMD, calculateInheritedIRAWithdrawal };
 
 export function DetailsTab() {
   const { state } = useApp();
