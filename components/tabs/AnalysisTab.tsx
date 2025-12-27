@@ -26,6 +26,31 @@ export function AnalysisTab() {
   // Total additional income at retirement age
   const totalAdditionalIncome = getAdditionalIncomeAtAge(data.retirementAge);
 
+  // Calculate dividend income at retirement
+  const getDividendIncomeAtRetirement = () => {
+    if (!data.hasDividendPortfolio || !data.dividendPortfolio.includeInProjections) return 0;
+    const yearsToRetirement = Math.max(0, data.retirementAge - data.currentAge);
+    // Project dividend portfolio growth to retirement
+    const portfolioAtRetirement = data.dividendPortfolio.currentValue * 
+      Math.pow(1 + (data.dividendPortfolio.expectedGrowthRate || 0.07), yearsToRetirement);
+    // Annual dividend income = portfolio * yield
+    return portfolioAtRetirement * (data.dividendPortfolio.dividendYield || 0.03);
+  };
+  const dividendIncomeAtRetirement = getDividendIncomeAtRetirement();
+
+  // Calculate crypto income at retirement
+  const getCryptoIncomeAtRetirement = () => {
+    if (!data.hasCryptoHoldings || !data.cryptoHoldings.includeInProjections) return 0;
+    if (data.retirementAge < (data.cryptoHoldings.withdrawalStartAge || 65)) return 0;
+    const yearsToRetirement = Math.max(0, data.retirementAge - data.currentAge);
+    // Project crypto value to retirement
+    const cryptoAtRetirement = data.cryptoHoldings.currentValue * 
+      Math.pow(1 + (data.cryptoHoldings.expectedGrowthRate || 0.05), yearsToRetirement);
+    // Annual crypto income = value * withdrawal rate
+    return cryptoAtRetirement * (data.cryptoHoldings.annualWithdrawalPercent || 0.04);
+  };
+  const cryptoIncomeAtRetirement = getCryptoIncomeAtRetirement();
+
   // Calculate Social Security income at retirement (only if at/past claiming age)
   const ssCOLA = data.inflationRate || 0.025;
   const getSocialSecurityAtAge = (age: number) => {
@@ -62,7 +87,11 @@ export function AnalysisTab() {
     : totalSavings + totalContributions * yearsToRetirement;
   
   const pensionAtRetirement = data.hasPension && data.retirementAge >= data.pensionStartAge ? data.pensionIncome : 0;
-  const incomeGap = data.retirementExpenses - (totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome);
+  
+  // Total other income (matches Details tab: additional + pension + dividend + crypto)
+  const totalOtherIncome = totalAdditionalIncome + dividendIncomeAtRetirement + cryptoIncomeAtRetirement;
+  
+  const incomeGap = data.retirementExpenses - (totalSocialSecurityAtRetirement + pensionAtRetirement + totalOtherIncome);
   // safeWithdrawalRate is already decimal (0.04 = 4%)
   const savingsNeeded = incomeGap > 0 && data.safeWithdrawalRate > 0 ? incomeGap / data.safeWithdrawalRate : 0;
   
@@ -176,8 +205,8 @@ export function AnalysisTab() {
           <div className="space-y-4">
             {/* Income vs Expenses Progress Bar */}
             {(() => {
-              // Guaranteed income only (not portfolio withdrawals - those are shown in Details tab)
-              const guaranteedIncome = Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome);
+              // Total guaranteed income including all sources (matches Details tab)
+              const guaranteedIncome = Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalOtherIncome);
               const coveragePercent = Math.min((guaranteedIncome / data.retirementExpenses) * 100, 100);
               const gap = data.retirementExpenses - guaranteedIncome;
               const isFullyCovered = gap <= 0;
@@ -219,20 +248,34 @@ export function AnalysisTab() {
                 <span className="text-slate-300">Pension</span>
                 <span className="text-blue-400">${pensionAtRetirement.toLocaleString()}/yr</span>
               </div>
-              <div className="flex justify-between items-center p-2 bg-purple-500/10 rounded">
-                <span className="text-slate-300">Additional Income ({data.additionalIncome.length} sources)</span>
-                <span className="text-purple-400">${totalAdditionalIncome.toLocaleString()}/yr</span>
-              </div>
+              {data.additionalIncome.length > 0 && (
+                <div className="flex justify-between items-center p-2 bg-purple-500/10 rounded">
+                  <span className="text-slate-300">Additional Income ({data.additionalIncome.length} sources)</span>
+                  <span className="text-purple-400">${Math.round(totalAdditionalIncome).toLocaleString()}/yr</span>
+                </div>
+              )}
+              {dividendIncomeAtRetirement > 0 && (
+                <div className="flex justify-between items-center p-2 bg-amber-500/10 rounded">
+                  <span className="text-slate-300">Dividend Income</span>
+                  <span className="text-amber-400">${Math.round(dividendIncomeAtRetirement).toLocaleString()}/yr</span>
+                </div>
+              )}
+              {cryptoIncomeAtRetirement > 0 && (
+                <div className="flex justify-between items-center p-2 bg-orange-500/10 rounded">
+                  <span className="text-slate-300">Crypto Income</span>
+                  <span className="text-orange-400">${Math.round(cryptoIncomeAtRetirement).toLocaleString()}/yr</span>
+                </div>
+              )}
             </div>
 
             <div className="border-t border-slate-600 pt-3">
               <div className="flex justify-between items-center">
                 <span className="text-white font-medium">Total Guaranteed Income</span>
                 <span className="text-2xl font-bold text-emerald-400">
-                  ${Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome).toLocaleString()}
+                  ${Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalOtherIncome).toLocaleString()}
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Gross income before taxes • See Details tab for year-by-year breakdown including portfolio withdrawals</p>
+              <p className="text-xs text-slate-500 mt-1">Gross income before taxes • See Details tab for year-by-year breakdown including RMDs</p>
             </div>
           </div>
         </Card>
