@@ -118,6 +118,26 @@ export function ChartsTab() {
     .filter(s => retirementData.retirementAge >= s.startAge && retirementData.retirementAge <= s.endAge)
     .reduce((sum, s) => sum + s.amount, 0);
   
+  // Calculate dividend income at retirement
+  const getDividendIncomeAtRetirement = () => {
+    if (!retirementData.hasDividendPortfolio || !retirementData.dividendPortfolio.includeInProjections) return 0;
+    const yearsToRetirement = Math.max(0, retirementData.retirementAge - retirementData.currentAge);
+    return retirementData.dividendPortfolio.annualDividendIncome * 
+      Math.pow(1 + (retirementData.dividendPortfolio.dividendGrowthRate || 0.05), yearsToRetirement);
+  };
+  const dividendIncomeAtRetirement = getDividendIncomeAtRetirement();
+
+  // Calculate crypto income at retirement
+  const getCryptoIncomeAtRetirement = () => {
+    if (!retirementData.hasCryptoHoldings || !retirementData.cryptoHoldings.includeInProjections) return 0;
+    if (retirementData.retirementAge < (retirementData.cryptoHoldings.withdrawalStartAge || 65)) return 0;
+    const yearsToRetirement = Math.max(0, retirementData.retirementAge - retirementData.currentAge);
+    const cryptoAtRetirement = retirementData.cryptoHoldings.currentValue * 
+      Math.pow(1 + (retirementData.cryptoHoldings.expectedGrowthRate || 0.05), yearsToRetirement);
+    return cryptoAtRetirement * (retirementData.cryptoHoldings.withdrawalPercent || 0.04);
+  };
+  const cryptoIncomeAtRetirement = getCryptoIncomeAtRetirement();
+  
   // Calculate Social Security at retirement (only if at/past claiming age, with COLA)
   const ssCOLA = retirementData.inflationRate || 0.025;
   let ssAtRetirement = 0;
@@ -135,8 +155,9 @@ export function ChartsTab() {
   const incomeSourceData = [
     { name: 'Social Security' + (retirementData.hasSpouse ? ' (Combined)' : ''), value: totalSsAtRetirement, color: '#10B981' },
     { name: 'Pension', value: pensionAtRetirement, color: '#3B82F6' },
-    { name: 'Additional Income', value: additionalIncomeAtRetirement, color: '#8B5CF6' },
-    { name: 'Portfolio (SWR)', value: Math.round(scenarioResults.expected.atRetirement * retirementData.safeWithdrawalRate), color: '#F59E0B' },
+    { name: 'Additional Income', value: Math.round(additionalIncomeAtRetirement), color: '#8B5CF6' },
+    { name: 'Dividend Income', value: Math.round(dividendIncomeAtRetirement), color: '#F59E0B' },
+    { name: 'Crypto Income', value: Math.round(cryptoIncomeAtRetirement), color: '#F97316' },
   ].filter(item => item.value > 0);
 
   const formatYAxis = (value: number) => {
@@ -165,9 +186,9 @@ export function ChartsTab() {
           <p className="text-slate-400 text-xs">Expected scenario</p>
         </div>
         <div className="bg-gradient-to-br from-amber-500/20 to-amber-600/10 rounded-xl p-4 border border-amber-500/30">
-          <p className="text-amber-400 text-sm font-medium">Annual Income</p>
+          <p className="text-amber-400 text-sm font-medium">Guaranteed Income</p>
           <p className="text-3xl font-bold text-white">{formatCurrency(incomeSourceData.reduce((s, d) => s + d.value, 0))}</p>
-          <p className="text-slate-400 text-xs">At retirement</p>
+          <p className="text-slate-400 text-xs">At retirement (pre-tax)</p>
         </div>
       </div>
 
@@ -311,7 +332,7 @@ export function ChartsTab() {
         </Card>
 
         {/* Retirement Income Sources */}
-        <Card title="💰 Retirement Income Sources" subtitle="Annual income at retirement">
+        <Card title="💰 Guaranteed Income Sources" subtitle="Pre-tax income at retirement (excludes portfolio withdrawals)">
           <div className="h-80 flex items-center">
             <ResponsiveContainer width="50%" height="100%">
               <PieChart>
