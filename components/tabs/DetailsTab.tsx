@@ -201,9 +201,10 @@ export function DetailsTab() {
         cryptoValue = startCrypto * (1 + cryptoGrowthRate);
       }
       
-      // Total income from non-portfolio sources (including RMDs as income)
+      // Total income from non-portfolio sources
       const totalOtherIncome = additionalIncome + pensionIncome + dividendIncome + cryptoIncome;
-      const totalIncome = totalSsIncome + totalOtherIncome + totalRMD;
+      
+      // Note: totalIncome will be calculated after earlyExtraWithdrawal is determined
       
       // Calculate expenses (only in retirement)
       let expenses = 0;
@@ -271,6 +272,10 @@ export function DetailsTab() {
       // Total withdrawal from portfolio (RMDs + any additional needed + early extra)
       const totalWithdrawal = totalRMD + additionalWithdrawalNeeded + earlyExtraWithdrawal;
       
+      // Total taxable income = SS + Other + RMDs + Early Extra (all 401K withdrawals are taxable)
+      // Note: earlyExtraWithdrawal comes from pre-tax 401K so it's taxable income
+      const totalIncome = totalSsIncome + totalOtherIncome + totalRMD + earlyExtraWithdrawal;
+      
       // Calculate net cash flow and surplus
       const netCashFlow = isRetired ? (incomeWithoutWithdrawal - expenses) : 0;
       const surplus = isRetired ? Math.max(0, incomeWithoutWithdrawal - expenses) : 0;
@@ -330,14 +335,16 @@ export function DetailsTab() {
       
       totalBalance = preTaxBalance + rothBalance + afterTaxBalance + inheritedIRABalance + dividendPortfolioValue + cryptoValue;
       
-      // Calculate total spendable (income + withdrawals)
-      const totalSpendable = isRetired ? totalSsIncome + totalOtherIncome + totalWithdrawal : 0;
+      // Calculate total spendable (total income for spending purposes)
+      // Note: This should equal totalIncome since all withdrawals are taxable
+      const totalSpendable = totalIncome;
       
       // Calculate taxes on retirement income (only in retirement)
+      // Tax is based on totalIncome which includes SS + Other + RMDs + Early Extra 401K withdrawals
       const spouseAge = data.hasSpouse ? age : 0;
       const taxBreakdown = isRetired 
         ? calculateTotalTaxes(
-            totalSpendable,
+            totalIncome,
             tax.filingStatus as FilingStatus,
             tax.includeStateTax ? tax.stateTaxRate : 0,
             age,
@@ -516,14 +523,14 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Soc Sec</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Other</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10 whitespace-nowrap">RMD</th>
+                {data.earlyWithdrawalEnabled && (
+                  <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10 whitespace-nowrap">401K Extra</th>
+                )}
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10 whitespace-nowrap">Gross Income</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10 whitespace-nowrap">Taxes</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-green-500/10 whitespace-nowrap">Surplus</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10 whitespace-nowrap">Contrib</th>
-                {data.earlyWithdrawalEnabled && (
-                  <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10 whitespace-nowrap">Early Extra</th>
-                )}
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10 whitespace-nowrap">After-Tax</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">W/D %</th>
                 <th className="text-right py-3 px-3 text-slate-400 font-medium whitespace-nowrap min-w-[120px]">End Balance</th>
@@ -586,6 +593,14 @@ export function DetailsTab() {
                         : <span className="text-slate-500">-</span>
                       }
                     </td>
+                    {data.earlyWithdrawalEnabled && (
+                      <td className="py-2 px-2 text-right bg-amber-500/5">
+                        {row.phase === 'Retirement' && row.earlyExtraWithdrawal > 0
+                          ? <span className="text-amber-400 font-medium">+${Math.round(row.earlyExtraWithdrawal).toLocaleString()}</span>
+                          : <span className="text-slate-500">-</span>
+                        }
+                      </td>
+                    )}
                     <td className="py-2 px-2 text-right font-semibold text-emerald-400 bg-emerald-500/5">
                       {row.totalIncome > 0 ? `$${Math.round(row.totalIncome).toLocaleString()}` : '-'}
                     </td>
@@ -609,14 +624,6 @@ export function DetailsTab() {
                     <td className="py-2 px-2 text-right text-blue-400 bg-blue-500/5">
                       {row.contributions > 0 ? `+$${Math.round(row.contributions).toLocaleString()}` : '-'}
                     </td>
-                    {data.earlyWithdrawalEnabled && (
-                      <td className="py-2 px-2 text-right bg-amber-500/5">
-                        {row.phase === 'Retirement' && row.earlyExtraWithdrawal > 0
-                          ? <span className="text-amber-400 font-medium">-${Math.round(row.earlyExtraWithdrawal).toLocaleString()}</span>
-                          : <span className="text-slate-500">-</span>
-                        }
-                      </td>
-                    )}
                     <td className="py-2 px-2 text-right bg-cyan-500/5">
                       {row.phase === 'Retirement' 
                         ? <span className="text-cyan-400 font-semibold">${Math.round(row.afterTaxSpendable).toLocaleString()}</span>
