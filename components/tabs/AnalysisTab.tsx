@@ -3,10 +3,12 @@
 import { useApp } from '@/lib/store';
 import { Card, StatCard } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
+import { calculateTotalTaxes, FilingStatus } from '@/lib/calculations';
 
 export function AnalysisTab() {
   const { state } = useApp();
   const data = state.retirementData;
+  const tax = state.taxSettings;
   const results = state.monteCarloResults;
   const scenarioResults = state.scenarioResults;
 
@@ -89,6 +91,19 @@ export function AnalysisTab() {
   
   // Total other income (matches Details tab: additional + pension + dividend + crypto)
   const totalOtherIncome = totalAdditionalIncome + dividendIncomeAtRetirement + cryptoIncomeAtRetirement;
+  
+  // Calculate total gross income at retirement
+  const totalGrossIncome = totalSocialSecurityAtRetirement + pensionAtRetirement + totalOtherIncome;
+  
+  // Calculate taxes on retirement income
+  const spouseAge = data.hasSpouse ? data.retirementAge : 0; // Approximate spouse age
+  const taxBreakdown = calculateTotalTaxes(
+    totalGrossIncome,
+    tax.filingStatus as FilingStatus,
+    tax.includeStateTax ? tax.stateTaxRate : 0,
+    data.retirementAge,
+    spouseAge
+  );
   
   const incomeGap = data.retirementExpenses - (totalSocialSecurityAtRetirement + pensionAtRetirement + totalOtherIncome);
   // safeWithdrawalRate is already decimal (0.04 = 4%)
@@ -267,14 +282,48 @@ export function AnalysisTab() {
               )}
             </div>
 
+            {/* Gross Income Total */}
             <div className="border-t border-slate-600 pt-3">
               <div className="flex justify-between items-center">
-                <span className="text-white font-medium">Total Guaranteed Income</span>
-                <span className="text-2xl font-bold text-emerald-400">
-                  ${Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalOtherIncome).toLocaleString()}
+                <span className="text-white font-medium">Gross Income</span>
+                <span className="text-xl font-bold text-emerald-400">
+                  ${Math.round(totalGrossIncome).toLocaleString()}/yr
                 </span>
               </div>
-              <p className="text-xs text-slate-500 mt-1">Gross income before taxes • See Details tab for year-by-year breakdown including RMDs</p>
+            </div>
+
+            {/* Tax Deductions */}
+            <div className="space-y-2 bg-red-500/5 rounded-lg p-3 border border-red-500/20">
+              <div className="flex justify-between items-center">
+                <span className="text-slate-400 text-sm">Federal Tax ({(taxBreakdown.marginalRate * 100).toFixed(0)}% bracket)</span>
+                <span className="text-red-400">-${taxBreakdown.federalTax.toLocaleString()}</span>
+              </div>
+              {tax.includeStateTax && taxBreakdown.stateTax > 0 && (
+                <div className="flex justify-between items-center">
+                  <span className="text-slate-400 text-sm">State Tax ({(tax.stateTaxRate * 100).toFixed(1)}%)</span>
+                  <span className="text-red-400">-${taxBreakdown.stateTax.toLocaleString()}</span>
+                </div>
+              )}
+              <div className="flex justify-between items-center pt-1 border-t border-red-500/20">
+                <span className="text-slate-300 text-sm">Total Taxes</span>
+                <span className="text-red-400 font-medium">-${taxBreakdown.totalTax.toLocaleString()}</span>
+              </div>
+              <p className="text-xs text-slate-500">
+                Effective rate: {(taxBreakdown.effectiveTotalRate * 100).toFixed(1)}% • Filing: {tax.filingStatus === 'married' ? 'Married Filing Jointly' : tax.filingStatus === 'head_of_household' ? 'Head of Household' : 'Single'}
+              </p>
+            </div>
+
+            {/* After-Tax Income */}
+            <div className="bg-emerald-500/10 rounded-lg p-4 border border-emerald-500/30">
+              <div className="flex justify-between items-center">
+                <span className="text-emerald-300 font-medium">After-Tax Income</span>
+                <span className="text-2xl font-bold text-emerald-400">
+                  ${taxBreakdown.afterTaxIncome.toLocaleString()}/yr
+                </span>
+              </div>
+              <p className="text-xs text-slate-500 mt-1">
+                ${Math.round(taxBreakdown.afterTaxIncome / 12).toLocaleString()}/month • See Details tab for year-by-year breakdown
+              </p>
             </div>
           </div>
         </Card>

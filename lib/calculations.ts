@@ -128,6 +128,190 @@ export function calculateRMD(age: number, preTaxBalance: number, rmdStartAge: nu
   return preTaxBalance / lifeExpectancy;
 }
 
+// =====================================================
+// TAX CALCULATIONS
+// =====================================================
+
+// 2025 Federal Tax Brackets (Married Filing Jointly)
+export const FEDERAL_BRACKETS_MFJ = [
+  { min: 0, max: 23850, rate: 0.10 },
+  { min: 23850, max: 96950, rate: 0.12 },
+  { min: 96950, max: 206700, rate: 0.22 },
+  { min: 206700, max: 394600, rate: 0.24 },
+  { min: 394600, max: 501050, rate: 0.32 },
+  { min: 501050, max: 751600, rate: 0.35 },
+  { min: 751600, max: Infinity, rate: 0.37 },
+];
+
+// 2025 Federal Tax Brackets (Single)
+export const FEDERAL_BRACKETS_SINGLE = [
+  { min: 0, max: 11925, rate: 0.10 },
+  { min: 11925, max: 48475, rate: 0.12 },
+  { min: 48475, max: 103350, rate: 0.22 },
+  { min: 103350, max: 197300, rate: 0.24 },
+  { min: 197300, max: 250525, rate: 0.32 },
+  { min: 250525, max: 626350, rate: 0.35 },
+  { min: 626350, max: Infinity, rate: 0.37 },
+];
+
+// 2025 Federal Tax Brackets (Head of Household)
+export const FEDERAL_BRACKETS_HOH = [
+  { min: 0, max: 17000, rate: 0.10 },
+  { min: 17000, max: 64850, rate: 0.12 },
+  { min: 64850, max: 103350, rate: 0.22 },
+  { min: 103350, max: 197300, rate: 0.24 },
+  { min: 197300, max: 250500, rate: 0.32 },
+  { min: 250500, max: 626350, rate: 0.35 },
+  { min: 626350, max: Infinity, rate: 0.37 },
+];
+
+// Standard Deductions for 2025
+export const STANDARD_DEDUCTIONS = {
+  single: 15000,
+  married: 30000,
+  head_of_household: 22500,
+};
+
+// Additional standard deduction for age 65+ (2025)
+export const ADDITIONAL_DEDUCTION_65_PLUS = {
+  single: 2000,
+  married: 1600, // Per person, so $3200 if both 65+
+  head_of_household: 2000,
+};
+
+export type FilingStatus = 'single' | 'married' | 'head_of_household';
+
+export interface TaxBracket {
+  min: number;
+  max: number;
+  rate: number;
+}
+
+export function getFederalBrackets(filingStatus: FilingStatus): TaxBracket[] {
+  switch (filingStatus) {
+    case 'married':
+      return FEDERAL_BRACKETS_MFJ;
+    case 'head_of_household':
+      return FEDERAL_BRACKETS_HOH;
+    default:
+      return FEDERAL_BRACKETS_SINGLE;
+  }
+}
+
+export function getStandardDeduction(filingStatus: FilingStatus, age: number = 0, spouseAge: number = 0): number {
+  let deduction = STANDARD_DEDUCTIONS[filingStatus];
+  
+  // Add additional deduction for age 65+
+  if (age >= 65) {
+    deduction += filingStatus === 'married' 
+      ? ADDITIONAL_DEDUCTION_65_PLUS.married 
+      : ADDITIONAL_DEDUCTION_65_PLUS[filingStatus];
+  }
+  
+  // Add spouse's additional deduction if married and spouse is 65+
+  if (filingStatus === 'married' && spouseAge >= 65) {
+    deduction += ADDITIONAL_DEDUCTION_65_PLUS.married;
+  }
+  
+  return deduction;
+}
+
+/**
+ * Calculate federal income tax using progressive brackets
+ * @param grossIncome Total gross income
+ * @param filingStatus Filing status for tax brackets
+ * @param age Primary taxpayer age (for additional deduction)
+ * @param spouseAge Spouse age if married (for additional deduction)
+ * @returns Object with federal tax, taxable income, effective rate, marginal rate
+ */
+export function calculateFederalTax(
+  grossIncome: number,
+  filingStatus: FilingStatus,
+  age: number = 0,
+  spouseAge: number = 0
+): { federalTax: number; taxableIncome: number; effectiveRate: number; marginalRate: number } {
+  const standardDeduction = getStandardDeduction(filingStatus, age, spouseAge);
+  const taxableIncome = Math.max(0, grossIncome - standardDeduction);
+  const brackets = getFederalBrackets(filingStatus);
+  
+  let tax = 0;
+  let remainingIncome = taxableIncome;
+  let marginalRate = 0.10;
+  
+  for (const bracket of brackets) {
+    if (remainingIncome <= 0) break;
+    
+    const taxableInBracket = Math.min(remainingIncome, bracket.max - bracket.min);
+    tax += taxableInBracket * bracket.rate;
+    remainingIncome -= taxableInBracket;
+    marginalRate = bracket.rate;
+    
+    if (remainingIncome <= 0) break;
+  }
+  
+  const effectiveRate = grossIncome > 0 ? tax / grossIncome : 0;
+  
+  return {
+    federalTax: Math.round(tax),
+    taxableIncome: Math.round(taxableIncome),
+    effectiveRate,
+    marginalRate,
+  };
+}
+
+/**
+ * Calculate state income tax (flat rate for simplicity)
+ * @param grossIncome Total gross income
+ * @param stateRate State tax rate as decimal (e.g., 0.05 = 5%)
+ * @returns State tax amount
+ */
+export function calculateStateTax(grossIncome: number, stateRate: number): number {
+  return Math.round(grossIncome * stateRate);
+}
+
+/**
+ * Calculate total taxes (federal + state) and after-tax income
+ * @param grossIncome Total gross income
+ * @param filingStatus Filing status for federal brackets
+ * @param stateRate State tax rate as decimal
+ * @param age Primary taxpayer age
+ * @param spouseAge Spouse age if married
+ * @returns Comprehensive tax breakdown
+ */
+export function calculateTotalTaxes(
+  grossIncome: number,
+  filingStatus: FilingStatus,
+  stateRate: number,
+  age: number = 0,
+  spouseAge: number = 0
+): {
+  grossIncome: number;
+  federalTax: number;
+  stateTax: number;
+  totalTax: number;
+  afterTaxIncome: number;
+  effectiveFederalRate: number;
+  effectiveStateRate: number;
+  effectiveTotalRate: number;
+  marginalRate: number;
+} {
+  const federal = calculateFederalTax(grossIncome, filingStatus, age, spouseAge);
+  const stateTax = calculateStateTax(grossIncome, stateRate);
+  const totalTax = federal.federalTax + stateTax;
+  
+  return {
+    grossIncome: Math.round(grossIncome),
+    federalTax: federal.federalTax,
+    stateTax,
+    totalTax,
+    afterTaxIncome: Math.round(grossIncome - totalTax),
+    effectiveFederalRate: federal.effectiveRate,
+    effectiveStateRate: grossIncome > 0 ? stateTax / grossIncome : 0,
+    effectiveTotalRate: grossIncome > 0 ? totalTax / grossIncome : 0,
+    marginalRate: federal.marginalRate,
+  };
+}
+
 // IRS Single Life Expectancy Table for Inherited IRAs (2024)
 export const SINGLE_LIFE_EXPECTANCY_TABLE: Record<number, number> = {
   0: 84.6, 1: 83.7, 2: 82.7, 3: 81.7, 4: 80.7, 5: 79.8, 6: 78.8, 7: 77.8, 8: 76.8, 9: 75.8,

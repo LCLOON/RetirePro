@@ -9,6 +9,8 @@ import {
   SINGLE_LIFE_EXPECTANCY_TABLE,
   calculateRMD,
   calculateInheritedIRAWithdrawal,
+  calculateTotalTaxes,
+  FilingStatus,
 } from '@/lib/calculations';
 
 // Re-export for backward compatibility if needed
@@ -17,6 +19,7 @@ export { RMD_LIFE_EXPECTANCY_TABLE, SINGLE_LIFE_EXPECTANCY_TABLE, calculateRMD, 
 export function DetailsTab() {
   const { state } = useApp();
   const data = state.retirementData;
+  const tax = state.taxSettings;
   const mortgageData = state.mortgageData;
   const [showAllYears, setShowAllYears] = useState(false);
 
@@ -330,6 +333,21 @@ export function DetailsTab() {
       // Calculate total spendable (income + withdrawals)
       const totalSpendable = isRetired ? totalSsIncome + totalOtherIncome + totalWithdrawal : 0;
       
+      // Calculate taxes on retirement income (only in retirement)
+      const spouseAge = data.hasSpouse ? age : 0;
+      const taxBreakdown = isRetired 
+        ? calculateTotalTaxes(
+            totalSpendable,
+            tax.filingStatus as FilingStatus,
+            tax.includeStateTax ? tax.stateTaxRate : 0,
+            age,
+            spouseAge
+          )
+        : { federalTax: 0, stateTax: 0, totalTax: 0, afterTaxIncome: 0, effectiveTotalRate: 0 };
+      
+      // After-tax spendable income
+      const afterTaxSpendable = isRetired ? taxBreakdown.afterTaxIncome : 0;
+      
       // Calculate withdrawal rate (total withdrawal / start balance)
       const withdrawalRate = isRetired && startBalance > 0 ? (totalWithdrawal / startBalance) * 100 : 0;
       
@@ -357,6 +375,11 @@ export function DetailsTab() {
         surplus: surplus,
         netCashFlow: netCashFlow,
         totalSpendable: totalSpendable,
+        federalTax: taxBreakdown.federalTax,
+        stateTax: taxBreakdown.stateTax,
+        totalTax: taxBreakdown.totalTax,
+        effectiveTaxRate: taxBreakdown.effectiveTotalRate,
+        afterTaxSpendable: afterTaxSpendable,
         withdrawalRate: withdrawalRate,
         endBalance: Math.max(0, totalBalance),
         cumulativeContributions,
@@ -404,21 +427,23 @@ export function DetailsTab() {
         const ssStartYear = yearData.find(y => y.age === data.socialSecurityStartAge);
         const firstRetirementYear = yearData.find(y => y.age === data.retirementAge);
         const avgRetirementIncome = ssStartYear ? ssStartYear.totalIncome : 0;
+        const avgTaxes = ssStartYear ? ssStartYear.totalTax : 0;
+        const avgAfterTax = ssStartYear ? ssStartYear.afterTaxSpendable : 0;
         const avgExpenses = ssStartYear ? ssStartYear.expenses : (firstRetirementYear?.expenses || 0);
         
         return (
           <div className="bg-gradient-to-r from-emerald-500/10 to-blue-500/10 rounded-xl p-6 border border-emerald-500/20">
             <h3 className="text-lg font-bold text-white mb-4 flex items-center gap-2">
-              💰 Your Retirement Income Summary
+              💰 Your Retirement Income Summary <span className="text-sm text-slate-400 font-normal">(at SS start age {data.socialSecurityStartAge})</span>
             </h3>
-            <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
               <div className="bg-slate-800/50 rounded-lg p-3">
-                <p className="text-xs text-slate-400">Your SS (at {data.socialSecurityStartAge})</p>
+                <p className="text-xs text-slate-400">Your SS</p>
                 <p className="text-lg font-bold text-blue-400">${Math.round(data.socialSecurityBenefit).toLocaleString()}/yr</p>
               </div>
               {data.hasSpouse && (
                 <div className="bg-slate-800/50 rounded-lg p-3">
-                  <p className="text-xs text-slate-400">Spouse SS (at {data.spouseSocialSecurityStartAge})</p>
+                  <p className="text-xs text-slate-400">Spouse SS</p>
                   <p className="text-lg font-bold text-purple-400">${Math.round(data.spouseSocialSecurityBenefit).toLocaleString()}/yr</p>
                 </div>
               )}
@@ -427,24 +452,18 @@ export function DetailsTab() {
                 <p className="text-lg font-bold text-amber-400">${Math.round(ssStartYear?.otherIncome || 0).toLocaleString()}/yr</p>
               </div>
               <div className="bg-emerald-500/20 rounded-lg p-3">
-                <p className="text-xs text-emerald-400">Total Annual Income</p>
-                <p className="text-xl font-bold text-emerald-400">${Math.round(avgRetirementIncome).toLocaleString()}/yr</p>
-                <p className="text-xs text-slate-500">${Math.round(avgRetirementIncome / 12).toLocaleString()}/mo</p>
+                <p className="text-xs text-emerald-400">Gross Income</p>
+                <p className="text-lg font-bold text-emerald-400">${Math.round(avgRetirementIncome).toLocaleString()}/yr</p>
               </div>
-              <div className={`rounded-lg p-3 ${avgRetirementIncome >= avgExpenses ? 'bg-emerald-500/20' : 'bg-orange-500/20'}`}>
-                <p className="text-xs text-slate-400">401K Withdrawal Needed</p>
-                <p className={`text-lg font-bold ${avgRetirementIncome >= avgExpenses ? 'text-emerald-400' : 'text-orange-400'}`}>
-                  {avgRetirementIncome >= avgExpenses 
-                    ? '$0/yr ✓' 
-                    : `$${Math.round(avgExpenses - avgRetirementIncome).toLocaleString()}/yr`
-                  }
-                </p>
-                <p className="text-xs text-slate-500">
-                  {avgRetirementIncome >= avgExpenses 
-                    ? `+$${Math.round(avgRetirementIncome - avgExpenses).toLocaleString()} surplus`
-                    : `$${Math.round((avgExpenses - avgRetirementIncome) / 12).toLocaleString()}/mo from 401K`
-                  }
-                </p>
+              <div className="bg-red-500/10 rounded-lg p-3">
+                <p className="text-xs text-red-400">Est. Taxes</p>
+                <p className="text-lg font-bold text-red-400">-${Math.round(avgTaxes).toLocaleString()}/yr</p>
+                <p className="text-xs text-slate-500">{avgRetirementIncome > 0 ? ((avgTaxes / avgRetirementIncome) * 100).toFixed(1) : 0}% effective</p>
+              </div>
+              <div className="bg-cyan-500/20 rounded-lg p-3">
+                <p className="text-xs text-cyan-400">After-Tax Income</p>
+                <p className="text-xl font-bold text-cyan-400">${Math.round(avgAfterTax).toLocaleString()}/yr</p>
+                <p className="text-xs text-slate-500">${Math.round(avgAfterTax / 12).toLocaleString()}/mo</p>
               </div>
             </div>
           </div>
@@ -497,14 +516,15 @@ export function DetailsTab() {
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Soc Sec</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Other</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10 whitespace-nowrap">RMD</th>
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10 whitespace-nowrap">Total Income</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-emerald-500/10 whitespace-nowrap">Gross Income</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-red-500/10 whitespace-nowrap">Taxes</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">Expenses</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-green-500/10 whitespace-nowrap">Surplus</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium bg-blue-500/10 whitespace-nowrap">Contrib</th>
                 {data.earlyWithdrawalEnabled && (
                   <th className="text-right py-3 px-2 text-slate-400 font-medium bg-amber-500/10 whitespace-nowrap">Early Extra</th>
                 )}
-                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10 whitespace-nowrap">Spendable</th>
+                <th className="text-right py-3 px-2 text-slate-400 font-medium bg-cyan-500/10 whitespace-nowrap">After-Tax</th>
                 <th className="text-right py-3 px-2 text-slate-400 font-medium whitespace-nowrap">W/D %</th>
                 <th className="text-right py-3 px-3 text-slate-400 font-medium whitespace-nowrap min-w-[120px]">End Balance</th>
               </tr>
@@ -569,6 +589,12 @@ export function DetailsTab() {
                     <td className="py-2 px-2 text-right font-semibold text-emerald-400 bg-emerald-500/5">
                       {row.totalIncome > 0 ? `$${Math.round(row.totalIncome).toLocaleString()}` : '-'}
                     </td>
+                    <td className="py-2 px-2 text-right bg-red-500/5">
+                      {row.totalTax > 0 
+                        ? <span className="text-red-400">-${Math.round(row.totalTax).toLocaleString()}</span>
+                        : <span className="text-slate-500">-</span>
+                      }
+                    </td>
                     <td className="py-2 px-2 text-right text-red-400">
                       {row.expenses > 0 ? `-$${Math.round(row.expenses).toLocaleString()}` : '-'}
                     </td>
@@ -593,7 +619,7 @@ export function DetailsTab() {
                     )}
                     <td className="py-2 px-2 text-right bg-cyan-500/5">
                       {row.phase === 'Retirement' 
-                        ? <span className="text-cyan-400 font-semibold">${Math.round(row.totalSpendable).toLocaleString()}</span>
+                        ? <span className="text-cyan-400 font-semibold">${Math.round(row.afterTaxSpendable).toLocaleString()}</span>
                         : <span className="text-slate-500">-</span>
                       }
                     </td>
