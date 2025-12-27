@@ -176,10 +176,11 @@ export function AnalysisTab() {
           <div className="space-y-4">
             {/* Income vs Expenses Progress Bar */}
             {(() => {
-              const totalIncome = Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome + futureValue * data.safeWithdrawalRate);
-              const coveragePercent = Math.min((totalIncome / data.retirementExpenses) * 100, 100);
-              const surplus = totalIncome - data.retirementExpenses;
-              const isFullyCovered = surplus >= 0;
+              // Guaranteed income only (not portfolio withdrawals - those are shown in Details tab)
+              const guaranteedIncome = Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome);
+              const coveragePercent = Math.min((guaranteedIncome / data.retirementExpenses) * 100, 100);
+              const gap = data.retirementExpenses - guaranteedIncome;
+              const isFullyCovered = gap <= 0;
               
               return (
                 <div className="p-4 bg-slate-700/50 rounded-lg">
@@ -201,8 +202,8 @@ export function AnalysisTab() {
                     </span>
                     <span className={isFullyCovered ? 'text-emerald-400' : 'text-amber-400'}>
                       {isFullyCovered 
-                        ? `+$${surplus.toLocaleString()} surplus` 
-                        : `-$${Math.abs(surplus).toLocaleString()} shortfall`}
+                        ? `Fully covered by guaranteed income` 
+                        : `$${Math.abs(gap).toLocaleString()} gap (covered by portfolio)`}
                     </span>
                   </div>
                 </div>
@@ -222,19 +223,16 @@ export function AnalysisTab() {
                 <span className="text-slate-300">Additional Income ({data.additionalIncome.length} sources)</span>
                 <span className="text-purple-400">${totalAdditionalIncome.toLocaleString()}/yr</span>
               </div>
-              <div className="flex justify-between items-center p-2 bg-amber-500/10 rounded">
-                <span className="text-slate-300">Portfolio Withdrawal</span>
-                <span className="text-amber-400">${Math.round(futureValue * data.safeWithdrawalRate).toLocaleString()}/yr</span>
-              </div>
             </div>
 
             <div className="border-t border-slate-600 pt-3">
               <div className="flex justify-between items-center">
-                <span className="text-white font-medium">Total Annual Income</span>
+                <span className="text-white font-medium">Total Guaranteed Income</span>
                 <span className="text-2xl font-bold text-emerald-400">
-                  ${Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome + futureValue * data.safeWithdrawalRate).toLocaleString()}
+                  ${Math.round(totalSocialSecurityAtRetirement + pensionAtRetirement + totalAdditionalIncome).toLocaleString()}
                 </span>
               </div>
+              <p className="text-xs text-slate-500 mt-1">Gross income before taxes • See Details tab for year-by-year breakdown including portfolio withdrawals</p>
             </div>
           </div>
         </Card>
