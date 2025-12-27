@@ -30,11 +30,10 @@ export function AnalysisTab() {
   const getDividendIncomeAtRetirement = () => {
     if (!data.hasDividendPortfolio || !data.dividendPortfolio.includeInProjections) return 0;
     const yearsToRetirement = Math.max(0, data.retirementAge - data.currentAge);
-    // Project dividend portfolio growth to retirement
-    const portfolioAtRetirement = data.dividendPortfolio.currentValue * 
-      Math.pow(1 + (data.dividendPortfolio.expectedGrowthRate || 0.07), yearsToRetirement);
-    // Annual dividend income = portfolio * yield
-    return portfolioAtRetirement * (data.dividendPortfolio.dividendYield || 0.03);
+    // Project dividend income growth to retirement (dividends grow at dividend growth rate)
+    const dividendIncomeAtRetirement = data.dividendPortfolio.annualDividendIncome * 
+      Math.pow(1 + (data.dividendPortfolio.dividendGrowthRate || 0.05), yearsToRetirement);
+    return dividendIncomeAtRetirement;
   };
   const dividendIncomeAtRetirement = getDividendIncomeAtRetirement();
 
@@ -47,7 +46,7 @@ export function AnalysisTab() {
     const cryptoAtRetirement = data.cryptoHoldings.currentValue * 
       Math.pow(1 + (data.cryptoHoldings.expectedGrowthRate || 0.05), yearsToRetirement);
     // Annual crypto income = value * withdrawal rate
-    return cryptoAtRetirement * (data.cryptoHoldings.annualWithdrawalPercent || 0.04);
+    return cryptoAtRetirement * (data.cryptoHoldings.withdrawalPercent || 0.04);
   };
   const cryptoIncomeAtRetirement = getCryptoIncomeAtRetirement();
 
